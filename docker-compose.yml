@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  # The Database Service
+  postgres_db:
+    image: postgres:15-alpine # Downloads a lightweight, official PostgreSQL version
+    container_name: bitewise_database
+    restart: always # Automatically restarts the database if it crashes or reboots
+    environment: # Sets up the master login credentials for the database
+      POSTGRES_USER: bitewise_admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: bitewise_main_db
+    ports:
+      - "5432:5432" # Connects computer port 5432 directly to Docker port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Saves database data so it isn't erased when turned off
+
+volumes: # Reserves physical space on your computer
+  postgres_data: # The name of the local storage vault for our database files
