@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+.expo/
+dist/
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env*.local
+
+# Operating System Files
+.DS_Store
+Thumbs.db
