@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { COLORS } from '../constants/pantryData';
+import { COLORS } from '../constants/Colors';
 
 export const mealCardStyles = StyleSheet.create({
   mealsContainerWrapper: {

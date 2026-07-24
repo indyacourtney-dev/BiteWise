@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { COLORS } from '../constants/pantryData';
+import { COLORS } from '../constants/Colors';
 import { componentStyles } from '../styles/componentStyles';
 import PantryItemRow from './PantryItemRow';
 

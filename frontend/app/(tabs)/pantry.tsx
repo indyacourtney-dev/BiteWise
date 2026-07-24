@@ -7,7 +7,8 @@ import { Feather } from '@expo/vector-icons';
 import { useFonts, PlayfairDisplay_600SemiBold } from '@expo-google-fonts/playfair-display';
 import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
-import { COLORS, SUGGESTION_LIBRARY, INITIAL_CATEGORIES, MOCK_MEALS } from '../../constants/pantryData';
+import { COLORS } from '../../constants/Colors';
+import { SUGGESTION_LIBRARY, INITIAL_CATEGORIES, MOCK_MEALS } from '../../constants/pantryData';
 import { layoutStyles } from '../../styles/layoutStyles';
 import { inputStyles } from '../../styles/inputStyles';
 import { componentStyles } from '../../styles/componentStyles';

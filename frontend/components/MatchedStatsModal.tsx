@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { COLORS } from '../constants/pantryData';
+import { COLORS } from '../constants/Colors';
 import { modalStyles } from '../styles/modalStyles';
 
 // Props for the meal-match modal

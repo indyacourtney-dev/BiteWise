@@ -3,12 +3,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-// Theme Palette
-const COLORS = {
-  yellowAccent: '#F3DD39', // Gold/Yellow
-  darkNavy: '#2E4053',     // Navy Blue
-  inactiveGray: '#85929E', // Clear gray for inactive icons
-};
+import { COLORS } from '../../constants/Colors';
 
 export default function TabLayout() {
   return (
@@ -21,7 +16,7 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: COLORS.darkNavy,
           borderTopWidth: 3,                 // Height of the trim line
-          borderTopColor: COLORS.yellowAccent, // Yellow trim at the top of the navbar
+          borderTopColor: COLORS.goldYellow, // Yellow trim at the top of the navbar
           height: 85,                        // Extra padding for tab comfort
           paddingBottom: 8,
           paddingTop: 8,
@@ -39,7 +34,7 @@ export default function TabLayout() {
     >
       {/* Home Tab */}
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
