@@ -1,12 +1,3 @@
-export const COLORS = {
-  lightBlueBg: '#F4F7F9',
-  darkNavy: '#2E4053',
-  yellowAccent: '#F3DD39',
-  darkGold: '#D4AC0D',
-  white: '#FFFFFF',
-  redAccent: '#E74C3C',
-};
-
 export const AVAILABLE_UNITS = [
   'Items',
   'Cups',
