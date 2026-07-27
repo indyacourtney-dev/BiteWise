@@ -1,301 +1,345 @@
-// data/recipes.ts
-//
-// Recipe database for scoring/matching with "This or That" game preferences.
-// Each recipe has tags that align with the preference tags from thisOrThatData.ts.
-// Tags are lowercase for consistency with the scoring engine.
 
-export interface Recipe {
-  id: string | number;
-  name: string;
-  description?: string;
-  tags: string[];
-  ingredients?: string[];
-  instructions?: string[];
-  cookTime?: number; // minutes
-  servings?: number;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  rating?: number; // 0-5
-  imageUrl?: string;
-}
-
+Recipes · TS
+// constants/recipes.ts
+// Recipe data lives here, not inside a screen. When you swap mock data
+// for an API, only this file changes — screens stay untouched.
+ 
+import type { Recipe } from '../types';
+ 
 export const RECIPES: Recipe[] = [
-  // PROTEIN: Chicken + Fried
   {
-    id: 1,
-    name: 'Crispy Fried Chicken Burger',
-    description: 'Golden-fried chicken breast on a toasted bun with pickles and sauce',
-    tags: ['chicken', 'fried', 'poultry', 'beef', 'ground-beef', 'bread', 'bun', 'quick'],
-    cookTime: 15,
-    servings: 1,
-    difficulty: 'easy',
-    rating: 4.5,
-    ingredients: ['chicken breast', 'flour', 'oil', 'bun', 'pickles', 'mayo'],
-  },
-
-  // PROTEIN: Fish + Seafood
-  {
-    id: 2,
-    name: 'Fish Tacos with Lime Crema',
-    description: 'Crispy battered fish with cabbage slaw and lime crema',
-    tags: ['fish', 'seafood', 'tortilla', 'wrap', 'handheld', 'quick'],
-    cookTime: 20,
-    servings: 2,
-    difficulty: 'medium',
-    rating: 4.8,
-    ingredients: ['fish fillet', 'tortillas', 'cabbage', 'lime', 'crema', 'cilantro'],
-  },
-
-  // PROTEIN: Beans + Vegetarian
-  {
-    id: 3,
-    name: 'Bean & Veggie Buddha Bowl',
-    description: 'Roasted vegetables and black beans over rice with tahini dressing',
-    tags: ['beans', 'vegetarian', 'plant-based', 'vegetables', 'roasted', 'light', 'rice', 'grain'],
-    cookTime: 25,
-    servings: 1,
-    difficulty: 'easy',
-    rating: 4.6,
-    ingredients: ['black beans', 'sweet potato', 'broccoli', 'rice', 'tahini', 'olive oil'],
-  },
-
-  // PROTEIN: Chicken + Grilled
-  {
-    id: 4,
-    name: 'Grilled Chicken with Roasted Vegetables',
-    description: 'Herb-grilled chicken breast with seasonal roasted vegetables',
-    tags: ['chicken', 'grilled', 'poultry', 'vegetables', 'roasted', 'light'],
-    cookTime: 30,
-    servings: 1,
-    difficulty: 'medium',
-    rating: 4.4,
-    ingredients: ['chicken breast', 'zucchini', 'bell peppers', 'tomatoes', 'herbs', 'olive oil'],
-  },
-
-  // PROTEIN: Beef + Tacos
-  {
-    id: 5,
-    name: 'Beef Taco Platter',
-    description: 'Seasoned ground beef tacos with all the fixings',
-    tags: ['beef', 'ground-beef', 'tortilla', 'wrap', 'handheld', 'onion', 'fried', 'quick'],
-    cookTime: 12,
-    servings: 2,
-    difficulty: 'easy',
-    rating: 4.3,
-    ingredients: ['ground beef', 'tortillas', 'onion', 'lettuce', 'cheese', 'salsa'],
-  },
-
-  // CARBS: Pasta + Comfort
-  {
-    id: 6,
-    name: 'Mac & Cheese Comfort Bowl',
-    description: 'Creamy homemade mac and cheese with breadcrumb topping',
-    tags: ['pasta', 'cheese', 'comfort', 'noodles', 'bread', 'bun'],
-    cookTime: 15,
-    servings: 2,
-    difficulty: 'easy',
-    rating: 4.7,
-    ingredients: ['pasta', 'cheddar cheese', 'butter', 'milk', 'breadcrumbs'],
-  },
-
-  // CARBS: Rice + Grain
-  {
-    id: 7,
-    name: 'Thai Basil Chicken Fried Rice',
-    description: 'Fragrant jasmine rice with chicken, vegetables, and Thai basil',
-    tags: ['rice', 'grain', 'chicken', 'poultry', 'vegetables', 'quick'],
-    cookTime: 18,
-    servings: 2,
-    difficulty: 'easy',
-    rating: 4.5,
-    ingredients: ['jasmine rice', 'chicken', 'egg', 'basil', 'soy sauce', 'vegetables'],
-  },
-
-  // CARBS: Potato + Comfort
-  {
-    id: 8,
-    name: 'Loaded Mashed Potatoes',
-    description: 'Creamy mashed potatoes with butter, cheese, and bacon',
-    tags: ['potato', 'comfort', 'grain'],
-    cookTime: 20,
+    id: 'r1',
+    name: 'Grilled Chicken with Brown Rice & Broccoli',
+    emoji: '🍗',
+    tags: ['chicken', 'grilled', 'rice', 'grain', 'light', 'balanced', 'lean', 'poultry'],
+    vibe: 'savory',
+    plate: { produce: 48, protein: 26, carbs: 21, healthyFats: 5 },
+    prepMinutes: 10,
+    cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    rating: 4.6,
-    ingredients: ['potatoes', 'butter', 'milk', 'cheese', 'bacon', 'chives'],
+    dietary: ['dairy-free', 'high-protein'],
+    allergens: [],
+    ingredients: [
+      { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
+      { name: 'brown rice', amount: '1 cup dry', category: 'grains' },
+      { name: 'broccoli', amount: '2 heads', category: 'produce' },
+      { name: 'olive oil', amount: '2 tbsp', category: 'pantry' },
+      { name: 'garlic', amount: '3 cloves', category: 'produce' },
+      { name: 'lemon', amount: '1', category: 'produce', optional: true },
+    ],
+    instructions: [
+      'Rinse the brown rice and simmer in 2 cups water for 25 minutes, covered.',
+      'Pat the chicken dry, then season both sides with salt, pepper, and minced garlic.',
+      'Heat a grill pan over medium-high with 1 tbsp olive oil.',
+      'Grill the chicken 6–7 minutes per side, until it reads 165°F at the thickest point.',
+      'Cut the broccoli into florets and steam 5 minutes, until bright green and just tender.',
+      'Rest the chicken 5 minutes before slicing, then plate with rice and broccoli.',
+      'Finish with the remaining olive oil and a squeeze of lemon.',
+    ],
   },
-
-  // SIDES: Coleslaw + Slaw
   {
-    id: 9,
-    name: 'Crispy Coleslaw',
-    description: 'Tangy vinegar-based coleslaw with fresh cabbage',
-    tags: ['cabbage', 'slaw', 'light', 'vegetables'],
-    cookTime: 10,
+    id: 'r2',
+    name: 'Crispy Beef Tacos',
+    emoji: '🌮',
+    tags: ['beef', 'fried', 'crispy', 'bread', 'hearty', 'portion-large', 'red-meat'],
+    vibe: 'spicy',
+    plate: { produce: 22, protein: 30, carbs: 40, healthyFats: 8 },
+    prepMinutes: 15,
+    cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    rating: 4.2,
-    ingredients: ['cabbage', 'vinegar', 'oil', 'carrots', 'sugar', 'salt'],
+    dietary: [],
+    allergens: ['gluten', 'dairy'],
+    ingredients: [
+      { name: 'ground beef', amount: '1 lb', category: 'proteins' },
+      { name: 'corn tortillas', amount: '8', category: 'grains' },
+      { name: 'lettuce', amount: '1 head', category: 'produce' },
+      { name: 'tomato', amount: '2', category: 'produce' },
+      { name: 'cheddar cheese', amount: '1 cup shredded', category: 'dairy' },
+      { name: 'onion', amount: '1', category: 'produce' },
+      { name: 'chili powder', amount: '2 tsp', category: 'pantry' },
+    ],
+    instructions: [
+      'Dice the onion and cook in a skillet over medium heat until translucent, about 5 minutes.',
+      'Add the ground beef and break it apart, cooking until browned, 8–10 minutes.',
+      'Stir in chili powder, salt, and 1/4 cup water. Simmer 5 minutes.',
+      'Warm the tortillas in a dry pan 30 seconds per side until pliable and lightly charred.',
+      'Shred the lettuce and dice the tomato.',
+      'Assemble: beef first, then cheese so it melts, then the cold toppings.',
+    ],
   },
-
-  // SIDES: Salad + Light
   {
-    id: 10,
-    name: 'Garden Side Salad',
-    description: 'Mixed greens with fresh vegetables and light vinaigrette',
-    tags: ['lettuce', 'salad', 'light', 'vegetables'],
-    cookTime: 5,
-    servings: 2,
-    difficulty: 'easy',
-    rating: 4.4,
-    ingredients: ['lettuce mix', 'tomatoes', 'cucumbers', 'carrots', 'vinaigrette'],
-  },
-
-  // SIDES: Vegetables + Roasted
-  {
-    id: 11,
-    name: 'Roasted Vegetable Medley',
-    description: 'Seasonal vegetables roasted with garlic and herbs',
-    tags: ['vegetables', 'roasted', 'light'],
-    cookTime: 25,
+    id: 'r3',
+    name: 'Lemon Herb Fish with Roasted Vegetables',
+    emoji: '🐟',
+    tags: ['fish', 'seafood', 'light', 'baked', 'fresh', 'greens', 'roasted', 'portion-medium'],
+    vibe: 'savory',
+    plate: { produce: 50, protein: 25, carbs: 18, healthyFats: 7 },
+    prepMinutes: 15,
+    cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    rating: 4.5,
-    ingredients: ['zucchini', 'bell peppers', 'broccoli', 'garlic', 'olive oil', 'herbs'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'high-protein'],
+    allergens: ['fish'],
+    ingredients: [
+      { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
+      { name: 'zucchini', amount: '2', category: 'produce' },
+      { name: 'bell pepper', amount: '2', category: 'produce' },
+      { name: 'red onion', amount: '1', category: 'produce' },
+      { name: 'olive oil', amount: '3 tbsp', category: 'pantry' },
+      { name: 'lemon', amount: '2', category: 'produce' },
+      { name: 'fresh dill', amount: '2 tbsp', category: 'produce', optional: true },
+    ],
+    instructions: [
+      'Heat the oven to 425°F.',
+      'Cut all vegetables into 1-inch pieces, toss with 2 tbsp olive oil, salt, and pepper.',
+      'Spread on a sheet pan in a single layer and roast 15 minutes.',
+      'Push the vegetables to the edges and set the fish skin-side down in the center.',
+      'Top the fish with lemon slices, dill, and the remaining olive oil.',
+      'Roast 12–15 more minutes, until the fish flakes easily with a fork.',
+    ],
   },
-
-  // SIDES: Onion Rings + Fried
   {
-    id: 12,
-    name: 'Crispy Onion Rings',
-    description: 'Golden-fried onion rings with ranch dipping sauce',
-    tags: ['onion', 'fried', 'quick'],
-    cookTime: 10,
-    servings: 2,
-    difficulty: 'easy',
-    rating: 4.3,
-    ingredients: ['onions', 'flour', 'milk', 'oil', 'salt', 'pepper'],
-  },
-
-  // SIDES: Fruit + Light
-  {
-    id: 13,
-    name: 'Mixed Fruit Cup',
-    description: 'Fresh seasonal fruits with a touch of honey',
-    tags: ['fruit', 'light', 'vegetables'],
-    cookTime: 5,
-    servings: 1,
-    difficulty: 'easy',
-    rating: 4.6,
-    ingredients: ['watermelon', 'berries', 'pineapple', 'honey'],
-  },
-
-  // Combination: Burger + Fries
-  {
-    id: 14,
-    name: 'Classic Cheeseburger & Fries',
-    description: 'Juicy beef burger with melted cheese and crispy fries',
-    tags: ['beef', 'ground-beef', 'potato', 'fried', 'quick', 'bun', 'bread', 'comfort'],
-    cookTime: 15,
-    servings: 1,
-    difficulty: 'easy',
-    rating: 4.7,
-    ingredients: ['ground beef', 'cheese', 'potatoes', 'bun', 'lettuce', 'tomato'],
-  },
-
-  // Combination: Grilled + Rice
-  {
-    id: 15,
-    name: 'Teriyaki Chicken Bowl',
-    description: 'Grilled teriyaki chicken over rice with vegetables',
-    tags: ['chicken', 'grilled', 'poultry', 'rice', 'grain', 'vegetables'],
-    cookTime: 22,
-    servings: 1,
-    difficulty: 'medium',
-    rating: 4.6,
-    ingredients: ['chicken', 'teriyaki sauce', 'rice', 'edamame', 'carrots'],
-  },
-
-  // Combination: Fish + Sides
-  {
-    id: 16,
-    name: 'Baked Fish with Side Salad',
-    description: 'Herb-baked fish fillet with garden salad',
-    tags: ['fish', 'seafood', 'lettuce', 'salad', 'light', 'vegetables'],
-    cookTime: 25,
-    servings: 1,
-    difficulty: 'medium',
-    rating: 4.5,
-    ingredients: ['fish fillet', 'lemon', 'herbs', 'lettuce', 'vegetables'],
-  },
-
-  // Combination: Vegetarian + Comfort
-  {
-    id: 17,
-    name: 'Veggie Pasta Primavera',
-    description: 'Fresh seasonal vegetables tossed with pasta and olive oil',
-    tags: ['vegetables', 'pasta', 'noodles', 'vegetarian', 'plant-based', 'light'],
-    cookTime: 20,
-    servings: 2,
-    difficulty: 'easy',
-    rating: 4.4,
-    ingredients: ['pasta', 'zucchini', 'tomatoes', 'basil', 'olive oil', 'garlic'],
-  },
-
-  // Combination: Handheld + Quick
-  {
-    id: 18,
-    name: 'Crispy Chicken Wrap',
-    description: 'Breaded chicken with veggies wrapped in a soft tortilla',
-    tags: ['chicken', 'poultry', 'tortilla', 'wrap', 'handheld', 'quick', 'bread'],
-    cookTime: 10,
-    servings: 1,
-    difficulty: 'easy',
-    rating: 4.4,
-    ingredients: ['chicken breast', 'tortilla', 'lettuce', 'tomato', 'mayo', 'cheese'],
-  },
-
-  // Combination: Beef + Comfort
-  {
-    id: 19,
-    name: 'Beef Meatball Pasta',
-    description: 'Tender beef meatballs in marinara sauce over pasta',
-    tags: ['beef', 'pasta', 'noodles', 'comfort', 'ground-beef'],
-    cookTime: 30,
-    servings: 2,
-    difficulty: 'medium',
-    rating: 4.6,
-    ingredients: ['ground beef', 'pasta', 'marinara', 'onion', 'garlic', 'breadcrumbs'],
-  },
-
-  // High-rating popular recipe
-  {
-    id: 20,
-    name: 'BBQ Pulled Pork Sandwich',
-    description: 'Slow-cooked pulled pork with BBQ sauce on a toasted bun',
-    tags: ['beef', 'red-meat', 'bread', 'bun', 'comfort', 'quick', 'handheld'],
-    cookTime: 240, // Slow-cooked, but quick to prep/serve
+    id: 'r4',
+    name: 'Creamy Pasta Carbonara',
+    emoji: '🍝',
+    tags: ['pasta', 'noodles', 'rich', 'creamy', 'regular', 'high-carb', 'portion-medium'],
+    vibe: 'savory',
+    plate: { produce: 12, protein: 22, carbs: 56, healthyFats: 10 },
+    prepMinutes: 10,
+    cookMinutes: 20,
     servings: 4,
     difficulty: 'medium',
-    rating: 4.8,
-    ingredients: ['pork shoulder', 'BBQ sauce', 'buns', 'onion', 'pickles'],
+    dietary: [],
+    allergens: ['gluten', 'dairy', 'eggs'],
+    ingredients: [
+      { name: 'spaghetti', amount: '1 lb', category: 'grains' },
+      { name: 'bacon', amount: '6 oz', category: 'proteins' },
+      { name: 'eggs', amount: '4', category: 'proteins' },
+      { name: 'parmesan cheese', amount: '1 cup grated', category: 'dairy' },
+      { name: 'black pepper', amount: '2 tsp', category: 'pantry' },
+      { name: 'garlic', amount: '2 cloves', category: 'produce', optional: true },
+    ],
+    instructions: [
+      'Boil the pasta in well-salted water until just shy of al dente.',
+      'While it cooks, crisp the diced bacon in a large skillet over medium heat.',
+      'Whisk the eggs and parmesan together in a bowl with plenty of black pepper.',
+      'Reserve 1 cup pasta water, then drain the pasta.',
+      'Off the heat, toss the hot pasta with the bacon and its fat.',
+      'Add the egg mixture while tossing constantly — the residual heat cooks it into a sauce. Never over direct heat, or it scrambles.',
+      'Loosen with pasta water a splash at a time until glossy.',
+    ],
+  },
+  {
+    id: 'r5',
+    name: 'Spicy Thai Curry with Jasmine Rice',
+    emoji: '🍛',
+    tags: ['rice', 'chicken', 'spicy', 'balanced', 'grain', 'poultry', 'portion-medium'],
+    vibe: 'spicy',
+    plate: { produce: 38, protein: 24, carbs: 30, healthyFats: 8 },
+    prepMinutes: 20,
+    cookMinutes: 25,
+    servings: 4,
+    difficulty: 'medium',
+    dietary: ['gluten-free', 'dairy-free'],
+    allergens: [],
+    ingredients: [
+      { name: 'chicken thighs', amount: '1.5 lbs', category: 'proteins' },
+      { name: 'jasmine rice', amount: '1.5 cups dry', category: 'grains' },
+      { name: 'coconut milk', amount: '1 can', category: 'pantry' },
+      { name: 'red curry paste', amount: '3 tbsp', category: 'pantry' },
+      { name: 'bell pepper', amount: '2', category: 'produce' },
+      { name: 'snap peas', amount: '2 cups', category: 'produce' },
+      { name: 'lime', amount: '1', category: 'produce' },
+    ],
+    instructions: [
+      'Start the rice — 1.5 cups rice to 2.25 cups water, covered, 15 minutes.',
+      'Cut the chicken into bite-size pieces and sear in a hot pot until browned.',
+      'Push the chicken aside and fry the curry paste in the fat for 1 minute, until fragrant.',
+      'Pour in the coconut milk and scrape up everything stuck to the bottom.',
+      'Simmer 10 minutes, then add the peppers and snap peas.',
+      'Cook 5 more minutes so the vegetables keep some bite. Finish with lime juice.',
+    ],
+  },
+  {
+    id: 'r6',
+    name: 'Vibrant Garden Salad Bowl',
+    emoji: '🥗',
+    tags: ['salad', 'fresh', 'greens', 'leafy', 'light', 'raw', 'veggies-large', 'portion-small'],
+    vibe: 'savory',
+    plate: { produce: 54, protein: 21, carbs: 15, healthyFats: 10 },
+    prepMinutes: 15,
+    cookMinutes: 0,
+    servings: 2,
+    difficulty: 'easy',
+    dietary: ['vegetarian', 'gluten-free', 'low-carb'],
+    allergens: ['dairy', 'nuts'],
+    ingredients: [
+      { name: 'mixed greens', amount: '6 cups', category: 'produce' },
+      { name: 'cherry tomatoes', amount: '1 cup', category: 'produce' },
+      { name: 'cucumber', amount: '1', category: 'produce' },
+      { name: 'chickpeas', amount: '1 can', category: 'proteins' },
+      { name: 'feta cheese', amount: '1/2 cup', category: 'dairy' },
+      { name: 'almonds', amount: '1/4 cup', category: 'pantry' },
+      { name: 'olive oil', amount: '3 tbsp', category: 'pantry' },
+      { name: 'lemon', amount: '1', category: 'produce' },
+    ],
+    instructions: [
+      'Rinse and thoroughly dry the greens — wet leaves will not hold dressing.',
+      'Halve the tomatoes and slice the cucumber into half-moons.',
+      'Drain and rinse the chickpeas, then pat dry.',
+      'Whisk olive oil, lemon juice, salt, and pepper into a dressing.',
+      'Toss the greens with dressing first, then add everything else so it stays crisp.',
+      'Top with crumbled feta and toasted almonds.',
+    ],
+  },
+  {
+    id: 'r7',
+    name: 'Grilled Steak with Sweet Potato',
+    emoji: '🥩',
+    tags: ['beef', 'hearty', 'grilled', 'red-meat', 'portion-large', 'smoky'],
+    vibe: 'savory',
+    plate: { produce: 30, protein: 34, carbs: 29, healthyFats: 7 },
+    prepMinutes: 15,
+    cookMinutes: 30,
+    servings: 4,
+    difficulty: 'medium',
+    dietary: ['gluten-free', 'dairy-free', 'high-protein'],
+    allergens: [],
+    ingredients: [
+      { name: 'sirloin steak', amount: '1.5 lbs', category: 'proteins' },
+      { name: 'sweet potato', amount: '3 large', category: 'produce' },
+      { name: 'asparagus', amount: '1 bunch', category: 'produce' },
+      { name: 'olive oil', amount: '3 tbsp', category: 'pantry' },
+      { name: 'garlic', amount: '4 cloves', category: 'produce' },
+      { name: 'rosemary', amount: '2 sprigs', category: 'produce', optional: true },
+    ],
+    instructions: [
+      'Take the steak out of the fridge 30 minutes ahead so it cooks evenly.',
+      'Heat the oven to 425°F. Cube the sweet potatoes, toss with oil and salt, roast 30 minutes.',
+      'Pat the steak very dry and season generously with salt and pepper.',
+      'Sear in a screaming-hot cast iron, 4 minutes per side for medium-rare.',
+      'Add garlic and rosemary to the pan in the last minute and baste the steak.',
+      'Rest the steak 10 minutes before slicing against the grain — this is not optional.',
+      'Roast the asparagus alongside the potatoes for the final 12 minutes.',
+    ],
+  },
+  {
+    id: 'r8',
+    name: 'Sweet & Sour Chicken with Brown Rice',
+    emoji: '🍲',
+    tags: ['chicken', 'sweet', 'poultry', 'rice', 'grain', 'balanced', 'portion-medium'],
+    vibe: 'sweet',
+    plate: { produce: 42, protein: 26, carbs: 25, healthyFats: 7 },
+    prepMinutes: 20,
+    cookMinutes: 25,
+    servings: 4,
+    difficulty: 'medium',
+    dietary: ['dairy-free'],
+    allergens: ['soy'],
+    ingredients: [
+      { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
+      { name: 'brown rice', amount: '1.5 cups dry', category: 'grains' },
+      { name: 'pineapple chunks', amount: '1 cup', category: 'produce' },
+      { name: 'bell pepper', amount: '2', category: 'produce' },
+      { name: 'onion', amount: '1', category: 'produce' },
+      { name: 'soy sauce', amount: '3 tbsp', category: 'pantry' },
+      { name: 'rice vinegar', amount: '2 tbsp', category: 'pantry' },
+      { name: 'honey', amount: '2 tbsp', category: 'pantry' },
+    ],
+    instructions: [
+      'Cook the brown rice — 1.5 cups to 3 cups water, 30 minutes covered.',
+      'Whisk soy sauce, rice vinegar, honey, and 1/4 cup pineapple juice into a sauce.',
+      'Cut the chicken into 1-inch cubes and sear in a hot wok until golden, about 6 minutes.',
+      'Remove the chicken, then stir-fry the peppers and onion 3 minutes so they stay crisp.',
+      'Return the chicken, add the pineapple and sauce, and simmer 4 minutes until it thickens.',
+      'Serve over the rice.',
+    ],
+  },
+  {
+    id: 'r9',
+    name: 'Roasted Veggie & Quinoa Bowl',
+    emoji: '🥙',
+    tags: ['quinoa', 'grain', 'roasted', 'veggies-large', 'balanced', 'light', 'greens'],
+    vibe: 'savory',
+    plate: { produce: 50, protein: 22, carbs: 20, healthyFats: 8 },
+    prepMinutes: 15,
+    cookMinutes: 30,
+    servings: 4,
+    difficulty: 'easy',
+    dietary: ['vegetarian', 'vegan', 'gluten-free', 'dairy-free'],
+    allergens: [],
+    ingredients: [
+      { name: 'quinoa', amount: '1 cup dry', category: 'grains' },
+      { name: 'chickpeas', amount: '2 cans', category: 'proteins' },
+      { name: 'sweet potato', amount: '2', category: 'produce' },
+      { name: 'broccoli', amount: '1 head', category: 'produce' },
+      { name: 'red onion', amount: '1', category: 'produce' },
+      { name: 'olive oil', amount: '3 tbsp', category: 'pantry' },
+      { name: 'tahini', amount: '3 tbsp', category: 'pantry', optional: true },
+    ],
+    instructions: [
+      'Heat the oven to 425°F.',
+      'Rinse the quinoa well, then simmer in 2 cups water for 15 minutes.',
+      'Cube the sweet potato and cut the broccoli into florets.',
+      'Drain and dry the chickpeas — dry chickpeas crisp, wet ones steam.',
+      'Toss everything with olive oil and salt, spread on two sheet pans, roast 25–30 minutes.',
+      'Build the bowls over quinoa and drizzle with thinned tahini.',
+    ],
+  },
+  {
+    id: 'r10',
+    name: 'Honey Garlic Salmon Rice Bowl',
+    emoji: '🍱',
+    tags: ['fish', 'seafood', 'sweet', 'rice', 'grain', 'baked', 'balanced', 'portion-medium'],
+    vibe: 'sweet',
+    plate: { produce: 46, protein: 27, carbs: 21, healthyFats: 6 },
+    prepMinutes: 10,
+    cookMinutes: 20,
+    servings: 4,
+    difficulty: 'easy',
+    dietary: ['pescatarian', 'dairy-free', 'high-protein'],
+    allergens: ['fish', 'soy'],
+    ingredients: [
+      { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
+      { name: 'jasmine rice', amount: '1.5 cups dry', category: 'grains' },
+      { name: 'edamame', amount: '1.5 cups', category: 'produce' },
+      { name: 'cucumber', amount: '1', category: 'produce' },
+      { name: 'carrot', amount: '2', category: 'produce' },
+      { name: 'honey', amount: '3 tbsp', category: 'pantry' },
+      { name: 'soy sauce', amount: '3 tbsp', category: 'pantry' },
+      { name: 'garlic', amount: '4 cloves', category: 'produce' },
+    ],
+    instructions: [
+      'Start the rice.',
+      'Whisk honey, soy sauce, and minced garlic into a glaze.',
+      'Heat the oven to 400°F and set the salmon on a lined sheet pan.',
+      'Brush half the glaze over the fish and bake 12–14 minutes.',
+      'Meanwhile, julienne the carrot, slice the cucumber, and steam the edamame.',
+      'Brush the remaining glaze over the cooked salmon and serve over rice with the vegetables.',
+    ],
   },
 ];
-
-/**
- * SCORING NOTES:
- *
- * The tags in each recipe should overlap with tags in thisOrThatData.ts
- * to enable proper scoring. For example:
- *
- *   Q: "Crispy chicken or juicy burger?"
- *   A: ['chicken', 'fried', 'poultry']
- *   B: ['beef', 'ground-beef', 'red-meat']
- *
- *   Recipe #1 (Crispy Fried Chicken Burger):
- *   tags: ['chicken', 'fried', 'poultry', 'beef', 'ground-beef', 'bread', 'bun']
- *
- *   If user chooses A (chicken), tags = ['chicken', 'fried', 'poultry']
- *   Overlap: 3/7 = 42.9% match (below 70% threshold, not shown)
- *
- * To increase match likelihood, recipes should have tags that align with
- * multiple preference options to catch different user preferences.
- */
+ 
+export function getRecipeById(id: string): Recipe | undefined {
+  return RECIPES.find(r => r.id === id);
+}
+ 
+export function getTotalTime(recipe: Recipe): number {
+  return recipe.prepMinutes + recipe.cookMinutes;
+}
+ 
+export function formatTime(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
+}
+ 
+export const DIFFICULTY_LABELS = {
+  easy: 'Easy',
+  medium: 'Medium',
+  hard: 'Advanced',
+} as const;
+ 
