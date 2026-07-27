@@ -1,9 +1,4 @@
 
-Recipes · TS
-// constants/recipes.ts
-// Recipe data lives here, not inside a screen. When you swap mock data
-// for an API, only this file changes — screens stay untouched.
- 
 import type { Recipe } from '../types';
  
 export const RECIPES: Recipe[] = [
