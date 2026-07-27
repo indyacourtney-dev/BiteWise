@@ -26,11 +26,12 @@ export default function TabLayout() {
         // to prevent a hydration error in React Navigation v6.
         headerShown: useClientOnlyValue(false, true),
       }}>
+      {/* HOME TAB */}
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Test tab',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: 'Home',
+          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
           headerRight: () => (
             <Link href="/modal" asChild>
               <Pressable>
@@ -47,18 +48,22 @@ export default function TabLayout() {
           ),
         }}
       />
+      
+      {/* PANTRY TAB */}
       <Tabs.Screen
         name="two"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: 'My Pantry',
+          tabBarIcon: ({ color }) => <TabBarIcon name="shopping-basket" color={color} />,
         }}
       />
+      
+      {/* THIS OR THAT TAB */}
       <Tabs.Screen
         name="thisorthat"
         options={{
-          title: 'This or That',
-          tabBarIcon: ({ color }) => <TabBarIcon name="cutlery" color={color} />,
+          title: 'Play Game',
+          tabBarIcon: ({ color }) => <TabBarIcon name="gamepad" color={color} />,
         }}
       />
     </Tabs>
