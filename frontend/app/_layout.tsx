@@ -1,67 +1,69 @@
-// frontend/app/(tabs)/_layout.tsx
 import React from 'react';
-import { Tabs } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Link, Tabs } from 'expo-router';
+import { Pressable } from 'react-native';
 
-import { COLORS } from '../../constants/Colors';
+import Colors from '@/constants/Colors';
+import { useColorScheme } from '@/components/useColorScheme';
+import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+
+// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
+function TabBarIcon(props: {
+  name: React.ComponentProps<typeof FontAwesome>['name'];
+  color: string;
+}) {
+  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
+}
 
 export default function TabLayout() {
+  const colorScheme = useColorScheme();
+
   return (
     <Tabs
       screenOptions={{
-        // 1. Hide the default header banner at the top of the screen
-        headerShown: false,
-
-        // 2. Navigation Bar Background and Border styling
-        tabBarStyle: {
-          backgroundColor: COLORS.darkNavy,
-          borderTopWidth: 3,                 // Height of the trim line
-          borderTopColor: COLORS.goldYellow, // Yellow trim at the top of the navbar
-          height: 85,                        // Extra padding for tab comfort
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
-
-        // 3. Icon selection colors
-        tabBarActiveTintColor: COLORS.yellowAccent,
-        tabBarInactiveTintColor: COLORS.inactiveGray,
-
-        tabBarLabelStyle: {
-          fontFamily: 'Inter_600SemiBold',
-          fontSize: 11,
-        },
-      }}
-    >
-      {/* Home Tab */}
+        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        // Disable the static render of the header on web
+        // to prevent a hydration error in React Navigation v6.
+        headerShown: useClientOnlyValue(false, true),
+      }}>
+      {/* HOME TAB */}
       <Tabs.Screen
-        name="home"
+        name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home-variant" size={size} color={color} />
+          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          headerRight: () => (
+            <Link href="/modal" asChild>
+              <Pressable>
+                {({ pressed }) => (
+                  <FontAwesome
+                    name="info-circle"
+                    size={25}
+                    color={Colors[colorScheme ?? 'light'].text}
+                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                  />
+                )}
+              </Pressable>
+            </Link>
           ),
         }}
       />
-
-      {/* This or That Tab */}
+      
+      {/* PANTRY TAB */}
+      <Tabs.Screen
+        name="two"
+        options={{
+          title: 'My Pantry',
+          tabBarIcon: ({ color }) => <TabBarIcon name="shopping-basket" color={color} />,
+        }}
+      />
+      
+      {/* THIS OR THAT TAB */}
       <Tabs.Screen
         name="thisorthat"
         options={{
-          title: 'This or That',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="cards-outline" size={size} color={color} />
-          ),
-        }}
-      />
-
-      {/* Pantry Tab */}
-      <Tabs.Screen
-        name="pantry"
-        options={{
-          title: 'My Pantry',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="fridge-outline" size={size} color={color} />
-          ),
+          title: 'Play Game',
+          tabBarIcon: ({ color }) => <TabBarIcon name="gamepad" color={color} />,
         }}
       />
     </Tabs>
