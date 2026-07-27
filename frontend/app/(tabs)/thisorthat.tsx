@@ -10,10 +10,10 @@
 
 import React, { useMemo, useState } from 'react';
 import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
-import { COLORS } from '../constants/pantryData';
-import ThisOrThatCard from '../components/ThisOrThatCard';
-import { buildRound, ThisOrThatQuestion } from '../data/thisOrThatData';
-import { RECIPES } from '../data/recipes';
+import { COLORS } from '../../constants/pantryData';
+import ThisOrThatCard from '../../components/ThisOrThatCard';
+import { buildRound, ThisOrThatQuestion } from '../../data/thisOrThatData';
+import { RECIPES } from '../../data/recipes';
 import {
   createRoundState,
   recordAnswer,
@@ -22,7 +22,7 @@ import {
   scoreRecipes,
   ScorableRecipe,
   RoundState,
-} from '../utils/thisOrThatEngine';
+} from '../../utils/thisOrThatEngine';
 
 type Step = 'intro' | 'question' | 'results';
 
