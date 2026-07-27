@@ -1,15 +1,24 @@
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { Text, View } from '@/components/Themed';
 
 const heroImage = 'https://www.figma.com/api/mcp/asset/c496edce-c61e-43fd-9837-d097e57151f5';
-const navIconProfile = 'https://www.figma.com/api/mcp/asset/9d874550-8a05-4594-bc66-f762b02d501f';
-const navIconHome = 'https://www.figma.com/api/mcp/asset/0ea94ff9-d2fd-490d-8b2f-a101b6403abc';
-const navIconRandomize = 'https://www.figma.com/api/mcp/asset/c52784eb-2659-410d-95dc-fb802834e00e';
-const navIconPantry = 'https://www.figma.com/api/mcp/asset/5ca99509-b654-4706-a0a8-d2782e8d5011';
 
 export default function HomeScreen() {
+  const router = useRouter();
+
+  const handleStartGame = () => {
+    // Navigate to This or That game screen
+    router.push('/(tabs)/thisorthat');
+  };
+
+  const handlePantryAccess = () => {
+    // Navigate to Pantry
+    router.push('/(tabs)/two');
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -24,32 +33,27 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.copyWrap}>
-        <Text style={styles.title}>Can’t Decide?</Text>
-        <Text style={styles.subtitle}>Play “This or That!” and let the app help you choose.</Text>
+        <Text style={styles.title}>Can't Decide?</Text>
+        <Text style={styles.subtitle}>Play "This or That!" and let the app help you choose.</Text>
       </View>
 
-      <TouchableOpacity style={styles.ctaButton} activeOpacity={0.9}>
+      {/* PRIMARY CTA - Goes to This or That Game */}
+      <TouchableOpacity 
+        style={styles.ctaButton} 
+        activeOpacity={0.9}
+        onPress={handleStartGame}
+      >
         <Text style={styles.ctaText}>Start now</Text>
       </TouchableOpacity>
 
-      <View style={styles.bottomNav}>
-        <View style={styles.navItemActive}>
-          <Image source={{ uri: navIconHome }} style={styles.navIcon} />
-          <Text style={styles.navLabelActive}>Home</Text>
-        </View>
-        <View style={styles.navItem}>
-          <Image source={{ uri: navIconRandomize }} style={styles.navIcon} />
-          <Text style={styles.navLabel}>Randomize</Text>
-        </View>
-        <View style={styles.navItem}>
-          <Image source={{ uri: navIconPantry }} style={styles.navIcon} />
-          <Text style={styles.navLabel}>My Pantry</Text>
-        </View>
-        <View style={styles.navItem}>
-          <Image source={{ uri: navIconProfile }} style={styles.navIcon} />
-          <Text style={styles.navLabel}>Profile</Text>
-        </View>
-      </View>
+      {/* SECONDARY CTA - Quick access to Pantry */}
+      <TouchableOpacity 
+        style={styles.secondaryCta}
+        activeOpacity={0.85}
+        onPress={handlePantryAccess}
+      >
+        <Text style={styles.secondaryCtaText}>Or add ingredients to your pantry</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -60,7 +64,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f6fd',
     paddingHorizontal: 24,
     paddingTop: 56,
-    paddingBottom: 24,
+    paddingBottom: 100, // Extra space for tab bar
   },
   topBar: {
     flexDirection: 'row',
@@ -134,48 +138,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  bottomNav: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    bottom: 18,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 24,
-    backgroundColor: '#ffffff',
-    shadowColor: '#2e4053',
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+  secondaryCta: {
+    marginTop: 16,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  navItemActive: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  navIcon: {
-    width: 20,
-    height: 20,
-  },
-  navLabel: {
-    fontSize: 11,
-    color: '#6b7280',
-    fontWeight: '600',
-  },
-  navLabelActive: {
-    fontSize: 11,
+  secondaryCtaText: {
     color: '#2e4053',
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
