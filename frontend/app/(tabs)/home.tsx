@@ -101,7 +101,7 @@ export default function Home() {
         <HeaderSection userName="Indya" />
 
         {/* Start Game -> the quiz, not the pantry */}
-        <FeaturedGameCard onStartGame={() => router.push('/(tabs)/thisorthat')} />
+        <FeaturedGameCard onStartGame={() => router.push('/thisorthat')} />
 
         <View style={homeStyles.sectionHeader}>
           <Text style={homeStyles.sectionTitle}>
@@ -119,7 +119,7 @@ export default function Home() {
             buttonBgColor={COLORS.goldYellow}
             buttonIconColor={COLORS.darkNavy}
             borderColor="#FBE396"
-            onPress={() => router.push('/(tabs)/pantry')}
+            onPress={() => router.push('/pantry')}
           />
 
           <Text style={homeStyles.orDividerText}>OR</Text>
@@ -132,7 +132,7 @@ export default function Home() {
             buttonBgColor={COLORS.darkNavy}
             buttonIconColor={COLORS.cardWhite}
             borderColor={COLORS.borderLight}
-            onPress={() => router.push('/(tabs)/thisorthat')}
+            onPress={() => router.push('/thisorthat')}
           />
         </View>
       </ScrollView>

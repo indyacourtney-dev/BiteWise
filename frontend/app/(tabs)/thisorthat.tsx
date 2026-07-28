@@ -170,7 +170,7 @@ export default function ThisOrThatScreen() {
 
   // Leaves the quiz from anywhere. replace() so exiting doesn't
   // pile quiz screens onto the back stack.
-  const exitToHome = () => router.replace('/(tabs)/home');
+  const exitToHome = () => router.replace('/home');
 
   const reset = () => {
     setScreen('mode');
