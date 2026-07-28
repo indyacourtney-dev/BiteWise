@@ -12,7 +12,8 @@ import type {
   SavedRecipe,
   QuizRun,
 } from '../types';
-import { getIconForItem, guessCategory } from '../constants/itemIcons';
+import { getIconForItem, guessCategory } from '../constants/Itemicons';
+//frontend/constants/itemIcons.ts
 
 // ============================================
 // DEFAULTS
