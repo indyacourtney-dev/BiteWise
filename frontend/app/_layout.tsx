@@ -79,6 +79,7 @@ function RootLayoutNav() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="randomMeal" />
+          <Stack.Screen name="recipe/[id]" />
           <Stack.Screen
             name="modal"
             options={{ presentation: 'modal', headerShown: true, title: 'About BiteWise' }}

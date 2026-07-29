@@ -21,14 +21,20 @@ import {
   ScrollView,
   View,
   Text,
-  SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import RecipeDetail from '../../components/RecipeDetail';
 import { COLORS } from '../../constants/Colors';
-import { RECIPES } from '../../constants/recipes';
+import {
+  RECIPES,
+  formatTime,
+  getTotalTime,
+  DIFFICULTY_LABELS,
+} from '../../constants/recipes';
 import {
   scoreAndFilterRecipes,
   getNearMisses,
@@ -52,6 +58,12 @@ export default function ThisOrThatScreen() {
   const router = useRouter();
   const { preferences, pantry, toggleFavorite, isFavorite, recordQuizRun } = useApp();
 
+  // The tab bar floats above screen content, so every ScrollView has to
+  // pad past it or the last rows sit underneath and can't be reached.
+  // This was cutting off the bottom of the results screen.
+  const tabBarHeight = useBottomTabBarHeight();
+  const scrollPad = { paddingBottom: tabBarHeight + 32 };
+
   const [screen, setScreen] = useState<Screen>('mode');
   const [mode, setMode] = useState<GameMode>('weekly');
   const [round, setRound] = useState<QuizQuestion[]>(() => buildRound());
@@ -59,7 +71,6 @@ export default function ThisOrThatScreen() {
   const [selections, setSelections] = useState<UserSelection[]>([]);
   const [qIndex, setQIndex] = useState(0);
   const [vibe, setVibe] = useState<Vibe | null>(null);
-  const [showAlternates, setShowAlternates] = useState(false);
 
   const exitToHome = () => router.replace('/');
 
@@ -70,7 +81,6 @@ export default function ThisOrThatScreen() {
     setSelections([]);
     setQIndex(0);
     setVibe(null);
-    setShowAlternates(false);
     setScreen('mode');
   }, []);
 
@@ -109,9 +119,9 @@ export default function ThisOrThatScreen() {
 
   if (screen === 'mode') {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header onExit={exitToHome} />
-        <ScrollView contentContainerStyle={styles.pad}>
+        <ScrollView contentContainerStyle={[styles.pad, scrollPad]}>
           <Text style={styles.h1}>Let's build your meal</Text>
           <Text style={styles.sub}>
             {TOTAL_QUESTIONS} quick questions, different every time. Skip any you don't
@@ -169,7 +179,7 @@ export default function ThisOrThatScreen() {
     const pct = (qIndex / TOTAL_QUESTIONS) * 100;
 
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header
           onExit={exitToHome}
           onBack={goBack}
@@ -189,7 +199,7 @@ export default function ThisOrThatScreen() {
           <Text style={styles.catBadge}>{CATEGORY_LABELS[question.category]}</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.pad}>
+        <ScrollView contentContainerStyle={[styles.pad, scrollPad]}>
           <Text style={styles.question}>{question.question}</Text>
           {question.helper ? <Text style={styles.helper}>{question.helper}</Text> : null}
 
@@ -223,7 +233,7 @@ export default function ThisOrThatScreen() {
 
   if (screen === 'vibe') {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header
           onExit={exitToHome}
           center={
@@ -234,7 +244,7 @@ export default function ThisOrThatScreen() {
           right={<Text style={styles.counter}>Last</Text>}
         />
 
-        <ScrollView contentContainerStyle={styles.pad}>
+        <ScrollView contentContainerStyle={[styles.pad, scrollPad]}>
           <Text style={styles.question}>{vibePrompt}</Text>
 
           {VIBE_OPTIONS.map(v => (
@@ -292,11 +302,20 @@ export default function ThisOrThatScreen() {
   }
 
   const meal = matches[0];
-  const alternates = matches.slice(1, 4);
+
+  // Sometimes only one recipe clears the threshold, which used to leave the
+  // user with a single take-it-or-leave-it result. Top the list up with the
+  // next-closest meals so there's always something else to look at.
+  let alternates = matches.slice(1, 4);
+  if (meal && alternates.length < 3) {
+    const shown = new Set([meal.id, ...alternates.map(a => a.id)]);
+    const topUp = getNearMisses(RECIPES, opts, 8).filter(r => !shown.has(r.id));
+    alternates = [...alternates, ...topUp].slice(0, 3);
+  }
 
   if (!meal) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header onExit={exitToHome} />
         <View style={styles.emptyWrap}>
           <Text style={styles.emptyEmoji}>🤔</Text>
@@ -317,7 +336,7 @@ export default function ThisOrThatScreen() {
   const saved = isFavorite(meal.id);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Header
         onExit={exitToHome}
         center={<Text style={styles.headerTitle}>Your meal</Text>}
@@ -336,7 +355,7 @@ export default function ThisOrThatScreen() {
         }
       />
 
-      <ScrollView contentContainerStyle={styles.resultPad} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.resultPad, scrollPad]} showsVerticalScrollIndicator={false}>
         <RecipeDetail
           recipe={meal}
           matchScore={meal.matchScore}
@@ -348,37 +367,35 @@ export default function ThisOrThatScreen() {
           }
         />
 
-        {/* ALTERNATES */}
+        {/* OTHER OPTIONS — always visible, tap to open the full recipe */}
         {alternates.length > 0 && (
           <>
-            <TouchableOpacity
-              style={styles.altToggle}
-              onPress={() => setShowAlternates(!showAlternates)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.altToggleText}>
-                {showAlternates ? 'Hide' : 'Show'} {alternates.length} other option
-                {alternates.length === 1 ? '' : 's'}
+            <View style={styles.altHeader}>
+              <Text style={styles.altHeading}>Other options for you</Text>
+              <Text style={styles.altSubheading}>
+                These also fit what you picked. Tap any one to see its full recipe.
               </Text>
-              <FontAwesome
-                name={showAlternates ? 'chevron-up' : 'chevron-down'}
-                size={12}
-                color={COLORS.darkGold}
-              />
-            </TouchableOpacity>
+            </View>
 
-            {showAlternates &&
-              alternates.map(alt => (
-                <View key={alt.id} style={styles.altCard}>
-                  <Text style={styles.altEmoji}>{alt.emoji}</Text>
-                  <View style={styles.flex1}>
-                    <Text style={styles.altName}>{alt.name}</Text>
-                    <Text style={styles.altMeta}>
-                      {alt.matchScore}% match · serves {alt.servings}
-                    </Text>
-                  </View>
+            {alternates.map(alt => (
+              <TouchableOpacity
+                key={alt.id}
+                style={styles.altCard}
+                activeOpacity={0.85}
+                onPress={() => router.push(`/recipe/${alt.id}?match=${alt.matchScore}`)}
+              >
+                <Text style={styles.altEmoji}>{alt.emoji}</Text>
+                <View style={styles.flex1}>
+                  <Text style={styles.altName}>{alt.name}</Text>
+                  <Text style={styles.altMeta}>
+                    {alt.matchScore}% match · {formatTime(getTotalTime(alt))} ·{' '}
+                    {DIFFICULTY_LABELS[alt.difficulty]}
+                  </Text>
+                  <Text style={styles.altLink}>View full recipe →</Text>
                 </View>
-              ))}
+                <FontAwesome name="chevron-right" size={14} color={COLORS.borderLight} />
+              </TouchableOpacity>
+            ))}
           </>
         )}
 
@@ -545,26 +562,21 @@ const styles = StyleSheet.create({
   skip: { alignItems: 'center', paddingVertical: 18, marginTop: 6 },
   skipText: { fontSize: 14, color: COLORS.textMuted, fontWeight: '600' },
 
-  altToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 18,
-    marginTop: 8,
-  },
-  altToggleText: { fontSize: 14, fontWeight: '600', color: COLORS.darkGold },
+  altHeader: { marginTop: 30, marginBottom: 12 },
+  altHeading: { fontSize: 16, fontWeight: '700', color: COLORS.darkNavy },
+  altSubheading: { fontSize: 13, color: COLORS.textMuted, marginTop: 4, lineHeight: 18 },
   altCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
     backgroundColor: COLORS.cardWhite,
     borderRadius: 14,
-    padding: 14,
+    padding: 16,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: COLORS.borderLight,
   },
+  altLink: { fontSize: 12, fontWeight: '700', color: COLORS.darkGold, marginTop: 6 },
   altEmoji: { fontSize: 26 },
   altName: { fontSize: 15, fontWeight: '600', color: COLORS.darkNavy },
   altMeta: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },

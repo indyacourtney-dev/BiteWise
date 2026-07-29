@@ -18,11 +18,11 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   Animated,
   Easing,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import RecipeDetail from '../components/RecipeDetail';
@@ -71,7 +71,7 @@ export default function RandomMealScreen() {
 
   if (!meal) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.loading}>
           <Text style={styles.loadingEmoji}>🎲</Text>
           <Text style={styles.loadingText}>Picking something…</Text>
@@ -84,7 +84,7 @@ export default function RandomMealScreen() {
   const rollsLeft = RECIPES.length - seen.length;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderLight,
   },
 
-  scroll: { paddingHorizontal: 20, paddingBottom: 48 },
+  scroll: { paddingHorizontal: 20, paddingBottom: 60 },
 
   banner: {
     flexDirection: 'row',
