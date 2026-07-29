@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 
 import { COLORS } from '../../constants/Colors';
 import { homeStyles } from '../../styles/homeStyles';
+import { useApp } from '../../context/AppContext';
 
 // Header section with greeting and brand label
 const HeaderSection = ({ userName }: { userName: string }) => (
@@ -92,13 +93,17 @@ const QuickDeciderCard: React.FC<QuickDeciderCardProps> = ({
 // Main home screen layout
 export default function Home() {
   const router = useRouter();
+  const { preferences } = useApp();
+
+  // Falls back to a friendly generic until the user sets a name in prefs.
+  const userName = preferences.name?.trim() || 'there';
 
   return (
     <SafeAreaView style={homeStyles.safeArea}>
       <View style={homeStyles.topDiagonalBackground} />
 
       <ScrollView contentContainerStyle={homeStyles.scrollContent} showsVerticalScrollIndicator={false}>
-        <HeaderSection userName="Indya" />
+        <HeaderSection userName={userName} />
 
         {/* Start Game -> the quiz, not the pantry */}
         <FeaturedGameCard onStartGame={() => router.push('/thisorthat')} />
@@ -132,7 +137,7 @@ export default function Home() {
             buttonBgColor={COLORS.darkNavy}
             buttonIconColor={COLORS.cardWhite}
             borderColor={COLORS.borderLight}
-            onPress={() => router.push('/thisorthat')}
+            onPress={() => router.push('/randomMeal')}
           />
         </View>
       </ScrollView>
