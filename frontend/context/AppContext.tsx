@@ -1,302 +1,76 @@
-// context/AppContext.tsx
-// One source of truth for pantry, preferences, favorites, and history.
-//
-// NEW: everything now persists to AsyncStorage, and the context tracks
-// whether the user has finished onboarding. Without persistence the
-// setup flow would re-run on every app launch, which defeats the point
-// of a "set up once" flow.
-//
-// Persistence pattern:
-//   - On mount, hydrate all slices from storage, then flip `hydrated`.
-//   - After hydration, each slice saves itself whenever it changes.
-//   - The root layout keeps the splash screen up until `hydrated` is
-//     true, so the app never flashes default state before loading.
-
+// context/AuthContext.tsx
 import React, {
   createContext,
   useContext,
-  useState,
   useEffect,
-  useCallback,
+  useState,
   ReactNode,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Session, User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 
-import type {
-  PantryItem,
-  PantryCategoryId,
-  UserPreferences,
-  SavedRecipe,
-  QuizRun,
-} from '../types';
-import { getIconForItem, guessCategory } from '../constants/Itemicons';
-import { useAuth } from './AuthContext';
-
-// ============================================
-// DEFAULTS & STORAGE KEYS
-// ============================================
-
-const DEFAULT_PREFERENCES: UserPreferences = {
-  name: '',
-  dietary: [],
-  avoidAllergens: [],
-  maxCookMinutes: null,
-  preferredDifficulty: null,
-  householdSize: 2,
-  favoriteTags: [],
+type AuthContextType = {
+  user: User | null;
+  session: Session | null;
+  initializing: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+  signOut: () => Promise<void>;
 };
 
-// Storage keys are namespaced per account so two people sharing a
-// phone (or one person with test accounts) never see each other's
-// pantry, tastes, or onboarding state.
-const keysFor = (uid: string) => ({
-  pantry: `@bitewise/${uid}/pantry`,
-  preferences: `@bitewise/${uid}/preferences`,
-  favorites: `@bitewise/${uid}/favorites`,
-  history: `@bitewise/${uid}/history`,
-  onboarded: `@bitewise/${uid}/onboarded`,
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ============================================
-// CONTEXT SHAPE
-// ============================================
-
-interface AppContextValue {
-  /** True once persisted state has been loaded from disk. */
-  hydrated: boolean;
-
-  // Onboarding
-  hasOnboarded: boolean;
-  completeOnboarding: () => void;
-  /** Dev/testing helper: wipes the flag so setup runs again. */
-  resetOnboarding: () => void;
-
-  // Pantry
-  pantry: PantryItem[];
-  addPantryItem: (name: string, category?: PantryCategoryId, unit?: string) => void;
-  updatePantryQuantity: (id: string, delta: number) => void;
-  removePantryItem: (id: string) => void;
-  clearPantry: () => void;
-
-  // Preferences
-  preferences: UserPreferences;
-  updatePreferences: (patch: Partial<UserPreferences>) => void;
-
-  // Favorites
-  favorites: SavedRecipe[];
-  toggleFavorite: (recipeId: string) => void;
-  isFavorite: (recipeId: string) => boolean;
-
-  // History
-  history: QuizRun[];
-  recordQuizRun: (run: Omit<QuizRun, 'id' | 'completedAt'>) => void;
-  clearHistory: () => void;
-}
-
-const AppContext = createContext<AppContextValue | null>(null);
-
-// ============================================
-// PROVIDER
-// ============================================
-
-export function AppProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  const uid = user?.id ?? null;
-  const KEYS = keysFor(uid ?? 'anonymous');
-
-  const [hydrated, setHydrated] = useState(false);
-  const [hasOnboarded, setHasOnboarded] = useState(false);
-  const [pantry, setPantry] = useState<PantryItem[]>([]);
-  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
-  const [favorites, setFavorites] = useState<SavedRecipe[]>([]);
-  const [history, setHistory] = useState<QuizRun[]>([]);
-
-  // ---------- Hydrate whenever the logged-in user changes ----------
-  // Logging out resets to defaults; logging in loads that account's
-  // saved state. `hydrated` drops during the switch so nothing saves
-  // defaults over real data mid-load.
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    setHydrated(false);
-    setPantry([]);
-    setPreferences(DEFAULT_PREFERENCES);
-    setFavorites([]);
-    setHistory([]);
-    setHasOnboarded(false);
-
-    if (!uid) {
-      // Logged out: nothing to load; mark ready so the gate can route.
-      setHydrated(true);
-      return;
-    }
-
-    (async () => {
-      try {
-        const entries = await AsyncStorage.multiGet(Object.values(KEYS));
-        const data = Object.fromEntries(entries);
-
-        if (data[KEYS.pantry]) setPantry(JSON.parse(data[KEYS.pantry]!));
-        if (data[KEYS.preferences]) {
-          // Spread over defaults so newly added fields (like favoriteTags)
-          // exist even for users who saved preferences before the field did.
-          setPreferences({ ...DEFAULT_PREFERENCES, ...JSON.parse(data[KEYS.preferences]!) });
-        }
-        if (data[KEYS.favorites]) setFavorites(JSON.parse(data[KEYS.favorites]!));
-        if (data[KEYS.history]) setHistory(JSON.parse(data[KEYS.history]!));
-        if (data[KEYS.onboarded]) setHasOnboarded(JSON.parse(data[KEYS.onboarded]!) === true);
-      } catch (e) {
-        // Corrupt or missing storage: fall back to defaults rather than crash.
-        console.warn('BiteWise: failed to load saved data', e);
-      } finally {
-        setHydrated(true);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid]);
-
-  // ---------- Save slices after hydration ----------
-
-  const persist = useCallback(
-    (key: string, value: unknown) => {
-      if (!hydrated) return; // never overwrite disk with defaults mid-load
-      AsyncStorage.setItem(key, JSON.stringify(value)).catch(e =>
-        console.warn('BiteWise: failed to save', key, e)
-      );
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hydrated, uid]
-  );
-
-  useEffect(() => persist(KEYS.pantry, pantry), [pantry, persist]);
-  useEffect(() => persist(KEYS.preferences, preferences), [preferences, persist]);
-  useEffect(() => persist(KEYS.favorites, favorites), [favorites, persist]);
-  useEffect(() => persist(KEYS.history, history), [history, persist]);
-  useEffect(() => persist(KEYS.onboarded, hasOnboarded), [hasOnboarded, persist]);
-
-  // ---------- Onboarding ----------
-
-  const completeOnboarding = useCallback(() => setHasOnboarded(true), []);
-  const resetOnboarding = useCallback(() => setHasOnboarded(false), []);
-
-  // ---------- Pantry ----------
-
-  const addPantryItem = useCallback(
-    (name: string, category?: PantryCategoryId, unit = 'qty') => {
-      const trimmed = name.trim();
-      if (!trimmed) return;
-
-      const resolvedCategory = category ?? guessCategory(trimmed);
-
-      setPantry(prev => {
-        // Bump quantity instead of creating a duplicate row
-        const existing = prev.find(
-          i => i.name.toLowerCase() === trimmed.toLowerCase()
-        );
-        if (existing) {
-          return prev.map(i =>
-            i.id === existing.id ? { ...i, quantity: i.quantity + 1 } : i
-          );
-        }
-
-        const item: PantryItem = {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          name: trimmed,
-          quantity: 1,
-          unit,
-          category: resolvedCategory,
-          icon: getIconForItem(trimmed, resolvedCategory),
-          addedAt: Date.now(),
-        };
-        return [...prev, item];
-      });
-    },
-    []
-  );
-
-  const updatePantryQuantity = useCallback((id: string, delta: number) => {
-    setPantry(prev =>
-      prev.map(i =>
-        i.id === id ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i
-      )
-    );
-  }, []);
-
-  const removePantryItem = useCallback((id: string) => {
-    setPantry(prev => prev.filter(i => i.id !== id));
-  }, []);
-
-  const clearPantry = useCallback(() => setPantry([]), []);
-
-  // ---------- Preferences ----------
-
-  const updatePreferences = useCallback((patch: Partial<UserPreferences>) => {
-    setPreferences(prev => ({ ...prev, ...patch }));
-  }, []);
-
-  // ---------- Favorites ----------
-
-  const toggleFavorite = useCallback((recipeId: string) => {
-    setFavorites(prev => {
-      const exists = prev.some(f => f.recipeId === recipeId);
-      if (exists) return prev.filter(f => f.recipeId !== recipeId);
-      return [...prev, { recipeId, savedAt: Date.now() }];
+    // With persistSession: false this resolves to null on launch,
+    // which sends the user to /auth — the intended behavior.
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setInitializing(false);
     });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+
+    return () => sub.subscription.unsubscribe();
   }, []);
 
-  const isFavorite = useCallback(
-    (recipeId: string) => favorites.some(f => f.recipeId === recipeId),
-    [favorites]
-  );
-
-  // ---------- History ----------
-
-  const recordQuizRun = useCallback(
-    (run: Omit<QuizRun, 'id' | 'completedAt'>) => {
-      setHistory(prev => [
-        {
-          ...run,
-          id: `${Date.now()}`,
-          completedAt: Date.now(),
-        },
-        ...prev,
-      ].slice(0, 25)); // keep the last 25 runs
-    },
-    []
-  );
-
-  const clearHistory = useCallback(() => setHistory([]), []);
-
-  const value: AppContextValue = {
-    hydrated,
-    hasOnboarded,
-    completeOnboarding,
-    resetOnboarding,
-    pantry,
-    addPantryItem,
-    updatePantryQuantity,
-    removePantryItem,
-    clearPantry,
-    preferences,
-    updatePreferences,
-    favorites,
-    toggleFavorite,
-    isFavorite,
-    history,
-    recordQuizRun,
-    clearHistory,
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error?.message ?? null };
   };
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  const signUp = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({ email, password });
+    return { error: error?.message ?? null };
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user: session?.user ?? null,
+        session,
+        initializing,
+        signIn,
+        signUp,
+        signOut,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
-// ============================================
-// HOOK
-// ============================================
-
-export function useApp(): AppContextValue {
-  const ctx = useContext(AppContext);
-  if (!ctx) {
-    throw new Error('useApp must be used inside <AppProvider>. Wrap your root layout with it.');
-  }
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
   return ctx;
 }
