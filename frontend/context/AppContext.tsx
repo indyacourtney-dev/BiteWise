@@ -1,9 +1,26 @@
 // context/AppContext.tsx
 // One source of truth for pantry, preferences, favorites, and history.
-// Without this, the pantry screen and the quiz screen can't see each
-// other's data — which is what blocks real "cook from my pantry" mode.
+//
+// NEW: everything now persists to AsyncStorage, and the context tracks
+// whether the user has finished onboarding. Without persistence the
+// setup flow would re-run on every app launch, which defeats the point
+// of a "set up once" flow.
+//
+// Persistence pattern:
+//   - On mount, hydrate all slices from storage, then flip `hydrated`.
+//   - After hydration, each slice saves itself whenever it changes.
+//   - The root layout keeps the splash screen up until `hydrated` is
+//     true, so the app never flashes default state before loading.
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type {
   PantryItem,
@@ -13,10 +30,9 @@ import type {
   QuizRun,
 } from '../types';
 import { getIconForItem, guessCategory } from '../constants/Itemicons';
-//frontend/constants/itemIcons.ts
 
 // ============================================
-// DEFAULTS
+// DEFAULTS & STORAGE KEYS
 // ============================================
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -26,13 +42,31 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   maxCookMinutes: null,
   preferredDifficulty: null,
   householdSize: 2,
+  favoriteTags: [],
 };
+
+const KEYS = {
+  pantry: '@bitewise/pantry',
+  preferences: '@bitewise/preferences',
+  favorites: '@bitewise/favorites',
+  history: '@bitewise/history',
+  onboarded: '@bitewise/onboarded',
+} as const;
 
 // ============================================
 // CONTEXT SHAPE
 // ============================================
 
 interface AppContextValue {
+  /** True once persisted state has been loaded from disk. */
+  hydrated: boolean;
+
+  // Onboarding
+  hasOnboarded: boolean;
+  completeOnboarding: () => void;
+  /** Dev/testing helper: wipes the flag so setup runs again. */
+  resetOnboarding: () => void;
+
   // Pantry
   pantry: PantryItem[];
   addPantryItem: (name: string, category?: PantryCategoryId, unit?: string) => void;
@@ -62,10 +96,61 @@ const AppContext = createContext<AppContextValue | null>(null);
 // ============================================
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [hydrated, setHydrated] = useState(false);
+  const [hasOnboarded, setHasOnboarded] = useState(false);
   const [pantry, setPantry] = useState<PantryItem[]>([]);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [favorites, setFavorites] = useState<SavedRecipe[]>([]);
   const [history, setHistory] = useState<QuizRun[]>([]);
+
+  // ---------- Hydrate once on mount ----------
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const entries = await AsyncStorage.multiGet(Object.values(KEYS));
+        const data = Object.fromEntries(entries);
+
+        if (data[KEYS.pantry]) setPantry(JSON.parse(data[KEYS.pantry]!));
+        if (data[KEYS.preferences]) {
+          // Spread over defaults so newly added fields (like favoriteTags)
+          // exist even for users who saved preferences before the field did.
+          setPreferences({ ...DEFAULT_PREFERENCES, ...JSON.parse(data[KEYS.preferences]!) });
+        }
+        if (data[KEYS.favorites]) setFavorites(JSON.parse(data[KEYS.favorites]!));
+        if (data[KEYS.history]) setHistory(JSON.parse(data[KEYS.history]!));
+        if (data[KEYS.onboarded]) setHasOnboarded(JSON.parse(data[KEYS.onboarded]!) === true);
+      } catch (e) {
+        // Corrupt or missing storage: fall back to defaults rather than crash.
+        console.warn('BiteWise: failed to load saved data', e);
+      } finally {
+        setHydrated(true);
+      }
+    })();
+  }, []);
+
+  // ---------- Save slices after hydration ----------
+
+  const persist = useCallback(
+    (key: string, value: unknown) => {
+      if (!hydrated) return; // never overwrite disk with defaults mid-load
+      AsyncStorage.setItem(key, JSON.stringify(value)).catch(e =>
+        console.warn('BiteWise: failed to save', key, e)
+      );
+    },
+    [hydrated]
+  );
+
+  useEffect(() => persist(KEYS.pantry, pantry), [pantry, persist]);
+  useEffect(() => persist(KEYS.preferences, preferences), [preferences, persist]);
+  useEffect(() => persist(KEYS.favorites, favorites), [favorites, persist]);
+  useEffect(() => persist(KEYS.history, history), [history, persist]);
+  useEffect(() => persist(KEYS.onboarded, hasOnboarded), [hasOnboarded, persist]);
+
+  // ---------- Onboarding ----------
+
+  const completeOnboarding = useCallback(() => setHasOnboarded(true), []);
+  const resetOnboarding = useCallback(() => setHasOnboarded(false), []);
 
   // ---------- Pantry ----------
 
@@ -156,6 +241,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const clearHistory = useCallback(() => setHistory([]), []);
 
   const value: AppContextValue = {
+    hydrated,
+    hasOnboarded,
+    completeOnboarding,
+    resetOnboarding,
     pantry,
     addPantryItem,
     updatePantryQuantity,

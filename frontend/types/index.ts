@@ -100,6 +100,13 @@ export interface UserPreferences {
   maxCookMinutes: number | null;   // null = no limit
   preferredDifficulty: Difficulty | null;
   householdSize: number;
+  /**
+   * Recipe tags collected during onboarding ("what do you enjoy?").
+   * Used as a soft signal: breaks quiz-result ties toward foods the
+   * user likes and weights the Surprise Me randomizer. Never a hard
+   * filter — that's what dietary/allergens are for.
+   */
+  favoriteTags: string[];
 }
 
 // ============================================

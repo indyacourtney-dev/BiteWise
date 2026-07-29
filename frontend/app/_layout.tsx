@@ -18,7 +18,7 @@
 // screen except Pantry, which happened to load them itself.
 
 import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -35,7 +35,7 @@ import {
 } from '@expo-google-fonts/inter';
 
 import { useColorScheme } from '@/components/useColorScheme';
-import { AppProvider } from '@/context/AppContext';
+import { AppProvider, useApp } from '@/context/AppContext';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -76,6 +76,7 @@ function RootLayoutNav() {
   return (
     <AppProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+<<<<<<< HEAD
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="randomMeal" />
@@ -85,7 +86,46 @@ function RootLayoutNav() {
             options={{ presentation: 'modal', headerShown: true, title: 'About BiteWise' }}
           />
         </Stack>
+=======
+        <OnboardingGate>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+            <Stack.Screen name="randomMeal" />
+            <Stack.Screen
+              name="modal"
+              options={{ presentation: 'modal', headerShown: true, title: 'About BiteWise' }}
+            />
+          </Stack>
+        </OnboardingGate>
+>>>>>>> 81deafd (Add first-launch onboarding with taste preferences and persistence)
       </ThemeProvider>
     </AppProvider>
   );
+}
+
+/**
+ * First-launch redirect. Once saved state has loaded (`hydrated`), any
+ * user who hasn't finished setup gets sent to /onboarding; a user who
+ * HAS finished can never wander back into it (e.g. via a stale deep
+ * link). Rendering children while unhydrated is fine — the redirect
+ * fires the moment storage resolves, which is near-instant.
+ */
+function OnboardingGate({ children }: { children: React.ReactNode }) {
+  const { hydrated, hasOnboarded } = useApp();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const inOnboarding = segments[0] === 'onboarding';
+
+    if (!hasOnboarded && !inOnboarding) {
+      router.replace('/onboarding');
+    } else if (hasOnboarded && inOnboarding) {
+      router.replace('/');
+    }
+  }, [hydrated, hasOnboarded, segments, router]);
+
+  return <>{children}</>;
 }

@@ -231,6 +231,18 @@ export interface ScoreOptions {
   pantryThreshold?: number;
 }
 
+/**
+ * How many of the user's onboarding taste tags a recipe carries.
+ * Used ONLY as a tie-breaker between equal match scores — the quiz
+ * answers always outrank standing preferences, because "what I feel
+ * like tonight" should beat "what I generally like."
+ */
+export function favoriteOverlap(recipe: Recipe, favoriteTags: string[]): number {
+  if (favoriteTags.length === 0) return 0;
+  const favs = new Set(favoriteTags.map(t => t.toLowerCase()));
+  return recipe.tags.filter(t => favs.has(t.toLowerCase())).length;
+}
+
 function scoreAll(recipes: Recipe[], opts: ScoreOptions): ScoredRecipe[] {
   const scoringSelections = withVibeSelection(opts.selections, opts.vibe);
 
@@ -259,9 +271,15 @@ export function scoreAndFilterRecipes(
       return getPantryCoverage(r, pantry).percent >= pantryThreshold;
     });
 
+  const favs = opts.preferences.favoriteTags ?? [];
+
   return scoreAll(eligible, opts)
     .filter(r => r.matchScore >= MATCH_THRESHOLD)
-    .sort((a, b) => b.matchScore - a.matchScore);
+    .sort(
+      (a, b) =>
+        b.matchScore - a.matchScore ||
+        favoriteOverlap(b, favs) - favoriteOverlap(a, favs)
+    );
 }
 
 // ============================================
@@ -279,9 +297,14 @@ export function getNearMisses(
   limit = 3
 ): ScoredRecipe[] {
   const eligible = recipes.filter(r => passesDietaryFilter(r, opts.preferences));
+  const favs = opts.preferences.favoriteTags ?? [];
 
   return scoreAll(eligible, opts)
     .filter(r => r.matchScore > 0)
-    .sort((a, b) => b.matchScore - a.matchScore)
+    .sort(
+      (a, b) =>
+        b.matchScore - a.matchScore ||
+        favoriteOverlap(b, favs) - favoriteOverlap(a, favs)
+    )
     .slice(0, limit);
 }

@@ -27,14 +27,14 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import RecipeDetail from '../components/RecipeDetail';
 import { COLORS } from '../constants/Colors';
-import { RECIPES, getRandomRecipe } from '../constants/recipes';
-import { getPlateSuggestion } from '../utils/matching';
+import { RECIPES } from '../constants/recipes';
+import { getPlateSuggestion, passesDietaryFilter, favoriteOverlap } from '../utils/matching';
 import { useApp } from '../context/AppContext';
 import type { Recipe } from '../types';
 
 export default function RandomMealScreen() {
   const router = useRouter();
-  const { toggleFavorite, isFavorite } = useApp();
+  const { toggleFavorite, isFavorite, preferences } = useApp();
 
   const [meal, setMeal] = useState<Recipe | null>(null);
   const [seen, setSeen] = useState<string[]>([]);
@@ -42,11 +42,25 @@ export default function RandomMealScreen() {
   const fade = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
 
+  // Surprise Me still respects hard limits (allergies, dietary rules) —
+  // random should never mean "randomly contains your allergen."
+  const eligible = RECIPES.filter(r => passesDietaryFilter(r, preferences));
+  const library = eligible.length > 0 ? eligible : RECIPES;
+
   const roll = useCallback(() => {
     setSeen(prevSeen => {
-      // Once every recipe has been shown, start the cycle over.
-      const exclude = prevSeen.length >= RECIPES.length ? [] : prevSeen;
-      const next = getRandomRecipe(exclude);
+      // Once every eligible recipe has been shown, start the cycle over.
+      const exclude = prevSeen.length >= library.length ? [] : prevSeen;
+      const pool = library.filter(r => !exclude.includes(r.id));
+
+      // "Surprise" with a thumb on the scale: ~65% of rolls draw from
+      // meals overlapping the user's onboarding tastes (when any exist
+      // in the pool), the rest from the whole pool so it never becomes
+      // an echo chamber.
+      const favs = preferences.favoriteTags ?? [];
+      const liked = pool.filter(r => favoriteOverlap(r, favs) > 0);
+      const source = liked.length > 0 && Math.random() < 0.65 ? liked : pool;
+      const next = source[Math.floor(Math.random() * source.length)];
 
       setMeal(next);
 
@@ -62,7 +76,7 @@ export default function RandomMealScreen() {
 
       return exclude.length === 0 ? [next.id] : [...prevSeen, next.id];
     });
-  }, [fade]);
+  }, [fade, library, preferences.favoriteTags]);
 
   // Roll once on mount so the user lands straight on a meal.
   useEffect(() => {
@@ -81,7 +95,7 @@ export default function RandomMealScreen() {
   }
 
   const saved = isFavorite(meal.id);
-  const rollsLeft = RECIPES.length - seen.length;
+  const rollsLeft = Math.max(0, library.length - seen.length);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
