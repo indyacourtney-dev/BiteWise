@@ -88,6 +88,11 @@ const DIETARY_OPTIONS: { key: DietaryTag; label: string; emoji: string }[] = [
   { key: 'gluten-free', label: 'Gluten-free', emoji: '🌾' },
   { key: 'dairy-free', label: 'Dairy-free', emoji: '🥛' },
   { key: 'high-protein', label: 'High-protein', emoji: '💪' },
+  { key: 'low-carb', label: 'Low-carb', emoji: '📉' },
+  { key: 'halal', label: 'Halal', emoji: '☪️' },
+  { key: 'kosher-style', label: 'Kosher-style', emoji: '✡️' },
+  { key: 'keto', label: 'Keto', emoji: '🥑' },
+  { key: 'paleo', label: 'Paleo', emoji: '🦴' },
 ];
 
 const ALLERGEN_OPTIONS: { key: Allergen; label: string }[] = [
@@ -100,6 +105,9 @@ const ALLERGEN_OPTIONS: { key: Allergen; label: string }[] = [
   { key: 'soy', label: 'Soy' },
   { key: 'gluten', label: 'Gluten' },
   { key: 'sesame', label: 'Sesame' },
+  { key: 'mustard', label: 'Mustard' },
+  { key: 'coconut', label: 'Coconut' },
+  { key: 'corn', label: 'Corn' },
 ];
 
 const TOTAL_STEPS = 4;

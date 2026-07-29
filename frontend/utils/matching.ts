@@ -248,7 +248,10 @@ function scoreAll(recipes: Recipe[], opts: ScoreOptions): ScoredRecipe[] {
 
   return recipes.map(r => ({
     ...r,
-    matchScore: calculateMatchScore(scoringSelections, r.tags),
+    // Score against tags PLUS the recipe's vibe, so the final flavor
+    // question matches on the vibe field instead of relying on the
+    // word happening to appear in the tag list.
+    matchScore: calculateMatchScore(scoringSelections, [...r.tags, r.vibe]),
     isBalanced: isPlateBalanced(r.plate),
     suggestion: getPlateSuggestion(r.plate),
   }));
