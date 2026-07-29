@@ -50,18 +50,35 @@ interface TasteOption {
 }
 
 const TASTE_OPTIONS: TasteOption[] = [
+  // Proteins
   { id: 'chicken', label: 'Chicken', emoji: '🍗', tags: ['chicken', 'poultry'] },
   { id: 'beef', label: 'Beef & steak', emoji: '🥩', tags: ['beef', 'red-meat'] },
   { id: 'seafood', label: 'Fish & seafood', emoji: '🐟', tags: ['fish', 'seafood'] },
   { id: 'plant', label: 'Plant-based', emoji: '🫘', tags: ['beans', 'tofu', 'plant-based', 'vegetarian'] },
+
+  // Formats
   { id: 'pasta', label: 'Pasta & noodles', emoji: '🍝', tags: ['pasta', 'noodles'] },
   { id: 'rice', label: 'Rice bowls', emoji: '🍚', tags: ['rice', 'grain', 'bowl'] },
   { id: 'handheld', label: 'Tacos & sandwiches', emoji: '🌮', tags: ['handheld', 'tortilla', 'bread', 'sandwich'] },
   { id: 'salad', label: 'Salads & fresh', emoji: '🥗', tags: ['salad', 'fresh', 'raw', 'light'] },
-  { id: 'comfort', label: 'Comfort classics', emoji: '🏠', tags: ['comfort', 'classic', 'rich', 'creamy'] },
+  { id: 'potato', label: 'Potatoes', emoji: '🥔', tags: ['potato', 'root-veg'] },
+  { id: 'soup', label: 'Stews & curries', emoji: '🍲', tags: ['simmered', 'saucy', 'slow-cooked'] },
+
+  // Cooking styles
+  { id: 'grilled', label: 'Grilled & smoky', emoji: '🔥', tags: ['grilled', 'charred'] },
+  { id: 'crispy', label: 'Crispy & fried', emoji: '🍤', tags: ['fried', 'crispy'] },
+  { id: 'cheesy', label: 'Cheesy & creamy', emoji: '🧀', tags: ['cheesy', 'creamy', 'rich'] },
+
+  // Flavor directions
+  { id: 'comfort', label: 'Comfort classics', emoji: '🏠', tags: ['comfort', 'classic'] },
   { id: 'spicy', label: 'Spicy food', emoji: '🌶️', tags: ['spicy'] },
   { id: 'sweet', label: 'Sweet & glazed', emoji: '🍯', tags: ['sweet', 'saucy'] },
+  { id: 'tangy', label: 'Bright & tangy', emoji: '🍋', tags: ['tangy', 'acidic'] },
   { id: 'global', label: 'Global flavors', emoji: '🌍', tags: ['global', 'adventurous'] },
+
+  // Lifestyle
+  { id: 'quick', label: 'Quick & easy', emoji: '⚡', tags: ['quick', 'easy', 'weeknight'] },
+  { id: 'hearty', label: 'Big hearty portions', emoji: '💪', tags: ['hearty', 'portion-large'] },
 ];
 
 const DIETARY_OPTIONS: { key: DietaryTag; label: string; emoji: string }[] = [

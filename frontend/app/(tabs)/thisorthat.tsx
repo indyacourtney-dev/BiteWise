@@ -236,6 +236,10 @@ export default function ThisOrThatScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header
           onExit={exitToHome}
+          /* Back from the flavor step re-opens the last question. Choosing
+             again replaces that answer (choose() de-dupes by dimension),
+             so users can revise without restarting. */
+          onBack={() => setScreen('quiz')}
           center={
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: '100%' }]} />
@@ -339,6 +343,10 @@ export default function ThisOrThatScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Header
         onExit={exitToHome}
+        /* Back from the result re-opens the flavor step; from there the
+           user can walk all the way back through their answers. The
+           result recomputes from scratch on return, so edits count. */
+        onBack={() => setScreen('vibe')}
         center={<Text style={styles.headerTitle}>Your meal</Text>}
         right={
           <TouchableOpacity
@@ -419,6 +427,14 @@ export default function ThisOrThatScreen() {
         >
           <FontAwesome name="refresh" size={15} color={COLORS.cardWhite} />
           <Text style={styles.primaryBtnText}>Build another meal</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryBtn}
+          onPress={() => setScreen('vibe')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.secondaryBtnText}>← Change my answers</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.secondaryBtn} onPress={exitToHome} activeOpacity={0.8}>

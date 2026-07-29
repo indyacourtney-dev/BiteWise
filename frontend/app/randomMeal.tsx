@@ -11,7 +11,7 @@
 // This lives outside (tabs) on purpose: it's a focused, one-thing screen you
 // exit from, not a destination you tab between.
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -44,44 +44,55 @@ export default function RandomMealScreen() {
 
   // Surprise Me still respects hard limits (allergies, dietary rules) —
   // random should never mean "randomly contains your allergen."
-  const eligible = RECIPES.filter(r => passesDietaryFilter(r, preferences));
-  const library = eligible.length > 0 ? eligible : RECIPES;
+  //
+  // BUG FIX ("maximum update depth exceeded"): this list used to be
+  // rebuilt as a brand-new array on every render. It's a dependency of
+  // the roll-on-mount effect, so every render made the effect think its
+  // inputs changed, which re-rolled, which set state, which rendered —
+  // an infinite loop. useMemo keeps the array's identity stable until
+  // preferences actually change.
+  const library = useMemo(() => {
+    const eligible = RECIPES.filter(r => passesDietaryFilter(r, preferences));
+    return eligible.length > 0 ? eligible : RECIPES;
+  }, [preferences]);
 
-  const roll = useCallback(() => {
-    setSeen(prevSeen => {
-      // Once every eligible recipe has been shown, start the cycle over.
-      const exclude = prevSeen.length >= library.length ? [] : prevSeen;
-      const pool = library.filter(r => !exclude.includes(r.id));
+  // Plain function, and all side effects (setMeal, animation, scroll)
+  // happen OUT here — never inside a setState updater, which React
+  // requires to be pure and may invoke twice in development.
+  const roll = () => {
+    const exclude = seen.length >= library.length ? [] : seen;
+    const pool = library.filter(r => !exclude.includes(r.id));
 
-      // "Surprise" with a thumb on the scale: ~65% of rolls draw from
-      // meals overlapping the user's onboarding tastes (when any exist
-      // in the pool), the rest from the whole pool so it never becomes
-      // an echo chamber.
-      const favs = preferences.favoriteTags ?? [];
-      const liked = pool.filter(r => favoriteOverlap(r, favs) > 0);
-      const source = liked.length > 0 && Math.random() < 0.65 ? liked : pool;
-      const next = source[Math.floor(Math.random() * source.length)];
+    // "Surprise" with a thumb on the scale: ~65% of rolls draw from
+    // meals overlapping the user's onboarding tastes (when any exist
+    // in the pool), the rest from the whole pool so it never becomes
+    // an echo chamber.
+    const favs = preferences.favoriteTags ?? [];
+    const liked = pool.filter(r => favoriteOverlap(r, favs) > 0);
+    const source = liked.length > 0 && Math.random() < 0.65 ? liked : pool;
+    const next = source[Math.floor(Math.random() * source.length)];
 
-      setMeal(next);
+    setSeen([...exclude, next.id]);
+    setMeal(next);
 
-      fade.setValue(0);
-      Animated.timing(fade, {
-        toValue: 1,
-        duration: 260,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }).start();
+    fade.setValue(0);
+    Animated.timing(fade, {
+      toValue: 1,
+      duration: 260,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
 
-      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
 
-      return exclude.length === 0 ? [next.id] : [...prevSeen, next.id];
-    });
-  }, [fade, library, preferences.favoriteTags]);
-
-  // Roll once on mount so the user lands straight on a meal.
+  // Roll exactly once on mount so the user lands straight on a meal.
+  // Deliberately mount-only: re-running on dependency changes is what
+  // caused the update-depth crash.
   useEffect(() => {
     roll();
-  }, [roll]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!meal) {
     return (
