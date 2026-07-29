@@ -30,7 +30,6 @@ import type {
   QuizRun,
 } from '../types';
 import { getIconForItem, guessCategory } from '../constants/Itemicons';
-import { useAuth } from './AuthContext';
 
 // ============================================
 // DEFAULTS & STORAGE KEYS
@@ -46,16 +45,13 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   favoriteTags: [],
 };
 
-// Storage keys are namespaced per account so two people sharing a
-// phone (or one person with test accounts) never see each other's
-// pantry, tastes, or onboarding state.
-const keysFor = (uid: string) => ({
-  pantry: `@bitewise/${uid}/pantry`,
-  preferences: `@bitewise/${uid}/preferences`,
-  favorites: `@bitewise/${uid}/favorites`,
-  history: `@bitewise/${uid}/history`,
-  onboarded: `@bitewise/${uid}/onboarded`,
-});
+const KEYS = {
+  pantry: '@bitewise/pantry',
+  preferences: '@bitewise/preferences',
+  favorites: '@bitewise/favorites',
+  history: '@bitewise/history',
+  onboarded: '@bitewise/onboarded',
+} as const;
 
 // ============================================
 // CONTEXT SHAPE
@@ -100,10 +96,6 @@ const AppContext = createContext<AppContextValue | null>(null);
 // ============================================
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  const uid = user?.id ?? null;
-  const KEYS = keysFor(uid ?? 'anonymous');
-
   const [hydrated, setHydrated] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
   const [pantry, setPantry] = useState<PantryItem[]>([]);
@@ -111,25 +103,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<SavedRecipe[]>([]);
   const [history, setHistory] = useState<QuizRun[]>([]);
 
-  // ---------- Hydrate whenever the logged-in user changes ----------
-  // Logging out resets to defaults; logging in loads that account's
-  // saved state. `hydrated` drops during the switch so nothing saves
-  // defaults over real data mid-load.
+  // ---------- Hydrate once on mount ----------
 
   useEffect(() => {
-    setHydrated(false);
-    setPantry([]);
-    setPreferences(DEFAULT_PREFERENCES);
-    setFavorites([]);
-    setHistory([]);
-    setHasOnboarded(false);
-
-    if (!uid) {
-      // Logged out: nothing to load; mark ready so the gate can route.
-      setHydrated(true);
-      return;
-    }
-
     (async () => {
       try {
         const entries = await AsyncStorage.multiGet(Object.values(KEYS));
@@ -151,8 +127,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setHydrated(true);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid]);
+  }, []);
 
   // ---------- Save slices after hydration ----------
 
@@ -163,8 +138,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.warn('BiteWise: failed to save', key, e)
       );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hydrated, uid]
+    [hydrated]
   );
 
   useEffect(() => persist(KEYS.pantry, pantry), [pantry, persist]);

@@ -12,7 +12,7 @@ export const configured = Boolean(supabaseUrl && supabaseAnonKey);
  
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-anon-key',
+  supabaseAnonKey || 'placeholder-anon-have thekey',
   {
     auth: {
       persistSession: false,
