@@ -1,6 +1,31 @@
 // utils/matching.ts
-// All scoring + filtering logic lives here so it can be tested
-// independently of any screen.
+//
+// All scoring + filtering logic, kept out of the screens so it can be
+// tested on its own.
+//
+// WHY THE SCORING CHANGED
+// -----------------------
+// The old formula was: (recipe tags the user picked) / (total recipe tags).
+// That reads like it should work, but it punishes descriptive recipes.
+// A recipe tagged with 20 things could satisfy every single answer the
+// user gave and still score 40%, because the denominator counted tags
+// the user was never asked about. Nothing ever cleared the 70% bar, so
+// the results screen always fell through to "closest fit."
+//
+// The new formula asks a better question:
+//
+//     Of the decisions the user actually made, how many does this recipe satisfy?
+//
+// Each quiz question covers one DIMENSION (protein-type, carb-richness,
+// veg-prep, and so on). A recipe "satisfies" a dimension if it carries any
+// of the tags from the option the user chose. Score is simply:
+//
+//     satisfied dimensions / answered dimensions
+//
+// Skipped questions never enter the denominator, so a skip stays neutral —
+// which is the behavior the team agreed on. Vibe is scored as one more
+// dimension instead of being a hard filter, so picking "spicy" nudges
+// results rather than deleting two-thirds of the library.
 
 import type {
   Recipe,
@@ -8,6 +33,7 @@ import type {
   PlateComposition,
   PantryItem,
   UserPreferences,
+  Vibe,
 } from '../types';
 
 export const MATCH_THRESHOLD = 70;
@@ -16,20 +42,60 @@ export const MATCH_THRESHOLD = 70;
 // MATCH SCORE
 // ============================================
 
+/** One answered question: which decision it covered, and what was chosen. */
+export interface UserSelection {
+  dimension: string;
+  tags: string[];
+}
+
 /**
- * Percentage of a recipe's tags that the user selected.
- * Skipped questions contribute no tags, so they neither
- * help nor hurt a recipe's score.
+ * Fraction of the user's answered dimensions that this recipe satisfies,
+ * as a 0–100 integer.
  */
 export function calculateMatchScore(
-  userTags: Set<string>,
+  selections: UserSelection[],
   recipeTags: string[]
 ): number {
-  if (userTags.size === 0) return 0;
-  if (recipeTags.length === 0) return 0;
+  if (selections.length === 0) return 0;
 
-  const matches = recipeTags.filter(tag => userTags.has(tag)).length;
-  return Math.round((matches / recipeTags.length) * 100);
+  const recipeTagSet = new Set(recipeTags.map(t => t.toLowerCase()));
+  const satisfied = selections.filter(sel =>
+    sel.tags.some(t => recipeTagSet.has(t.toLowerCase()))
+  ).length;
+
+  return Math.round((satisfied / selections.length) * 100);
+}
+
+/**
+ * Which of the user's choices this recipe did and didn't satisfy.
+ * Useful for a "why this meal?" breakdown on the results screen.
+ */
+export function explainMatch(
+  selections: UserSelection[],
+  recipeTags: string[]
+): { matched: string[]; missed: string[] } {
+  const recipeTagSet = new Set(recipeTags.map(t => t.toLowerCase()));
+  const matched: string[] = [];
+  const missed: string[] = [];
+
+  selections.forEach(sel => {
+    const hit = sel.tags.some(t => recipeTagSet.has(t.toLowerCase()));
+    (hit ? matched : missed).push(sel.dimension);
+  });
+
+  return { matched, missed };
+}
+
+/**
+ * Folds the vibe answer in as one more dimension, so it influences the
+ * ranking without wiping out every recipe of a different flavor.
+ */
+export function withVibeSelection(
+  selections: UserSelection[],
+  vibe: Vibe | null
+): UserSelection[] {
+  if (!vibe) return selections;
+  return [...selections, { dimension: 'vibe', tags: [vibe] }];
 }
 
 // ============================================
@@ -55,8 +121,8 @@ export function isPlateBalanced(plate: PlateComposition): boolean {
 }
 
 /**
- * Generates a specific, actionable tip instead of a generic
- * "add more veggies" for every unbalanced plate.
+ * A specific, actionable tip instead of a generic "add more veggies"
+ * on every unbalanced plate.
  */
 export function getPlateSuggestion(plate: PlateComposition): string | undefined {
   if (isPlateBalanced(plate)) return undefined;
@@ -88,7 +154,7 @@ function normalize(s: string): string {
   return s.toLowerCase().trim();
 }
 
-/** Loose match so "Chicken Breast" in pantry satisfies "chicken" in a recipe. */
+/** Loose match so "Chicken Breast" in the pantry satisfies "chicken" in a recipe. */
 function pantryHas(pantry: PantryItem[], ingredientName: string): boolean {
   const needle = normalize(ingredientName);
   return pantry.some(item => {
@@ -129,8 +195,8 @@ export function getPantryCoverage(
 // ============================================
 
 /**
- * Allergens are a hard exclusion — never surface a recipe
- * containing something the user flagged.
+ * Allergens are a hard exclusion — never surface a recipe containing
+ * something the user flagged.
  */
 export function passesDietaryFilter(
   recipe: Recipe,
@@ -155,11 +221,25 @@ export function passesDietaryFilter(
 // ============================================
 
 export interface ScoreOptions {
-  userTags: Set<string>;
-  vibe: string | null;
+  /** One entry per answered question. Skips are simply absent. */
+  selections: UserSelection[];
+  vibe: Vibe | null;
   preferences: UserPreferences;
-  pantry?: PantryItem[];        // only passed in pantry mode
+  pantry?: PantryItem[]; // only passed in pantry mode
   requirePantryMatch?: boolean;
+  /** Minimum pantry coverage in pantry mode. */
+  pantryThreshold?: number;
+}
+
+function scoreAll(recipes: Recipe[], opts: ScoreOptions): ScoredRecipe[] {
+  const scoringSelections = withVibeSelection(opts.selections, opts.vibe);
+
+  return recipes.map(r => ({
+    ...r,
+    matchScore: calculateMatchScore(scoringSelections, r.tags),
+    isBalanced: isPlateBalanced(r.plate),
+    suggestion: getPlateSuggestion(r.plate),
+  }));
 }
 
 /**
@@ -170,21 +250,16 @@ export function scoreAndFilterRecipes(
   recipes: Recipe[],
   opts: ScoreOptions
 ): ScoredRecipe[] {
-  const { userTags, vibe, preferences, pantry, requirePantryMatch } = opts;
+  const { preferences, pantry, requirePantryMatch, pantryThreshold = 70 } = opts;
 
-  return recipes
+  const eligible = recipes
     .filter(r => passesDietaryFilter(r, preferences))
-    .filter(r => (vibe ? r.vibe === vibe : true))
     .filter(r => {
       if (!requirePantryMatch || !pantry) return true;
-      return getPantryCoverage(r, pantry).percent >= 70;
-    })
-    .map(r => ({
-      ...r,
-      matchScore: calculateMatchScore(userTags, r.tags),
-      isBalanced: isPlateBalanced(r.plate),
-      suggestion: getPlateSuggestion(r.plate),
-    }))
+      return getPantryCoverage(r, pantry).percent >= pantryThreshold;
+    });
+
+  return scoreAll(eligible, opts)
     .filter(r => r.matchScore >= MATCH_THRESHOLD)
     .sort((a, b) => b.matchScore - a.matchScore);
 }
@@ -194,25 +269,19 @@ export function scoreAndFilterRecipes(
 // ============================================
 
 /**
- * If nothing clears 70%, return the next-best few so the user
- * always sees something rather than a dead end.
+ * If nothing clears the threshold, return the next-best few so the user
+ * always sees something rather than a dead end. Pantry mode is relaxed
+ * here on purpose: a near miss is more useful than an empty screen.
  */
 export function getNearMisses(
   recipes: Recipe[],
   opts: ScoreOptions,
   limit = 3
 ): ScoredRecipe[] {
-  const { userTags, preferences } = opts;
+  const eligible = recipes.filter(r => passesDietaryFilter(r, opts.preferences));
 
-  return recipes
-    .filter(r => passesDietaryFilter(r, preferences))
-    .map(r => ({
-      ...r,
-      matchScore: calculateMatchScore(userTags, r.tags),
-      isBalanced: isPlateBalanced(r.plate),
-      suggestion: getPlateSuggestion(r.plate),
-    }))
-    .filter(r => r.matchScore > 0 && r.matchScore < MATCH_THRESHOLD)
+  return scoreAll(eligible, opts)
+    .filter(r => r.matchScore > 0)
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, limit);
 }

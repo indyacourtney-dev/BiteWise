@@ -1,12 +1,33 @@
+// constants/recipes.ts
+//
+// The recipe dataset the matching engine scores against.
+//
+// TAGGING RULES — read before adding a recipe
+// -------------------------------------------
+// Tags are lowercase and must come from the vocabulary in
+// data/quizQuestions.ts. Each recipe should declare a tag for as many
+// question DIMENSIONS as honestly apply, because the match score is
+// "how many of the user's decisions does this recipe satisfy."
+//
+// A recipe with 6 tags will almost never score well. Aim for 15–22.
+// If a dimension genuinely doesn't apply (a cold salad has no cooking
+// method for the protein), just leave it out — the recipe simply
+// doesn't earn that point.
 
 import type { Recipe } from '../types';
- 
+
 export const RECIPES: Recipe[] = [
+  // =========================================================
   {
     id: 'r1',
     name: 'Grilled Chicken with Brown Rice & Broccoli',
     emoji: '🍗',
-    tags: ['chicken', 'grilled', 'rice', 'grain', 'light', 'balanced', 'lean', 'poultry'],
+    tags: [
+      'chicken', 'poultry', 'grilled', 'charred', 'tender', 'juicy',
+      'portion-medium', 'balanced', 'weeknight', 'classic', 'comfort',
+      'rice', 'grain', 'whole-grain', 'light', 'plated', 'warm', 'side',
+      'greens', 'steamed', 'simple', 'olive-oil',
+    ],
     vibe: 'savory',
     plate: { produce: 48, protein: 26, carbs: 21, healthyFats: 5 },
     prepMinutes: 10,
@@ -33,11 +54,18 @@ export const RECIPES: Recipe[] = [
       'Finish with the remaining olive oil and a squeeze of lemon.',
     ],
   },
+
+  // =========================================================
   {
     id: 'r2',
     name: 'Crispy Beef Tacos',
     emoji: '🌮',
-    tags: ['beef', 'fried', 'crispy', 'bread', 'hearty', 'portion-large', 'red-meat'],
+    tags: [
+      'beef', 'red-meat', 'fried', 'crispy', 'portion-large', 'hearty',
+      'quick', 'easy', 'classic', 'comfort', 'tortilla', 'bread',
+      'handheld', 'sandwich', 'high-carb', 'warm', 'raw', 'fresh',
+      'salad', 'portion-small', 'mixed-in', 'colorful', 'cheesy',
+    ],
     vibe: 'spicy',
     plate: { produce: 22, protein: 30, carbs: 40, healthyFats: 8 },
     prepMinutes: 15,
@@ -64,11 +92,18 @@ export const RECIPES: Recipe[] = [
       'Assemble: beef first, then cheese so it melts, then the cold toppings.',
     ],
   },
+
+  // =========================================================
   {
     id: 'r3',
-    name: 'Lemon Herb Fish with Roasted Vegetables',
+    name: 'Lemon Herb Salmon with Roasted Vegetables',
     emoji: '🐟',
-    tags: ['fish', 'seafood', 'light', 'baked', 'fresh', 'greens', 'roasted', 'portion-medium'],
+    tags: [
+      'fish', 'seafood', 'baked', 'roasted', 'tender', 'juicy',
+      'portion-medium', 'weeknight', 'light', 'fresh', 'low-carb',
+      'plated', 'side', 'warm', 'veggies-large', 'colorful', 'peppers',
+      'charred', 'balanced', 'tangy', 'acidic', 'simple', 'olive-oil',
+    ],
     vibe: 'savory',
     plate: { produce: 50, protein: 25, carbs: 18, healthyFats: 7 },
     prepMinutes: 15,
@@ -88,20 +123,27 @@ export const RECIPES: Recipe[] = [
     ],
     instructions: [
       'Heat the oven to 425°F.',
-      'Cut all vegetables into 1-inch pieces, toss with 2 tbsp olive oil, salt, and pepper.',
-      'Spread on a sheet pan in a single layer and roast 15 minutes.',
-      'Push the vegetables to the edges and set the fish skin-side down in the center.',
-      'Top the fish with lemon slices, dill, and the remaining olive oil.',
-      'Roast 12–15 more minutes, until the fish flakes easily with a fork.',
+      'Cut the zucchini, peppers, and onion into rough 1-inch pieces.',
+      'Toss the vegetables with 2 tbsp olive oil, salt, and pepper on a sheet pan.',
+      'Roast the vegetables alone for 12 minutes to give them a head start.',
+      'Nestle the salmon among the vegetables, drizzle with the remaining oil, and top with lemon slices.',
+      'Roast 12–14 more minutes, until the salmon flakes at the thickest part.',
+      'Finish with dill and a squeeze of fresh lemon.',
     ],
   },
+
+  // =========================================================
   {
     id: 'r4',
     name: 'Creamy Pasta Carbonara',
     emoji: '🍝',
-    tags: ['pasta', 'noodles', 'rich', 'creamy', 'regular', 'high-carb', 'portion-medium'],
+    tags: [
+      'pasta', 'noodles', 'rich', 'creamy', 'high-carb', 'plated',
+      'warm', 'comfort', 'classic', 'quick', 'easy', 'portion-medium',
+      'fried', 'crispy', 'cheesy', 'minimal-veg', 'portion-small', 'side',
+    ],
     vibe: 'savory',
-    plate: { produce: 12, protein: 22, carbs: 56, healthyFats: 10 },
+    plate: { produce: 12, protein: 26, carbs: 50, healthyFats: 12 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -117,20 +159,26 @@ export const RECIPES: Recipe[] = [
       { name: 'garlic', amount: '2 cloves', category: 'produce', optional: true },
     ],
     instructions: [
-      'Boil the pasta in well-salted water until just shy of al dente.',
-      'While it cooks, crisp the diced bacon in a large skillet over medium heat.',
-      'Whisk the eggs and parmesan together in a bowl with plenty of black pepper.',
+      'Boil the pasta in heavily salted water until just shy of al dente.',
+      'While it cooks, crisp the chopped bacon in a cold pan brought up to medium heat.',
+      'Whisk the eggs and parmesan together with a lot of black pepper.',
       'Reserve 1 cup pasta water, then drain the pasta.',
-      'Off the heat, toss the hot pasta with the bacon and its fat.',
-      'Add the egg mixture while tossing constantly — the residual heat cooks it into a sauce. Never over direct heat, or it scrambles.',
-      'Loosen with pasta water a splash at a time until glossy.',
+      'Kill the heat. Toss the hot pasta into the bacon pan, then add the egg mixture off-heat.',
+      'Add pasta water a splash at a time, tossing constantly, until it turns glossy — not scrambled.',
     ],
   },
+
+  // =========================================================
   {
     id: 'r5',
-    name: 'Spicy Thai Curry with Jasmine Rice',
+    name: 'Spicy Thai Red Curry with Jasmine Rice',
     emoji: '🍛',
-    tags: ['rice', 'chicken', 'spicy', 'balanced', 'grain', 'poultry', 'portion-medium'],
+    tags: [
+      'chicken', 'poultry', 'simmered', 'saucy', 'tender',
+      'portion-medium', 'weeknight', 'global', 'adventurous',
+      'rice', 'grain', 'quick', 'easy', 'balanced', 'warm', 'bowl',
+      'mixed-in', 'veggies-large', 'colorful', 'peppers', 'steamed', 'rich',
+    ],
     vibe: 'spicy',
     plate: { produce: 38, protein: 24, carbs: 30, healthyFats: 8 },
     prepMinutes: 20,
@@ -157,11 +205,18 @@ export const RECIPES: Recipe[] = [
       'Cook 5 more minutes so the vegetables keep some bite. Finish with lime juice.',
     ],
   },
+
+  // =========================================================
   {
     id: 'r6',
     name: 'Vibrant Garden Salad Bowl',
     emoji: '🥗',
-    tags: ['salad', 'fresh', 'greens', 'leafy', 'light', 'raw', 'veggies-large', 'portion-small'],
+    tags: [
+      'salad', 'fresh', 'greens', 'leafy', 'light', 'raw', 'cold',
+      'veggies-large', 'portion-small', 'beans', 'plant-based',
+      'vegetarian', 'low-carb', 'quick', 'easy', 'bowl', 'mixed-in',
+      'tangy', 'acidic', 'olive-oil', 'colorful',
+    ],
     vibe: 'savory',
     plate: { produce: 54, protein: 21, carbs: 15, healthyFats: 10 },
     prepMinutes: 15,
@@ -189,11 +244,18 @@ export const RECIPES: Recipe[] = [
       'Top with crumbled feta and toasted almonds.',
     ],
   },
+
+  // =========================================================
   {
     id: 'r7',
-    name: 'Grilled Steak with Sweet Potato',
+    name: 'Grilled Steak with Roasted Sweet Potato',
     emoji: '🥩',
-    tags: ['beef', 'hearty', 'grilled', 'red-meat', 'portion-large', 'smoky'],
+    tags: [
+      'beef', 'red-meat', 'grilled', 'charred', 'hearty', 'portion-large',
+      'tender', 'juicy', 'weeknight', 'classic', 'comfort', 'potato',
+      'balanced', 'plated', 'side', 'warm', 'root-veg', 'roasted',
+      'greens', 'simple', 'olive-oil',
+    ],
     vibe: 'savory',
     plate: { produce: 30, protein: 34, carbs: 29, healthyFats: 7 },
     prepMinutes: 15,
@@ -220,11 +282,18 @@ export const RECIPES: Recipe[] = [
       'Roast the asparagus alongside the potatoes for the final 12 minutes.',
     ],
   },
+
+  // =========================================================
   {
     id: 'r8',
     name: 'Sweet & Sour Chicken with Brown Rice',
     emoji: '🍲',
-    tags: ['chicken', 'sweet', 'poultry', 'rice', 'grain', 'balanced', 'portion-medium'],
+    tags: [
+      'chicken', 'poultry', 'fried', 'crispy', 'simmered', 'saucy',
+      'portion-medium', 'balanced', 'weeknight', 'global', 'adventurous',
+      'rice', 'grain', 'whole-grain', 'warm', 'bowl', 'mixed-in',
+      'colorful', 'peppers', 'veggies-large', 'tangy',
+    ],
     vibe: 'sweet',
     plate: { produce: 42, protein: 26, carbs: 25, healthyFats: 7 },
     prepMinutes: 20,
@@ -252,11 +321,18 @@ export const RECIPES: Recipe[] = [
       'Serve over the rice.',
     ],
   },
+
+  // =========================================================
   {
     id: 'r9',
     name: 'Roasted Veggie & Quinoa Bowl',
     emoji: '🥙',
-    tags: ['quinoa', 'grain', 'roasted', 'veggies-large', 'balanced', 'light', 'greens'],
+    tags: [
+      'beans', 'plant-based', 'vegetarian', 'roasted', 'charred',
+      'baked', 'quinoa', 'grain', 'whole-grain', 'balanced', 'light',
+      'weeknight', 'veggies-large', 'greens', 'root-veg', 'colorful',
+      'bowl', 'mixed-in', 'warm', 'portion-medium', 'simple', 'olive-oil',
+    ],
     vibe: 'savory',
     plate: { produce: 50, protein: 22, carbs: 20, healthyFats: 8 },
     prepMinutes: 15,
@@ -283,11 +359,18 @@ export const RECIPES: Recipe[] = [
       'Build the bowls over quinoa and drizzle with thinned tahini.',
     ],
   },
+
+  // =========================================================
   {
     id: 'r10',
     name: 'Honey Garlic Salmon Rice Bowl',
     emoji: '🍱',
-    tags: ['fish', 'seafood', 'sweet', 'rice', 'grain', 'baked', 'balanced', 'portion-medium'],
+    tags: [
+      'fish', 'seafood', 'baked', 'roasted', 'tender', 'juicy',
+      'portion-medium', 'balanced', 'quick', 'easy', 'global',
+      'rice', 'grain', 'warm', 'bowl', 'mixed-in', 'colorful',
+      'root-veg', 'steamed', 'light', 'saucy', 'rich',
+    ],
     vibe: 'sweet',
     plate: { produce: 46, protein: 27, carbs: 21, healthyFats: 6 },
     prepMinutes: 10,
@@ -315,26 +398,533 @@ export const RECIPES: Recipe[] = [
       'Brush the remaining glaze over the cooked salmon and serve over rice with the vegetables.',
     ],
   },
+
+  // =========================================================
+  {
+    id: 'r11',
+    name: 'Crispy Chicken Sandwich with Slaw',
+    emoji: '🥪',
+    tags: [
+      'chicken', 'poultry', 'fried', 'crispy', 'portion-large', 'hearty',
+      'weeknight', 'comfort', 'classic', 'bread', 'bun', 'handheld',
+      'sandwich', 'high-carb', 'rich', 'warm', 'raw', 'fresh',
+      'salad', 'portion-small', 'mixed-in', 'tangy', 'acidic',
+    ],
+    vibe: 'savory',
+    plate: { produce: 20, protein: 30, carbs: 42, healthyFats: 8 },
+    prepMinutes: 20,
+    cookMinutes: 15,
+    servings: 4,
+    difficulty: 'medium',
+    dietary: [],
+    allergens: ['gluten', 'dairy', 'eggs'],
+    ingredients: [
+      { name: 'chicken thighs', amount: '4 boneless', category: 'proteins' },
+      { name: 'buttermilk', amount: '1.5 cups', category: 'dairy' },
+      { name: 'flour', amount: '1.5 cups', category: 'pantry' },
+      { name: 'brioche buns', amount: '4', category: 'grains' },
+      { name: 'green cabbage', amount: '1/2 head', category: 'produce' },
+      { name: 'carrot', amount: '1', category: 'produce' },
+      { name: 'mayonnaise', amount: '1/3 cup', category: 'pantry' },
+      { name: 'apple cider vinegar', amount: '2 tbsp', category: 'pantry' },
+      { name: 'paprika', amount: '2 tsp', category: 'pantry' },
+    ],
+    instructions: [
+      'Soak the chicken thighs in buttermilk with salt for at least 20 minutes.',
+      'Shred the cabbage and carrot, then toss with mayo, vinegar, salt, and pepper. Chill.',
+      'Mix the flour with paprika, salt, and pepper. Add 2 tbsp of the buttermilk and rub it in — those clumps become the crunchy bits.',
+      'Dredge each thigh, pressing hard so the coating sticks.',
+      'Fry in 1 inch of 350°F oil, 4–5 minutes per side, until deep golden and 165°F inside.',
+      'Drain on a wire rack, not paper towels, so the bottom stays crisp.',
+      'Toast the buns, add the chicken, pile on the cold slaw, and close it up.',
+    ],
+  },
+
+  // =========================================================
+  {
+    id: 'r12',
+    name: 'Beef & Broccoli Stir-Fry',
+    emoji: '🥡',
+    tags: [
+      'beef', 'red-meat', 'fried', 'crispy', 'simmered', 'saucy',
+      'tender', 'portion-medium', 'quick', 'easy', 'global',
+      'adventurous', 'rice', 'grain', 'balanced', 'bowl', 'mixed-in',
+      'warm', 'greens', 'leafy', 'steamed', 'veggies-large', 'colorful',
+    ],
+    vibe: 'savory',
+    plate: { produce: 44, protein: 28, carbs: 22, healthyFats: 6 },
+    prepMinutes: 15,
+    cookMinutes: 15,
+    servings: 4,
+    difficulty: 'easy',
+    dietary: ['dairy-free'],
+    allergens: ['soy', 'gluten'],
+    ingredients: [
+      { name: 'flank steak', amount: '1.25 lbs', category: 'proteins' },
+      { name: 'broccoli', amount: '2 heads', category: 'produce' },
+      { name: 'white rice', amount: '1.5 cups dry', category: 'grains' },
+      { name: 'soy sauce', amount: '1/3 cup', category: 'pantry' },
+      { name: 'brown sugar', amount: '2 tbsp', category: 'pantry' },
+      { name: 'cornstarch', amount: '1 tbsp', category: 'pantry' },
+      { name: 'garlic', amount: '4 cloves', category: 'produce' },
+      { name: 'fresh ginger', amount: '1 tbsp', category: 'produce' },
+      { name: 'sesame oil', amount: '1 tbsp', category: 'pantry', optional: true },
+    ],
+    instructions: [
+      'Start the rice first — everything else moves fast.',
+      'Slice the steak thinly against the grain. Toss with 1 tbsp soy sauce and the cornstarch.',
+      'Whisk the remaining soy sauce, brown sugar, and 1/3 cup water into a sauce.',
+      'Get a wok or wide skillet very hot. Sear the beef in a single layer for 90 seconds, flip, then pull it out.',
+      'Add the broccoli and 1/4 cup water, cover, and steam 3 minutes until bright green.',
+      'Add the garlic and ginger, stir 30 seconds, then pour in the sauce and let it thicken.',
+      'Return the beef, toss to coat, and finish with sesame oil over rice.',
+    ],
+  },
+
+  // =========================================================
+  {
+    id: 'r13',
+    name: 'Black Bean & Sweet Potato Tacos',
+    emoji: '🌯',
+    tags: [
+      'beans', 'plant-based', 'vegetarian', 'roasted', 'charred',
+      'baked', 'portion-medium', 'weeknight', 'global', 'adventurous',
+      'tortilla', 'bread', 'handheld', 'sandwich', 'balanced', 'warm',
+      'root-veg', 'veggies-large', 'colorful', 'mixed-in', 'tangy', 'acidic',
+    ],
+    vibe: 'spicy',
+    plate: { produce: 44, protein: 20, carbs: 30, healthyFats: 6 },
+    prepMinutes: 15,
+    cookMinutes: 30,
+    servings: 4,
+    difficulty: 'easy',
+    dietary: ['vegetarian', 'vegan', 'dairy-free'],
+    allergens: ['gluten'],
+    ingredients: [
+      { name: 'sweet potato', amount: '2 large', category: 'produce' },
+      { name: 'black beans', amount: '2 cans', category: 'proteins' },
+      { name: 'corn tortillas', amount: '10', category: 'grains' },
+      { name: 'red onion', amount: '1', category: 'produce' },
+      { name: 'lime', amount: '2', category: 'produce' },
+      { name: 'cumin', amount: '2 tsp', category: 'pantry' },
+      { name: 'smoked paprika', amount: '1 tsp', category: 'pantry' },
+      { name: 'chipotle in adobo', amount: '1 tbsp', category: 'pantry' },
+      { name: 'cilantro', amount: '1 bunch', category: 'produce', optional: true },
+    ],
+    instructions: [
+      'Heat the oven to 425°F. Cube the sweet potato small — 1/2 inch, so it roasts fast.',
+      'Toss with oil, cumin, smoked paprika, and salt. Roast 25–30 minutes until the edges char.',
+      'Thinly slice half the red onion and cover it with lime juice and salt — a 15-minute quick pickle.',
+      'Drain the beans and warm them in a pan with the chipotle and a splash of water. Mash a few for body.',
+      'Char the tortillas directly over a burner or in a dry pan.',
+      'Build: beans, then sweet potato, then the pickled onion and cilantro.',
+    ],
+  },
+
+  // =========================================================
+  {
+    id: 'r14',
+    name: 'Garlic Butter Shrimp Pasta',
+    emoji: '🍤',
+    tags: [
+      'fish', 'seafood', 'fried', 'crispy', 'tender', 'juicy',
+      'portion-medium', 'quick', 'easy', 'classic', 'comfort',
+      'pasta', 'noodles', 'rich', 'creamy', 'high-carb', 'plated',
+      'warm', 'greens', 'leafy', 'light', 'cheesy', 'tangy',
+    ],
+    vibe: 'savory',
+    plate: { produce: 24, protein: 26, carbs: 40, healthyFats: 10 },
+    prepMinutes: 10,
+    cookMinutes: 15,
+    servings: 4,
+    difficulty: 'easy',
+    dietary: ['pescatarian'],
+    allergens: ['shellfish', 'gluten', 'dairy'],
+    ingredients: [
+      { name: 'shrimp', amount: '1 lb peeled', category: 'proteins' },
+      { name: 'linguine', amount: '12 oz', category: 'grains' },
+      { name: 'butter', amount: '4 tbsp', category: 'dairy' },
+      { name: 'garlic', amount: '6 cloves', category: 'produce' },
+      { name: 'baby spinach', amount: '4 cups', category: 'produce' },
+      { name: 'lemon', amount: '1', category: 'produce' },
+      { name: 'red pepper flakes', amount: '1 tsp', category: 'pantry' },
+      { name: 'parmesan cheese', amount: '1/2 cup', category: 'dairy', optional: true },
+    ],
+    instructions: [
+      'Boil the pasta in well-salted water. Reserve 1 cup of the water before draining.',
+      'Pat the shrimp completely dry and season with salt — wet shrimp steam instead of searing.',
+      'Melt 2 tbsp butter over medium-high and sear the shrimp 90 seconds per side. Remove.',
+      'Lower the heat, add the rest of the butter and the sliced garlic. Cook 60 seconds — do not brown it.',
+      'Add the spinach and a splash of pasta water; it wilts in about a minute.',
+      'Toss in the pasta, then the shrimp, adding pasta water until the sauce clings.',
+      'Finish off-heat with lemon juice, pepper flakes, and parmesan.',
+    ],
+  },
+
+  // =========================================================
+  {
+    id: 'r15',
+    name: 'Slow-Simmered Beef Chili',
+    emoji: '🌶️',
+    tags: [
+      'beef', 'red-meat', 'simmered', 'saucy', 'slow-cooked', 'tender',
+      'portion-large', 'hearty', 'project', 'comfort', 'classic',
+      'beans', 'low-carb', 'bowl', 'mixed-in', 'warm', 'colorful',
+      'peppers', 'veggies-large', 'balanced', 'cheesy', 'rich',
+    ],
+    vibe: 'spicy',
+    plate: { produce: 34, protein: 32, carbs: 26, healthyFats: 8 },
+    prepMinutes: 20,
+    cookMinutes: 90,
+    servings: 6,
+    difficulty: 'easy',
+    dietary: ['gluten-free', 'high-protein'],
+    allergens: [],
+    ingredients: [
+      { name: 'ground beef', amount: '2 lbs', category: 'proteins' },
+      { name: 'kidney beans', amount: '2 cans', category: 'proteins' },
+      { name: 'crushed tomatoes', amount: '1 large can', category: 'pantry' },
+      { name: 'onion', amount: '2', category: 'produce' },
+      { name: 'bell pepper', amount: '2', category: 'produce' },
+      { name: 'garlic', amount: '5 cloves', category: 'produce' },
+      { name: 'chili powder', amount: '3 tbsp', category: 'pantry' },
+      { name: 'cumin', amount: '1 tbsp', category: 'pantry' },
+      { name: 'beef broth', amount: '2 cups', category: 'pantry' },
+      { name: 'cheddar cheese', amount: '1 cup', category: 'dairy', optional: true },
+    ],
+    instructions: [
+      'Brown the beef in a heavy pot in batches. Crowding it steams the meat instead of browning it.',
+      'Remove the beef, then cook the diced onion and pepper in the fat until soft, 8 minutes.',
+      'Add the garlic, chili powder, and cumin and toast 60 seconds until it smells sharp.',
+      'Return the beef, add the tomatoes and broth, and bring to a bare simmer.',
+      'Simmer uncovered 60 minutes, stirring occasionally, until it thickens noticeably.',
+      'Add the drained beans and simmer 20 minutes more.',
+      'Taste and salt hard at the end — chili needs more than you think. Top with cheddar.',
+    ],
+  },
+
+  // =========================================================
+  {
+    id: 'r16',
+    name: 'Baked Lemon Chicken with Potatoes & Green Beans',
+    emoji: '🍋',
+    tags: [
+      'chicken', 'poultry', 'baked', 'roasted', 'tender', 'juicy',
+      'portion-medium', 'weeknight', 'classic', 'comfort', 'potato',
+      'balanced', 'plated', 'side', 'warm', 'greens', 'root-veg',
+      'charred', 'tangy', 'acidic', 'simple', 'olive-oil', 'light',
+    ],
+    vibe: 'savory',
+    plate: { produce: 42, protein: 27, carbs: 24, healthyFats: 7 },
+    prepMinutes: 15,
+    cookMinutes: 40,
+    servings: 4,
+    difficulty: 'easy',
+    dietary: ['gluten-free', 'dairy-free', 'high-protein'],
+    allergens: [],
+    ingredients: [
+      { name: 'chicken thighs', amount: '6 bone-in', category: 'proteins' },
+      { name: 'baby potatoes', amount: '1.5 lbs', category: 'produce' },
+      { name: 'green beans', amount: '1 lb', category: 'produce' },
+      { name: 'lemon', amount: '2', category: 'produce' },
+      { name: 'garlic', amount: '6 cloves', category: 'produce' },
+      { name: 'olive oil', amount: '3 tbsp', category: 'pantry' },
+      { name: 'dried oregano', amount: '1 tbsp', category: 'pantry' },
+    ],
+    instructions: [
+      'Heat the oven to 425°F.',
+      'Halve the potatoes and toss with oil, oregano, salt, and smashed garlic on a sheet pan.',
+      'Pat the chicken skin bone dry and salt it well — dry skin is the whole trick.',
+      'Set the chicken skin-side up on top of the potatoes and roast 30 minutes.',
+      'Scatter the green beans around, squeeze one lemon over everything, and roast 10 more minutes.',
+      'Check that the chicken reads 175°F at the thigh. Rest 5 minutes.',
+      'Finish with the second lemon, cut into wedges, at the table.',
+    ],
+  },
+
+  // =========================================================
+  {
+    id: 'r17',
+    name: 'Teriyaki Tofu Rice Bowl',
+    emoji: '🍚',
+    tags: [
+      'tofu', 'plant-based', 'vegetarian', 'beans', 'fried', 'crispy',
+      'baked', 'portion-medium', 'weeknight', 'global', 'adventurous',
+      'rice', 'grain', 'balanced', 'bowl', 'mixed-in', 'warm',
+      'greens', 'leafy', 'steamed', 'colorful', 'saucy', 'veggies-large',
+    ],
+    vibe: 'sweet',
+    plate: { produce: 44, protein: 22, carbs: 27, healthyFats: 7 },
+    prepMinutes: 20,
+    cookMinutes: 25,
+    servings: 4,
+    difficulty: 'medium',
+    dietary: ['vegetarian', 'vegan', 'dairy-free'],
+    allergens: ['soy'],
+    ingredients: [
+      { name: 'extra-firm tofu', amount: '2 blocks', category: 'proteins' },
+      { name: 'jasmine rice', amount: '1.5 cups dry', category: 'grains' },
+      { name: 'broccoli', amount: '1 head', category: 'produce' },
+      { name: 'carrot', amount: '2', category: 'produce' },
+      { name: 'soy sauce', amount: '1/3 cup', category: 'pantry' },
+      { name: 'honey', amount: '3 tbsp', category: 'pantry' },
+      { name: 'rice vinegar', amount: '2 tbsp', category: 'pantry' },
+      { name: 'cornstarch', amount: '3 tbsp', category: 'pantry' },
+      { name: 'fresh ginger', amount: '1 tbsp', category: 'produce' },
+    ],
+    instructions: [
+      'Press the tofu between towels under something heavy for 15 minutes. Skipping this gives you soggy tofu.',
+      'Start the rice.',
+      'Cube the tofu and toss with 2 tbsp cornstarch and salt until evenly dusted.',
+      'Pan-fry in a thin layer of oil, turning every 2 minutes, until all sides are golden — about 10 minutes.',
+      'Whisk the soy sauce, honey, vinegar, ginger, remaining cornstarch, and 1/2 cup water.',
+      'Steam the broccoli and sliced carrot 4 minutes until just tender.',
+      'Simmer the sauce until glossy, then toss the tofu in it and serve over rice with the vegetables.',
+    ],
+  },
+
+  // =========================================================
+  {
+    id: 'r18',
+    name: 'Crispy Baked Fish Tacos',
+    emoji: '🐠',
+    tags: [
+      'fish', 'seafood', 'baked', 'fried', 'crispy', 'portion-medium',
+      'weeknight', 'global', 'adventurous', 'tortilla', 'bread',
+      'handheld', 'sandwich', 'balanced', 'warm', 'raw', 'fresh',
+      'salad', 'colorful', 'mixed-in', 'tangy', 'acidic', 'light',
+    ],
+    vibe: 'spicy',
+    plate: { produce: 36, protein: 26, carbs: 30, healthyFats: 8 },
+    prepMinutes: 20,
+    cookMinutes: 18,
+    servings: 4,
+    difficulty: 'medium',
+    dietary: ['pescatarian'],
+    allergens: ['fish', 'gluten', 'dairy'],
+    ingredients: [
+      { name: 'white fish fillets', amount: '1.5 lbs', category: 'proteins' },
+      { name: 'panko breadcrumbs', amount: '1.5 cups', category: 'pantry' },
+      { name: 'corn tortillas', amount: '10', category: 'grains' },
+      { name: 'green cabbage', amount: '1/2 head', category: 'produce' },
+      { name: 'lime', amount: '3', category: 'produce' },
+      { name: 'sour cream', amount: '1/2 cup', category: 'dairy' },
+      { name: 'chili powder', amount: '2 tsp', category: 'pantry' },
+      { name: 'eggs', amount: '2', category: 'proteins' },
+      { name: 'flour', amount: '1/2 cup', category: 'pantry' },
+    ],
+    instructions: [
+      'Heat the oven to 425°F and set a wire rack on a sheet pan.',
+      'Toast the panko in a dry skillet until light gold — this is why baked fish still gets crunchy.',
+      'Cut the fish into finger-width strips. Set up flour, beaten egg, and seasoned panko.',
+      'Dredge each strip and lay it on the rack. Spray or drizzle lightly with oil.',
+      'Bake 14–18 minutes until the coating is deep gold and the fish flakes.',
+      'Shred the cabbage and toss with lime juice and salt.',
+      'Thin the sour cream with lime juice and chili powder for the sauce.',
+      'Warm the tortillas, then build: cabbage, fish, sauce, extra lime.',
+    ],
+  },
+
+  // =========================================================
+  {
+    id: 'r19',
+    name: 'Creamy Tomato Pasta with Spinach',
+    emoji: '🍅',
+    tags: [
+      'beans', 'plant-based', 'vegetarian', 'simmered', 'saucy',
+      'portion-medium', 'quick', 'easy', 'comfort', 'classic',
+      'pasta', 'noodles', 'rich', 'creamy', 'high-carb', 'plated',
+      'warm', 'greens', 'leafy', 'mixed-in', 'cheesy', 'light',
+    ],
+    vibe: 'savory',
+    plate: { produce: 30, protein: 18, carbs: 42, healthyFats: 10 },
+    prepMinutes: 10,
+    cookMinutes: 20,
+    servings: 4,
+    difficulty: 'easy',
+    dietary: ['vegetarian'],
+    allergens: ['gluten', 'dairy'],
+    ingredients: [
+      { name: 'rigatoni', amount: '1 lb', category: 'grains' },
+      { name: 'crushed tomatoes', amount: '1 can', category: 'pantry' },
+      { name: 'heavy cream', amount: '1/2 cup', category: 'dairy' },
+      { name: 'baby spinach', amount: '5 cups', category: 'produce' },
+      { name: 'garlic', amount: '4 cloves', category: 'produce' },
+      { name: 'onion', amount: '1', category: 'produce' },
+      { name: 'parmesan cheese', amount: '3/4 cup', category: 'dairy' },
+      { name: 'red pepper flakes', amount: '1 tsp', category: 'pantry', optional: true },
+      { name: 'fresh basil', amount: '1/4 cup', category: 'produce', optional: true },
+    ],
+    instructions: [
+      'Boil the pasta in salted water; reserve a cup of the water.',
+      'Soften the diced onion in olive oil over medium heat, 6 minutes, then add the garlic for 1 minute.',
+      'Pour in the tomatoes, season with salt, and simmer 10 minutes until the color darkens slightly.',
+      'Stir in the cream and bring it back to a gentle simmer — do not boil hard or it can split.',
+      'Add the spinach by the handful; it collapses almost instantly.',
+      'Toss in the drained pasta with a splash of pasta water and the parmesan.',
+      'Finish with basil and pepper flakes.',
+    ],
+  },
+
+  // =========================================================
+  {
+    id: 'r20',
+    name: 'Honey Mustard Chicken Salad Bowl',
+    emoji: '🥬',
+    tags: [
+      'chicken', 'poultry', 'grilled', 'charred', 'tender', 'juicy',
+      'portion-medium', 'quick', 'easy', 'light', 'fresh', 'low-carb',
+      'cold', 'salad', 'raw', 'greens', 'leafy', 'veggies-large',
+      'bowl', 'mixed-in', 'tangy', 'acidic', 'colorful',
+    ],
+    vibe: 'sweet',
+    plate: { produce: 52, protein: 28, carbs: 12, healthyFats: 8 },
+    prepMinutes: 15,
+    cookMinutes: 15,
+    servings: 4,
+    difficulty: 'easy',
+    dietary: ['gluten-free', 'high-protein'],
+    allergens: ['nuts'],
+    ingredients: [
+      { name: 'chicken breast', amount: '1.25 lbs', category: 'proteins' },
+      { name: 'mixed greens', amount: '8 cups', category: 'produce' },
+      { name: 'apple', amount: '1', category: 'produce' },
+      { name: 'red onion', amount: '1/2', category: 'produce' },
+      { name: 'pecans', amount: '1/2 cup', category: 'pantry' },
+      { name: 'dijon mustard', amount: '3 tbsp', category: 'pantry' },
+      { name: 'honey', amount: '2 tbsp', category: 'pantry' },
+      { name: 'apple cider vinegar', amount: '2 tbsp', category: 'pantry' },
+      { name: 'olive oil', amount: '1/4 cup', category: 'pantry' },
+    ],
+    instructions: [
+      'Whisk the dijon, honey, vinegar, and olive oil into a dressing. Season it aggressively.',
+      'Reserve 3 tbsp of the dressing, then toss the chicken in the rest. Let it sit 10 minutes.',
+      'Grill or pan-sear the chicken over medium-high, 5–6 minutes per side, to 165°F.',
+      'Toast the pecans in a dry pan until fragrant, about 3 minutes. Watch them — they burn fast.',
+      'Thinly slice the apple and red onion.',
+      'Rest and slice the chicken, then build bowls with greens, apple, onion, and pecans.',
+      'Drizzle with the reserved clean dressing.',
+    ],
+  },
+
+  // =========================================================
+  {
+    id: 'r21',
+    name: 'Mediterranean Chickpea Bowl',
+    emoji: '🫒',
+    tags: [
+      'beans', 'plant-based', 'vegetarian', 'raw', 'fresh', 'cold',
+      'portion-medium', 'quick', 'easy', 'light', 'global',
+      'adventurous', 'grain', 'quinoa', 'whole-grain', 'balanced',
+      'bowl', 'mixed-in', 'salad', 'greens', 'colorful', 'veggies-large',
+      'tangy', 'acidic', 'olive-oil', 'cheesy',
+    ],
+    vibe: 'savory',
+    plate: { produce: 48, protein: 20, carbs: 22, healthyFats: 10 },
+    prepMinutes: 20,
+    cookMinutes: 15,
+    servings: 4,
+    difficulty: 'easy',
+    dietary: ['vegetarian', 'gluten-free'],
+    allergens: ['dairy', 'sesame'],
+    ingredients: [
+      { name: 'chickpeas', amount: '2 cans', category: 'proteins' },
+      { name: 'quinoa', amount: '1 cup dry', category: 'grains' },
+      { name: 'cucumber', amount: '2', category: 'produce' },
+      { name: 'cherry tomatoes', amount: '2 cups', category: 'produce' },
+      { name: 'red onion', amount: '1/2', category: 'produce' },
+      { name: 'feta cheese', amount: '3/4 cup', category: 'dairy' },
+      { name: 'kalamata olives', amount: '1/2 cup', category: 'pantry' },
+      { name: 'tahini', amount: '1/4 cup', category: 'pantry' },
+      { name: 'lemon', amount: '2', category: 'produce' },
+      { name: 'fresh parsley', amount: '1/2 cup', category: 'produce', optional: true },
+    ],
+    instructions: [
+      'Rinse the quinoa thoroughly, then simmer in 2 cups water for 15 minutes. Fluff and cool.',
+      'Whisk the tahini with lemon juice, a pinch of salt, and cold water until it turns pale and pourable.',
+      'Dice the cucumber and halve the tomatoes. Thinly slice the onion.',
+      'Drain and rinse the chickpeas, then toss with olive oil, salt, and a squeeze of lemon.',
+      'Layer the bowls: quinoa, then chickpeas, then the raw vegetables.',
+      'Top with feta, olives, parsley, and a heavy drizzle of the tahini sauce.',
+    ],
+  },
+
+  // =========================================================
+  {
+    id: 'r22',
+    name: 'Steak Burrito Bowl',
+    emoji: '🍛',
+    tags: [
+      'beef', 'red-meat', 'grilled', 'charred', 'crispy', 'tender',
+      'juicy', 'portion-large', 'hearty', 'weeknight', 'global',
+      'adventurous', 'rice', 'grain', 'beans', 'high-carb', 'bowl',
+      'mixed-in', 'warm', 'colorful', 'peppers', 'veggies-large',
+      'raw', 'fresh', 'tangy', 'acidic', 'cheesy',
+    ],
+    vibe: 'spicy',
+    plate: { produce: 34, protein: 30, carbs: 30, healthyFats: 6 },
+    prepMinutes: 20,
+    cookMinutes: 20,
+    servings: 4,
+    difficulty: 'medium',
+    dietary: ['gluten-free', 'high-protein'],
+    allergens: ['dairy'],
+    ingredients: [
+      { name: 'skirt steak', amount: '1.5 lbs', category: 'proteins' },
+      { name: 'white rice', amount: '1.5 cups dry', category: 'grains' },
+      { name: 'black beans', amount: '2 cans', category: 'proteins' },
+      { name: 'bell pepper', amount: '2', category: 'produce' },
+      { name: 'onion', amount: '1', category: 'produce' },
+      { name: 'lime', amount: '3', category: 'produce' },
+      { name: 'cumin', amount: '2 tsp', category: 'pantry' },
+      { name: 'chili powder', amount: '1 tbsp', category: 'pantry' },
+      { name: 'cilantro', amount: '1 bunch', category: 'produce' },
+      { name: 'cotija cheese', amount: '1/2 cup', category: 'dairy', optional: true },
+    ],
+    instructions: [
+      'Cook the rice, then fold in lime juice and chopped cilantro once it is off the heat.',
+      'Rub the steak with cumin, chili powder, and salt. Let it sit while the pan heats.',
+      'Slice the peppers and onion into strips and char them in a hot dry skillet, 6 minutes.',
+      'Sear the steak in the same pan, 3–4 minutes per side for medium-rare.',
+      'Warm the drained beans with a little cumin and some of their own liquid.',
+      'Rest the steak 8 minutes, then slice thinly against the grain — skirt steak is unchewable otherwise.',
+      'Build the bowls: rice, beans, peppers, steak, then cotija, cilantro, and lime.',
+    ],
+  },
 ];
- 
+
+// ============================================
+// HELPERS
+// ============================================
+
 export function getRecipeById(id: string): Recipe | undefined {
   return RECIPES.find(r => r.id === id);
 }
- 
+
 export function getTotalTime(recipe: Recipe): number {
   return recipe.prepMinutes + recipe.cookMinutes;
 }
- 
+
 export function formatTime(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
 }
- 
+
 export const DIFFICULTY_LABELS = {
   easy: 'Easy',
   medium: 'Medium',
   hard: 'Advanced',
 } as const;
- 
+
+/**
+ * Picks a random recipe, optionally avoiding ones already shown.
+ * Used by the "Surprise Me" randomizer so hitting redo cycles the whole
+ * library before it repeats anything.
+ */
+export function getRandomRecipe(excludeIds: string[] = []): Recipe {
+  const pool = RECIPES.filter(r => !excludeIds.includes(r.id));
+  const source = pool.length > 0 ? pool : RECIPES;
+  return source[Math.floor(Math.random() * source.length)];
+}

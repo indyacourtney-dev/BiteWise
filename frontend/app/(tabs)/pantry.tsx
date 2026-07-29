@@ -6,8 +6,6 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useFonts, PlayfairDisplay_600SemiBold } from '@expo-google-fonts/playfair-display';
-import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
 import { COLORS } from '../../constants/Colors';
 import { SUGGESTION_LIBRARY, INITIAL_CATEGORIES, MOCK_MEALS } from '../../constants/pantryData';
@@ -33,12 +31,8 @@ interface ActiveEditState {
 export default function Pantry() {
   const router = useRouter();
 
-  const [fontsLoaded] = useFonts({
-    PlayfairDisplay_600SemiBold,
-    Inter_400Regular,
-    Inter_600SemiBold,
-    Inter_700Bold,
-  });
+  // Fonts (Inter + Playfair Display) are loaded once in app/_layout.tsx,
+  // which blocks rendering until they're ready — no per-screen loading needed.
 
   /* --- STATE MANAGEMENT --- */
   const [currentView, setCurrentView] = useState<'pantry' | 'meals'>('pantry');
@@ -52,8 +46,6 @@ export default function Pantry() {
   const [mealModalVisible, setMealModalVisible] = useState(false);
   const [activeItemToEdit, setActiveItemToEdit] = useState<ActiveEditState | null>(null);
   const [dynamicStats, setDynamicStats] = useState({ mealsCount: 0, ingredientsCount: 0 });
-
-  if (!fontsLoaded) return null;
 
   /* --- HANDLER FUNCTIONS --- */
 
