@@ -23,8 +23,7 @@ import {
   Text,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import RecipeDetail from '@/components/RecipeDetail';
@@ -58,11 +57,11 @@ export default function ThisOrThatScreen() {
   const router = useRouter();
   const { preferences, pantry, toggleFavorite, isFavorite, recordQuizRun } = useApp();
 
-  // The tab bar floats above screen content, so every ScrollView has to
-  // pad past it or the last rows sit underneath and can't be reached.
-  // This was cutting off the bottom of the results screen.
-  const tabBarHeight = useBottomTabBarHeight();
-  const scrollPad = { paddingBottom: tabBarHeight + 32 };
+  // This screen lives on the root Stack (full-screen, no tab bar), so
+  // useBottomTabBarHeight() would throw here. Pad past the home indicator
+  // with the safe-area inset instead so the last rows stay reachable.
+  const insets = useSafeAreaInsets();
+  const scrollPad = { paddingBottom: insets.bottom + 32 };
 
   const [screen, setScreen] = useState<Screen>('mode');
   const [mode, setMode] = useState<GameMode>('weekly');
