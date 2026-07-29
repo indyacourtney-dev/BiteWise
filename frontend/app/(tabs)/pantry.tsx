@@ -2,8 +2,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
-  SafeAreaView, KeyboardAvoidingView, Platform
+  KeyboardAvoidingView, Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -30,6 +32,11 @@ interface ActiveEditState {
 // expects component names to be capitalized.
 export default function Pantry() {
   const router = useRouter();
+
+  // Clearance for the floating tab bar — without this the last pantry
+  // category and the meals list run underneath it.
+  const tabBarHeight = useBottomTabBarHeight();
+  const scrollPad = { paddingBottom: tabBarHeight + 32 };
 
   // Fonts (Inter + Playfair Display) are loaded once in app/_layout.tsx,
   // which blocks rendering until they're ready — no per-screen loading needed.
@@ -200,8 +207,12 @@ export default function Pantry() {
     const remainingMealsCount = Math.max(0, liveMeals.length - INITIAL_DISPLAY_LIMIT);
 
     return (
-      <SafeAreaView style={layoutStyles.safeArea}>
-        <ScrollView style={mealCardStyles.mealsContainerWrapper} showsVerticalScrollIndicator={false}>
+      <SafeAreaView style={layoutStyles.safeArea} edges={['top']}>
+        <ScrollView
+          style={mealCardStyles.mealsContainerWrapper}
+          contentContainerStyle={scrollPad}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={mealCardStyles.mealsHeaderContainer}>
             <TouchableOpacity
               style={mealCardStyles.closeViewCrossIcon}
@@ -260,10 +271,11 @@ export default function Pantry() {
   // VIEW RENDER LAYER: STANDARD PANTRY INVENTORY
   // =============================================
   return (
-    <SafeAreaView style={layoutStyles.safeArea}>
+    <SafeAreaView style={layoutStyles.safeArea} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           style={layoutStyles.container}
+          contentContainerStyle={scrollPad}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >

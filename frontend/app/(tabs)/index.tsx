@@ -1,6 +1,8 @@
 
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -95,14 +97,21 @@ export default function Home() {
   const router = useRouter();
   const { preferences } = useApp();
 
+  // The tab bar floats over screen content, so the scroll has to pad past
+  // it or the last cards sit underneath it and can't be reached.
+  const tabBarHeight = useBottomTabBarHeight();
+
   // Falls back to a friendly generic until the user sets a name in prefs.
   const userName = preferences.name?.trim() || 'there';
 
   return (
-    <SafeAreaView style={homeStyles.safeArea}>
+    <SafeAreaView style={homeStyles.safeArea} edges={['top']}>
       <View style={homeStyles.topDiagonalBackground} />
 
-      <ScrollView contentContainerStyle={homeStyles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[homeStyles.scrollContent, { paddingBottom: tabBarHeight + 32 }]}
+        showsVerticalScrollIndicator={false}
+      >
         <HeaderSection userName={userName} />
 
         {/* Start Game -> the quiz, not the pantry */}

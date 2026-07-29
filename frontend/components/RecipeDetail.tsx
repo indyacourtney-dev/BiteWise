@@ -6,7 +6,7 @@
 // screens pick it up.
 
 import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import PlateVisualization from './PlateVisualization';
@@ -22,9 +22,22 @@ interface Props {
   suggestion?: string;
   /** Optional line above the hero, e.g. the near-miss notice. */
   note?: string;
+  /**
+   * When provided, renders a "See full recipe" button under the plate
+   * breakdown that opens this meal on its own screen. Used on the quiz
+   * result, where people expect a button rather than a long scroll.
+   * Omitted on the recipe screen itself — it's already the full recipe.
+   */
+  onOpenRecipe?: () => void;
 }
 
-export default function RecipeDetail({ recipe, matchScore, suggestion, note }: Props) {
+export default function RecipeDetail({
+  recipe,
+  matchScore,
+  suggestion,
+  note,
+  onOpenRecipe,
+}: Props) {
   return (
     <View>
       {note ? (
@@ -69,6 +82,24 @@ export default function RecipeDetail({ recipe, matchScore, suggestion, note }: P
           </View>
         ) : null}
       </View>
+
+      {/* JUMP TO FULL RECIPE */}
+      {onOpenRecipe ? (
+        <TouchableOpacity
+          style={styles.openRecipeBtn}
+          onPress={onOpenRecipe}
+          activeOpacity={0.85}
+        >
+          <FontAwesome name="book" size={15} color={COLORS.darkNavy} />
+          <View style={styles.flex1}>
+            <Text style={styles.openRecipeTitle}>See the full recipe</Text>
+            <Text style={styles.openRecipeSub}>
+              {recipe.ingredients.length} ingredients · {recipe.instructions.length} steps
+            </Text>
+          </View>
+          <FontAwesome name="chevron-right" size={13} color={COLORS.darkGold} />
+        </TouchableOpacity>
+      ) : null}
 
       {/* INGREDIENTS */}
       <Text style={styles.sectionTitle}>
@@ -143,6 +174,23 @@ function Stat({ icon, label, value }: { icon: any; label: string; value: string 
 }
 
 const styles = StyleSheet.create({
+  flex1: { flex: 1 },
+
+  openRecipeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: COLORS.lightYellow,
+    borderWidth: 1,
+    borderColor: COLORS.goldYellow,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginTop: 14,
+  },
+  openRecipeTitle: { fontSize: 15, fontWeight: '700', color: COLORS.darkNavy },
+  openRecipeSub: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+
   noteBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',

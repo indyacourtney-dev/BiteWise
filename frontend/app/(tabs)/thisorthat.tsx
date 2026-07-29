@@ -365,6 +365,10 @@ export default function ThisOrThatScreen() {
               ? "Nothing was a full match, so here's the closest fit."
               : undefined
           }
+          /* The recipe is printed in full below, but a lot of users expect a
+             button rather than a scroll. This puts the same content one tap
+             away on its own screen, right under the plate breakdown. */
+          onOpenRecipe={() => router.push(`/recipe/${meal.id}?match=${meal.matchScore}`)}
         />
 
         {/* OTHER OPTIONS — always visible, tap to open the full recipe */}
