@@ -97,7 +97,7 @@ export const homeStyles = StyleSheet.create({
     marginBottom: 6,
   },
   heroSubtitle: {
-    color: '#9CA3AF',
+    color: '#8298AE',
     fontSize: 13,
     marginBottom: 20,
     textAlign: 'center',
@@ -178,6 +178,49 @@ export const homeStyles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // ---- Plan for the Week banner ----
+  planWeekCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: COLORS.lightBlueBg,
+    borderRadius: 20,
+    padding: 18,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: COLORS.blueSoft,
+  },
+  planWeekIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.cardWhite,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  planWeekTextWrap: {
+    flex: 1,
+  },
+  planWeekTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textDark,
+  },
+  planWeekSubtitle: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 3,
+    lineHeight: 17,
+  },
+  planWeekArrowCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.darkNavy,
     justifyContent: 'center',
     alignItems: 'center',
   },

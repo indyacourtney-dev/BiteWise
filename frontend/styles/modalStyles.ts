@@ -25,7 +25,7 @@ export const modalStyles = StyleSheet.create({
   modalOption: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F3F4',
+    borderBottomColor: '#E2EDFC',
     alignItems: 'center',
   },
   modalOptionText: {
@@ -62,7 +62,7 @@ export const modalStyles = StyleSheet.create({
   mealModalHeaderSub: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#7F8C8D',
+    color: '#5B6C80',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -91,12 +91,12 @@ export const modalStyles = StyleSheet.create({
   ringLabelSub: {
     fontFamily: 'Inter_400Regular',
     fontSize: 10,
-    color: '#7F8C8D',
+    color: '#5B6C80',
   },
   horizontalDividerModal: {
     width: '100%',
     height: 1,
-    backgroundColor: '#EAECEE',
+    backgroundColor: '#D9E4F1',
     marginBottom: 16,
   },
   ingredientStatContainer: {
@@ -123,7 +123,7 @@ export const modalStyles = StyleSheet.create({
   ingredientSummarySubtext: {
     fontFamily: 'Inter_400Regular',
     fontSize: 11,
-    color: '#7F8C8D',
+    color: '#5B6C80',
   },
   modalSeeMealsButton: {
     backgroundColor: COLORS.darkNavy,
@@ -145,6 +145,6 @@ export const modalStyles = StyleSheet.create({
   maybeLaterTextStyles: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 13,
-    color: '#7F8C8D',
+    color: '#5B6C80',
   },
 });

@@ -1,45 +1,27 @@
-// frontend/app/(tabs)/_layout.tsx
-import React from 'react';
+// app/(tabs)/_layout.tsx — the bottom tab bar: Home + Pantry.
+import { COLORS } from '@/constants/Colors';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-
-import { COLORS } from '../../constants/Colors';
+import React from 'react';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        // 1. Hide the default header banner at the top of the screen
         headerShown: false,
-        
-        // 2. Navigation Bar Background and Border styling
         tabBarStyle: {
           backgroundColor: COLORS.darkNavy,
-          borderTopWidth: 3,                 // Height of the trim line
-          borderTopColor: COLORS.goldYellow, // Yellow trim at the top of the navbar
-          height: 85,                        // Extra padding for tab comfort
-          paddingBottom: 8,
-          paddingTop: 8,
+          borderTopWidth: 0,
         },
-        
-        // 3. Icon selection colors
-        tabBarActiveTintColor: COLORS.yellowAccent, // Highlight selected tab with yellow
-        tabBarInactiveTintColor: COLORS.inactiveGray, // Default unselected tab color
-        
-        tabBarLabelStyle: {
-          fontFamily: 'Inter_600SemiBold',
-          fontSize: 11,
-        },
+        tabBarActiveTintColor: COLORS.yellowAccent,
+        tabBarInactiveTintColor: COLORS.inactiveGray,
       }}
     >
-      {/* Home Tab */}
       <Tabs.Screen
-        name="home"
+        name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home-variant" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
         }}
       />
 
@@ -47,11 +29,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="pantry"
         options={{
-          title: 'My Pantry',
-          tabBarIcon: ({ color, size }) => (
-            // A perfect shelf / cupboard pantry icon from MaterialCommunityIcons
-            <MaterialCommunityIcons name="fridge-outline" size={size} color={color} />
-          ),
+          title: 'Pantry',
+          tabBarIcon: ({ color }) => <FontAwesome name="shopping-basket" size={22} color={color} />,
         }}
       />
 

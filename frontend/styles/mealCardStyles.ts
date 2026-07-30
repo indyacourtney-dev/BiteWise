@@ -58,7 +58,7 @@ export const mealCardStyles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#EAECEE',
+    borderColor: '#D9E4F1',
     shadowColor: COLORS.darkNavy,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -111,7 +111,7 @@ export const mealCardStyles = StyleSheet.create({
   matchSubLabelBadgeText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 10,
-    color: '#7F8C8D',
+    color: '#5B6C80',
     marginTop: 2,
   },
   ingredientChipsContainerRow: {
@@ -139,7 +139,7 @@ export const mealCardStyles = StyleSheet.create({
   plusMoreRemainingText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 11,
-    color: '#7F8C8D',
+    color: '#5B6C80',
     marginTop: 6,
     marginBottom: 4,
   },

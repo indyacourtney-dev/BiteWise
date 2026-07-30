@@ -1,13 +1,24 @@
+
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { COLORS } from '../../constants/Colors';
-import { homeStyles } from '../../styles/homeStyles';
+import { COLORS } from '@/constants/Colors';
+import { homeStyles } from '@/styles/homeStyles';
+import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 
-// Header section with greeting and brand label
-const HeaderSection = ({ userName }: { userName: string }) => (
+// Header section with greeting, brand label, and sign-out
+const HeaderSection = ({
+  userName,
+  onSignOut,
+}: {
+  userName: string;
+  onSignOut: () => void;
+}) => (
   <View style={homeStyles.headerContainer}>
     <View style={homeStyles.greetingRow}>
       <View style={homeStyles.waveIconContainer}>
@@ -17,6 +28,24 @@ const HeaderSection = ({ userName }: { userName: string }) => (
         <Text style={homeStyles.greetingTitle}>Hey {userName}!</Text>
         <Text style={homeStyles.greetingSubtitle}>What's the vibe for dinner?</Text>
       </View>
+      {/* Sign out lives on Home so it's always one tap away. The auth
+          gate notices the dropped session and returns to the login. */}
+      <TouchableOpacity
+        onPress={onSignOut}
+        activeOpacity={0.7}
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: COLORS.cardWhite,
+          borderWidth: 1,
+          borderColor: COLORS.borderLight,
+        }}
+      >
+        <Ionicons name="log-out-outline" size={20} color={COLORS.darkNavy} />
+      </TouchableOpacity>
     </View>
     <Text style={homeStyles.brandLogo}>BiteWise</Text>
   </View>
@@ -29,9 +58,11 @@ const FeaturedGameCard = ({ onStartGame }: { onStartGame: () => void }) => (
       <MaterialCommunityIcons name="silverware-fork-knife" size={42} color={COLORS.goldYellow} />
     </View>
 
-    <Text style={homeStyles.heroTitle}>Can’t Decide?</Text>
-    <Text style={homeStyles.heroTitleHighlight}>Play “This or That!”</Text>
-    <Text style={homeStyles.heroSubtitle}>Quick game to find your current craving</Text>
+    <Text style={homeStyles.heroTitle}>Can't Decide?</Text>
+    <Text style={homeStyles.heroTitleHighlight}>Play "This or That!"</Text>
+    <Text style={homeStyles.heroSubtitle}>
+      Pick between two dishes, 3 rounds max — we'll find your craving
+    </Text>
 
     <TouchableOpacity style={homeStyles.heroButton} activeOpacity={0.8} onPress={onStartGame}>
       <Text style={homeStyles.heroButtonText}>Start Game</Text>
@@ -42,7 +73,6 @@ const FeaturedGameCard = ({ onStartGame }: { onStartGame: () => void }) => (
   </View>
 );
 
-// Props passed into the reusable quick-action card
 interface QuickDeciderCardProps {
   title: string;
   iconName: string;
@@ -54,7 +84,6 @@ interface QuickDeciderCardProps {
   onPress: () => void;
 }
 
-// Reusable card for the home screen's two quick action paths
 const QuickDeciderCard: React.FC<QuickDeciderCardProps> = ({
   title,
   iconName,
@@ -93,14 +122,29 @@ const QuickDeciderCard: React.FC<QuickDeciderCardProps> = ({
 // Main home screen layout
 export default function Home() {
   const router = useRouter();
+  const { preferences } = useApp();
+  const { user, signOut } = useAuth();
+
+  // The tab bar floats over screen content, so the scroll has to pad past
+  // it or the last cards sit underneath it and can't be reached.
+  const tabBarHeight = useBottomTabBarHeight();
+
+  // Prefer the name they typed in onboarding, fall back to their
+  // account username, then a friendly generic.
+  const userName = preferences.name?.trim() || user?.user_metadata?.username || 'there';
 
   return (
-    <SafeAreaView style={homeStyles.safeArea}>
+    <SafeAreaView style={homeStyles.safeArea} edges={['top']}>
       <View style={homeStyles.topDiagonalBackground} />
 
-      <ScrollView contentContainerStyle={homeStyles.scrollContent} showsVerticalScrollIndicator={false}>
-        <HeaderSection userName="Indya" />
-        <FeaturedGameCard onStartGame={() => router.push('/(tabs)/pantry')} />
+      <ScrollView
+        contentContainerStyle={[homeStyles.scrollContent, { paddingBottom: tabBarHeight + 32 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <HeaderSection userName={userName} onSignOut={signOut} />
+
+        {/* Start Game -> the quiz, not the pantry */}
+        <FeaturedGameCard onStartGame={() => router.push('/thisorthat')} />
 
         <View style={homeStyles.sectionHeader}>
           <Text style={homeStyles.sectionTitle}>
@@ -117,23 +161,43 @@ export default function Home() {
             bgColor={COLORS.lightYellow}
             buttonBgColor={COLORS.goldYellow}
             buttonIconColor={COLORS.darkNavy}
-            borderColor="#FBE396"
-            onPress={() => router.push('/(tabs)/pantry')}
+            borderColor="#EDE28A"
+            onPress={() => router.push('/cookWithPantry')}
           />
 
           <Text style={homeStyles.orDividerText}>OR</Text>
 
           <QuickDeciderCard
-            title="Surprise Me Select a Meal at Random"
+            title="Surprise Me — Pick a Meal at Random"
             iconName="dice-5-outline"
             iconType="mci"
             bgColor={COLORS.cardWhite}
             buttonBgColor={COLORS.darkNavy}
             buttonIconColor={COLORS.cardWhite}
             borderColor={COLORS.borderLight}
-            onPress={() => router.push('/(tabs)/pantry')}
+            onPress={() => router.push('/randomMeal')}
           />
         </View>
+
+        {/* Plan for the Week — the question quiz, shop-for-it mode */}
+        <TouchableOpacity
+          style={homeStyles.planWeekCard}
+          activeOpacity={0.85}
+          onPress={() => router.push('/planWeek')}
+        >
+          <View style={homeStyles.planWeekIconCircle}>
+            <MaterialCommunityIcons name="calendar-week" size={26} color={COLORS.darkNavy} />
+          </View>
+          <View style={homeStyles.planWeekTextWrap}>
+            <Text style={homeStyles.planWeekTitle}>Plan for the Week</Text>
+            <Text style={homeStyles.planWeekSubtitle}>
+              Answer a few quick questions and get a meal worth shopping for
+            </Text>
+          </View>
+          <View style={homeStyles.planWeekArrowCircle}>
+            <Ionicons name="arrow-forward" size={18} color={COLORS.cardWhite} />
+          </View>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
