@@ -23,23 +23,22 @@ import {
   Text,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-import RecipeDetail from '../../components/RecipeDetail';
-import { COLORS } from '../../constants/Colors';
+import RecipeDetail from '@/components/RecipeDetail';
+import { COLORS } from '@/constants/Colors';
 import {
   RECIPES,
   formatTime,
   getTotalTime,
   DIFFICULTY_LABELS,
-} from '../../constants/recipes';
+} from '@/constants/recipes';
 import {
   scoreAndFilterRecipes,
   getNearMisses,
   type UserSelection,
-} from '../../utils/matching';
+} from '@/utils/matching';
 import {
   buildRound,
   pickVibePrompt,
@@ -48,9 +47,9 @@ import {
   VIBE_OPTIONS,
   type QuizQuestion,
   type QuizOption,
-} from '../../data/quizQuestions';
-import { useApp } from '../../context/AppContext';
-import type { GameMode, Vibe, ScoredRecipe } from '../../types';
+} from '@/data/quizQuestions';
+import { useApp } from '@/context/AppContext';
+import type { GameMode, Vibe, ScoredRecipe } from '@/types';
 
 type Screen = 'mode' | 'quiz' | 'vibe' | 'result';
 
@@ -61,8 +60,8 @@ export default function ThisOrThatScreen() {
   // The tab bar floats above screen content, so every ScrollView has to
   // pad past it or the last rows sit underneath and can't be reached.
   // This was cutting off the bottom of the results screen.
-  const tabBarHeight = useBottomTabBarHeight();
-  const scrollPad = { paddingBottom: tabBarHeight + 32 };
+  const insets = useSafeAreaInsets();
+  const scrollPad = { paddingBottom: insets.bottom + 32 };
 
   const [screen, setScreen] = useState<Screen>('mode');
   const [mode, setMode] = useState<GameMode>('weekly');
@@ -236,6 +235,10 @@ export default function ThisOrThatScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header
           onExit={exitToHome}
+          /* Back from the flavor step re-opens the last question. Choosing
+             again replaces that answer (choose() de-dupes by dimension),
+             so users can revise without restarting. */
+          onBack={() => setScreen('quiz')}
           center={
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: '100%' }]} />
@@ -339,6 +342,10 @@ export default function ThisOrThatScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Header
         onExit={exitToHome}
+        /* Back from the result re-opens the flavor step; from there the
+           user can walk all the way back through their answers. The
+           result recomputes from scratch on return, so edits count. */
+        onBack={() => setScreen('vibe')}
         center={<Text style={styles.headerTitle}>Your meal</Text>}
         right={
           <TouchableOpacity
@@ -365,10 +372,9 @@ export default function ThisOrThatScreen() {
               ? "Nothing was a full match, so here's the closest fit."
               : undefined
           }
-          /* The recipe is printed in full below, but a lot of users expect a
-             button rather than a scroll. This puts the same content one tap
-             away on its own screen, right under the plate breakdown. */
-          onOpenRecipe={() => router.push(`/recipe/${meal.id}?match=${meal.matchScore}`)}
+          /* No onOpenRecipe here on purpose: the full recipe is already
+             rendered on this screen, so a button to a duplicate screen was
+             redundant. Alternates below still open their own screens. */
         />
 
         {/* OTHER OPTIONS — always visible, tap to open the full recipe */}
@@ -419,6 +425,14 @@ export default function ThisOrThatScreen() {
         >
           <FontAwesome name="refresh" size={15} color={COLORS.cardWhite} />
           <Text style={styles.primaryBtnText}>Build another meal</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryBtn}
+          onPress={() => setScreen('vibe')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.secondaryBtnText}>← Change my answers</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.secondaryBtn} onPress={exitToHome} activeOpacity={0.8}>

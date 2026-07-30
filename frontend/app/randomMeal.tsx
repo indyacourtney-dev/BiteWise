@@ -11,7 +11,7 @@
 // This lives outside (tabs) on purpose: it's a focused, one-thing screen you
 // exit from, not a destination you tab between.
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -27,14 +27,14 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import RecipeDetail from '../components/RecipeDetail';
 import { COLORS } from '../constants/Colors';
-import { RECIPES, getRandomRecipe } from '../constants/recipes';
-import { getPlateSuggestion } from '../utils/matching';
+import { RECIPES } from '../constants/recipes';
+import { getPlateSuggestion, passesDietaryFilter, favoriteOverlap } from '../utils/matching';
 import { useApp } from '../context/AppContext';
 import type { Recipe } from '../types';
 
 export default function RandomMealScreen() {
   const router = useRouter();
-  const { toggleFavorite, isFavorite } = useApp();
+  const { toggleFavorite, isFavorite, preferences } = useApp();
 
   const [meal, setMeal] = useState<Recipe | null>(null);
   const [seen, setSeen] = useState<string[]>([]);
@@ -42,32 +42,57 @@ export default function RandomMealScreen() {
   const fade = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
 
-  const roll = useCallback(() => {
-    setSeen(prevSeen => {
-      // Once every recipe has been shown, start the cycle over.
-      const exclude = prevSeen.length >= RECIPES.length ? [] : prevSeen;
-      const next = getRandomRecipe(exclude);
+  // Surprise Me still respects hard limits (allergies, dietary rules) —
+  // random should never mean "randomly contains your allergen."
+  //
+  // BUG FIX ("maximum update depth exceeded"): this list used to be
+  // rebuilt as a brand-new array on every render. It's a dependency of
+  // the roll-on-mount effect, so every render made the effect think its
+  // inputs changed, which re-rolled, which set state, which rendered —
+  // an infinite loop. useMemo keeps the array's identity stable until
+  // preferences actually change.
+  const library = useMemo(() => {
+    const eligible = RECIPES.filter(r => passesDietaryFilter(r, preferences));
+    return eligible.length > 0 ? eligible : RECIPES;
+  }, [preferences]);
 
-      setMeal(next);
+  // Plain function, and all side effects (setMeal, animation, scroll)
+  // happen OUT here — never inside a setState updater, which React
+  // requires to be pure and may invoke twice in development.
+  const roll = () => {
+    const exclude = seen.length >= library.length ? [] : seen;
+    const pool = library.filter(r => !exclude.includes(r.id));
 
-      fade.setValue(0);
-      Animated.timing(fade, {
-        toValue: 1,
-        duration: 260,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }).start();
+    // "Surprise" with a thumb on the scale: ~65% of rolls draw from
+    // meals overlapping the user's onboarding tastes (when any exist
+    // in the pool), the rest from the whole pool so it never becomes
+    // an echo chamber.
+    const favs = preferences.favoriteTags ?? [];
+    const liked = pool.filter(r => favoriteOverlap(r, favs) > 0);
+    const source = liked.length > 0 && Math.random() < 0.65 ? liked : pool;
+    const next = source[Math.floor(Math.random() * source.length)];
 
-      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    setSeen([...exclude, next.id]);
+    setMeal(next);
 
-      return exclude.length === 0 ? [next.id] : [...prevSeen, next.id];
-    });
-  }, [fade]);
+    fade.setValue(0);
+    Animated.timing(fade, {
+      toValue: 1,
+      duration: 260,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
 
-  // Roll once on mount so the user lands straight on a meal.
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
+  // Roll exactly once on mount so the user lands straight on a meal.
+  // Deliberately mount-only: re-running on dependency changes is what
+  // caused the update-depth crash.
   useEffect(() => {
     roll();
-  }, [roll]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!meal) {
     return (
@@ -81,7 +106,7 @@ export default function RandomMealScreen() {
   }
 
   const saved = isFavorite(meal.id);
-  const rollsLeft = RECIPES.length - seen.length;
+  const rollsLeft = Math.max(0, library.length - seen.length);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>

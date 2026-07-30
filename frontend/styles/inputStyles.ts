@@ -8,7 +8,7 @@ export const inputStyles = StyleSheet.create({
     backgroundColor: COLORS.white, 
     borderRadius: 8, 
     borderWidth: 1.5, 
-    borderColor: '#D5DBDB', 
+    borderColor: '#C7D8EC', 
     height: 48, 
     paddingHorizontal: 12 
   },
@@ -30,7 +30,7 @@ export const inputStyles = StyleSheet.create({
     backgroundColor: COLORS.white, 
     borderRadius: 8, 
     borderWidth: 1, 
-    borderColor: '#BDC3C7', 
+    borderColor: '#A9BDD3', 
     maxHeight: 204, 
     zIndex: 999, 
     elevation: 5 
@@ -40,7 +40,7 @@ export const inputStyles = StyleSheet.create({
     alignItems: 'center', 
     padding: 12, 
     borderBottomWidth: 1, 
-    borderBottomColor: '#F2F3F4' 
+    borderBottomColor: '#E2EDFC' 
   },
   suggestionEmoji: { 
     fontSize: 18, 
@@ -54,7 +54,7 @@ export const inputStyles = StyleSheet.create({
   suggestionSubtext: { 
     fontFamily: 'Inter_400Regular', 
     fontSize: 10, 
-    color: '#7F8C8D' 
+    color: '#5B6C80' 
   },
   voiceButton: { 
     padding: 4 

@@ -24,7 +24,7 @@ export const layoutStyles = StyleSheet.create({
   subtitleText: { 
     fontFamily: 'Inter_400Regular', 
     fontSize: 14, 
-    color: '#7F8C8D' 
+    color: '#5B6C80' 
   },
   primaryActionButton: { 
     backgroundColor: COLORS.yellowAccent, 

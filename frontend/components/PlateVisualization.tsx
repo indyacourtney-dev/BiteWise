@@ -1,191 +1,219 @@
 // components/PlateVisualization.tsx
 //
-// BUG FIX from the earlier version:
-// The old code used `flex: plate.produce / 50` for produce and
-// `flex: plate.protein / 25` for protein. A balanced 50/25 plate
-// therefore rendered as flex:1 / flex:1 — two EQUAL bands, which is
-// exactly backwards from what it was trying to show. Dividing each
-// value by a different denominator destroys the proportion.
-//
-// The fix is to feed the raw percentages into flex directly, so the
-// bands are sized relative to each other the way they actually are.
+// REDESIGN: one sleek card in the app's navy/gold theme.
+//  - Proportional plate bar with soft rounded segments and a gold
+//    "Balanced" pill when the plate meets targets.
+//  - Legend with muted dot swatches + percentages.
+//  - Macro row (when `nutrition` is provided): Calories, Protein, Carbs,
+//    Total Fat, and Healthy Fats — healthy fats get the gold accent and
+//    show what share of total fat they make up.
+// Props stay backward-compatible: `nutrition` is optional, `compact`
+// still renders just the slim bar for list cards.
 
 import React from 'react';
 import { StyleSheet, View as RNView } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { Text, View } from '@/components/Themed';
-import type { PlateComposition } from '../types';
+import type { PlateComposition, Nutrition } from '../types';
 import { isPlateBalanced } from '../utils/matching';
+import { COLORS } from '../constants/Colors';
 
 export const PLATE_COLORS = {
-  produce: '#52C41A',
-  protein: '#FF4D4F',
-  carbs: '#FAAD14',
-  fats: '#D4AF37',
+  produce: '#6FBF73',
+  protein: '#E8896B',
+  carbs: '#F0C75E',
+  fats: '#8FA9C4',
 } as const;
+
+const SEGMENTS = [
+  { key: 'produce', label: 'Veggies & fruit', color: PLATE_COLORS.produce },
+  { key: 'protein', label: 'Protein', color: PLATE_COLORS.protein },
+  { key: 'carbs', label: 'Carbs', color: PLATE_COLORS.carbs },
+  { key: 'healthyFats', label: 'Healthy fats', color: PLATE_COLORS.fats },
+] as const;
 
 interface Props {
   plate: PlateComposition;
+  nutrition?: Nutrition;
   compact?: boolean;
 }
 
-export default function PlateVisualization({ plate, compact = false }: Props) {
+export default function PlateVisualization({ plate, nutrition, compact = false }: Props) {
   const balanced = isPlateBalanced(plate);
 
+  if (compact) {
+    return (
+      <RNView style={styles.barCompact}>
+        {SEGMENTS.map(s => (
+          <RNView
+            key={s.key}
+            style={{ flex: Math.max(plate[s.key], 1), backgroundColor: s.color }}
+          />
+        ))}
+      </RNView>
+    );
+  }
+
   return (
-    <RNView style={styles.wrap}>
-      {/* Proportional bar — flex values are the raw percentages */}
-      <RNView style={[styles.bar, compact && styles.barCompact]}>
-        <RNView style={[styles.seg, { flex: plate.produce, backgroundColor: PLATE_COLORS.produce }]}>
-          {!compact && plate.produce >= 15 && <Text style={styles.segLabel}>🥗</Text>}
-        </RNView>
-        <RNView style={[styles.seg, { flex: plate.protein, backgroundColor: PLATE_COLORS.protein }]}>
-          {!compact && plate.protein >= 15 && <Text style={styles.segLabel}>🍗</Text>}
-        </RNView>
-        <RNView style={[styles.seg, { flex: plate.carbs, backgroundColor: PLATE_COLORS.carbs }]}>
-          {!compact && plate.carbs >= 15 && <Text style={styles.segLabel}>🍚</Text>}
-        </RNView>
-        <RNView style={[styles.seg, { flex: plate.healthyFats, backgroundColor: PLATE_COLORS.fats }]} />
+    <RNView style={styles.card}>
+      {/* Header */}
+      <RNView style={styles.headerRow}>
+        <Text style={styles.title}>Plate Balance</Text>
+        {balanced && (
+          <RNView style={styles.balancedPill}>
+            <FontAwesome name="check" size={10} color={COLORS.darkNavy} />
+            <Text style={styles.balancedText}>Balanced</Text>
+          </RNView>
+        )}
       </RNView>
 
-      {/* Target markers at 50% and 75% show where the ideal cuts fall */}
-      {!compact && (
-        <RNView style={styles.markerRow}>
-          <RNView style={{ flex: 50 }} />
-          <RNView style={styles.marker} />
-          <RNView style={{ flex: 25 }} />
-          <RNView style={styles.marker} />
-          <RNView style={{ flex: 25 }} />
-        </RNView>
-      )}
+      {/* Proportional bar */}
+      <RNView style={styles.bar}>
+        {SEGMENTS.map((s, i) => (
+          <RNView
+            key={s.key}
+            style={[
+              styles.seg,
+              { flex: Math.max(plate[s.key], 1), backgroundColor: s.color },
+              i === 0 && styles.segFirst,
+              i === SEGMENTS.length - 1 && styles.segLast,
+            ]}
+          />
+        ))}
+      </RNView>
 
-      {!compact && (
-        <View style={styles.legend}>
-          <LegendRow color={PLATE_COLORS.produce} label="Produce" value={plate.produce} target="50%" />
-          <LegendRow color={PLATE_COLORS.protein} label="Protein" value={plate.protein} target="25%" />
-          <LegendRow color={PLATE_COLORS.carbs} label="Carbs" value={plate.carbs} target="25%" />
-          <LegendRow color={PLATE_COLORS.fats} label="Healthy fats" value={plate.healthyFats} target="~8%" />
-        </View>
-      )}
+      {/* Legend */}
+      <RNView style={styles.legend}>
+        {SEGMENTS.map(s => (
+          <RNView key={s.key} style={styles.legendItem}>
+            <RNView style={[styles.dot, { backgroundColor: s.color }]} />
+            <Text style={styles.legendLabel}>{s.label}</Text>
+            <Text style={styles.legendPct}>{plate[s.key]}%</Text>
+          </RNView>
+        ))}
+      </RNView>
 
-      <View style={[styles.status, balanced ? styles.statusOk : styles.statusWarn]}>
-        <FontAwesome
-          name={balanced ? 'check-circle' : 'info-circle'}
-          size={14}
-          color={balanced ? '#389E0D' : '#D46B08'}
-        />
-        <Text style={[styles.statusText, { color: balanced ? '#389E0D' : '#D46B08' }]}>
-          {balanced ? 'Balanced plate' : 'Slightly off balance'}
-        </Text>
-      </View>
+      {/* Macros */}
+      {nutrition && (
+        <>
+          <RNView style={styles.divider} />
+          <RNView style={styles.macroRow}>
+            <MacroStat value={`${nutrition.calories}`} label="Calories" big />
+            <MacroStat value={`${nutrition.protein}g`} label="Protein" />
+            <MacroStat value={`${nutrition.carbs}g`} label="Carbs" />
+            <MacroStat value={`${nutrition.totalFat}g`} label="Total Fat" />
+          </RNView>
+          <RNView style={styles.healthyFatRow}>
+            <RNView style={styles.healthyFatBadge}>
+              <FontAwesome name="heart" size={10} color={COLORS.darkGold} />
+              <Text style={styles.healthyFatText}>
+                {nutrition.healthyFat}g healthy fats
+              </Text>
+            </RNView>
+            <Text style={styles.healthyFatShare}>
+              {Math.round((nutrition.healthyFat / Math.max(nutrition.totalFat, 1)) * 100)}% of
+              total fat
+            </Text>
+          </RNView>
+          <Text style={styles.perServing}>Estimated per serving</Text>
+        </>
+      )}
     </RNView>
   );
 }
 
-function LegendRow({
-  color,
-  label,
-  value,
-  target,
-}: {
-  color: string;
-  label: string;
-  value: number;
-  target: string;
-}) {
+function MacroStat({ value, label, big }: { value: string; label: string; big?: boolean }) {
   return (
-    <RNView style={styles.legendRow}>
-      <RNView style={[styles.dot, { backgroundColor: color }]} />
-      <Text style={styles.legendLabel}>{label}</Text>
-      <Text style={styles.legendValue}>{value}%</Text>
-      <Text style={styles.legendTarget}>target {target}</Text>
+    <RNView style={styles.macroStat}>
+      <Text style={[styles.macroValue, big && styles.macroValueBig]}>{value}</Text>
+      <Text style={styles.macroLabel}>{label}</Text>
     </RNView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    paddingHorizontal: 14,
-    paddingBottom: 12,
+  card: {
+    backgroundColor: COLORS.cardWhite,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    padding: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: COLORS.darkNavy,
+  },
+  balancedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: COLORS.goldYellow,
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  balancedText: { fontSize: 11, fontWeight: '800', color: COLORS.darkNavy },
+
   bar: {
     flexDirection: 'row',
-    height: 34,
-    borderRadius: 8,
+    height: 14,
+    borderRadius: 7,
     overflow: 'hidden',
-    backgroundColor: '#f0f0f0',
+    gap: 2,
+    backgroundColor: COLORS.background,
   },
   barCompact: {
-    height: 8,
-    borderRadius: 4,
-  },
-  seg: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  segLabel: {
-    fontSize: 14,
-  },
-  markerRow: {
     flexDirection: 'row',
-    height: 8,
-    marginBottom: 10,
-  },
-  marker: {
-    width: 2,
     height: 6,
-    backgroundColor: '#8c8c8c',
+    borderRadius: 3,
+    overflow: 'hidden',
   },
-  legend: {
-    gap: 6,
-    marginBottom: 10,
-  },
-  legendRow: {
+  seg: { height: '100%' },
+  segFirst: { borderTopLeftRadius: 7, borderBottomLeftRadius: 7 },
+  segLast: { borderTopRightRadius: 7, borderBottomRightRadius: 7 },
+
+  legend: { marginTop: 12, gap: 7 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dot: { width: 9, height: 9, borderRadius: 5 },
+  legendLabel: { flex: 1, fontSize: 13, color: COLORS.textMuted },
+  legendPct: { fontSize: 13, fontWeight: '700', color: COLORS.darkNavy },
+
+  divider: { height: 1, backgroundColor: COLORS.borderLight, marginVertical: 14 },
+
+  macroRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  macroStat: { alignItems: 'center', flex: 1 },
+  macroValue: { fontSize: 16, fontWeight: '800', color: COLORS.darkNavy },
+  macroValueBig: { fontSize: 18, color: COLORS.darkGold },
+  macroLabel: { fontSize: 11, color: COLORS.textMuted, marginTop: 3 },
+
+  healthyFatRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  legendLabel: {
-    fontSize: 12,
-    color: '#2e4053',
-    fontWeight: '600',
-    flex: 1,
-  },
-  legendValue: {
-    fontSize: 12,
-    color: '#2e4053',
-    fontWeight: '700',
-    minWidth: 34,
-    textAlign: 'right',
-  },
-  legendTarget: {
-    fontSize: 11,
-    color: '#999',
-    minWidth: 68,
-    textAlign: 'right',
-  },
-  status: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
+    justifyContent: 'space-between',
+    marginTop: 12,
+    backgroundColor: COLORS.lightYellow,
+    borderRadius: 12,
     paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 12,
   },
-  statusOk: {
-    backgroundColor: '#F6FFED',
-  },
-  statusWarn: {
-    backgroundColor: '#FFF7E6',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
+  healthyFatBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  healthyFatText: { fontSize: 13, fontWeight: '700', color: COLORS.darkNavy },
+  healthyFatShare: { fontSize: 12, color: COLORS.textMuted },
+
+  perServing: {
+    fontSize: 11,
+    color: COLORS.inactiveGray,
+    textAlign: 'center',
+    marginTop: 10,
   },
 });

@@ -1,177 +1,101 @@
 // app/recipe/[id].tsx
+// Full recipe screen. Reached via router.push(`/recipe/${id}?match=${score}`)
+// from the This-or-That results (and anywhere else a recipe is tapped).
 //
-// Full recipe for any single meal, addressed by id (e.g. /recipe/r14).
-//
-// This exists so the "other options" on the quiz results screen aren't
-// dead ends. Previously an alternate showed only a name and a match
-// percentage, with no way to actually read the recipe — the user could
-// see that a meal fit them but not how to cook it.
-//
-// It's a plain route, so anything can link here later (favorites list,
-// history, pantry matches) without duplicating the layout.
+// - id fills the [id] slot in the path; match arrives as a query param.
+// - Renders the shared <RecipeDetail /> without onOpenRecipe (this IS the
+//   full recipe screen, so no "See full recipe" button).
+// - Unknown ids get a friendly not-found state instead of a crash, so a
+//   stale link can never strand the user.
 
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-import RecipeDetail from '../../components/RecipeDetail';
-import { COLORS } from '../../constants/Colors';
-import { getRecipeById } from '../../constants/recipes';
-import { getPlateSuggestion } from '../../utils/matching';
-import { useApp } from '../../context/AppContext';
+import RecipeDetail from '@/components/RecipeDetail';
+import { getRecipeById } from '@/constants/recipes';
+import { COLORS } from '@/constants/Colors';
 
 export default function RecipeScreen() {
   const { id, match } = useLocalSearchParams<{ id: string; match?: string }>();
   const router = useRouter();
-  const { toggleFavorite, isFavorite } = useApp();
+  const insets = useSafeAreaInsets();
 
-  const recipe = getRecipeById(id);
-
-  // Guard against a bad or stale id rather than crashing on undefined.
-  if (!recipe) {
-    return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.iconBtn}
-            activeOpacity={0.7}
-          >
-            <FontAwesome name="chevron-left" size={15} color={COLORS.darkNavy} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Recipe</Text>
-          <View style={styles.iconBtn} />
-        </View>
-
-        <View style={styles.emptyWrap}>
-          <Text style={styles.emptyEmoji}>🍽️</Text>
-          <Text style={styles.emptyTitle}>Recipe not found</Text>
-          <Text style={styles.emptyText}>
-            That meal isn't in the library anymore.
-          </Text>
-          <TouchableOpacity
-            style={styles.primaryBtn}
-            onPress={() => router.back()}
-            activeOpacity={0.9}
-          >
-            <Text style={styles.primaryBtnText}>Go back</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const saved = isFavorite(recipe.id);
+  const recipe = id ? getRecipeById(id) : undefined;
   const matchScore = match ? Number(match) : undefined;
+
+  // Back should pop when pushed; if this screen was somehow opened
+  // directly (deep link, reload), fall back to Home instead of a dead end.
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.iconBtn}
-          activeOpacity={0.7}
-        >
-          <FontAwesome name="chevron-left" size={15} color={COLORS.darkNavy} />
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          Recipe
-        </Text>
-
-        <TouchableOpacity
-          onPress={() => toggleFavorite(recipe.id)}
-          style={styles.iconBtn}
-          activeOpacity={0.7}
-        >
-          <FontAwesome
-            name={saved ? 'heart' : 'heart-o'}
-            size={17}
-            color={saved ? COLORS.redAccent : COLORS.darkNavy}
-          />
+        <TouchableOpacity style={styles.backBtn} onPress={goBack} activeOpacity={0.7}>
+          <FontAwesome name="chevron-left" size={16} color={COLORS.darkNavy} />
+          <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        <RecipeDetail
-          recipe={recipe}
-          matchScore={Number.isFinite(matchScore) ? matchScore : undefined}
-          suggestion={getPlateSuggestion(recipe.plate)}
-        />
-
-        <TouchableOpacity
-          style={styles.secondaryBtn}
-          onPress={() => router.back()}
-          activeOpacity={0.8}
+      {recipe ? (
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.secondaryBtnText}>Back to your results</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <RecipeDetail
+            recipe={recipe}
+            matchScore={
+              typeof matchScore === 'number' && !Number.isNaN(matchScore)
+                ? matchScore
+                : undefined
+            }
+          />
+        </ScrollView>
+      ) : (
+        <View style={styles.notFound}>
+          <Text style={styles.notFoundEmoji}>🍽️</Text>
+          <Text style={styles.notFoundTitle}>Recipe not found</Text>
+          <Text style={styles.notFoundSub}>
+            This recipe may have been removed or the link is out of date.
+          </Text>
+          <TouchableOpacity style={styles.homeBtn} onPress={() => router.replace('/')} activeOpacity={0.9}>
+            <Text style={styles.homeBtnText}>Back to Home</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
-
-  header: {
+  header: { paddingHorizontal: 16, paddingVertical: 10 },
+  backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: 8,
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingRight: 12,
   },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: COLORS.darkNavy },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.cardWhite,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-  },
+  backText: { fontSize: 16, fontWeight: '600', color: COLORS.darkNavy },
+  scroll: { paddingHorizontal: 20 },
 
-  // Generous bottom padding: this screen sits outside the tab navigator,
-  // but the home indicator still needs clearance.
-  scroll: { paddingHorizontal: 20, paddingBottom: 60 },
-
-  secondaryBtn: { alignItems: 'center', paddingVertical: 18, marginTop: 12 },
-  secondaryBtnText: { fontSize: 14, color: COLORS.textMuted, fontWeight: '600' },
-
-  emptyWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  emptyEmoji: { fontSize: 48, marginBottom: 14 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: COLORS.darkNavy },
-  emptyText: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    marginTop: 10,
-    lineHeight: 20,
-  },
-  primaryBtn: {
+  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 },
+  notFoundEmoji: { fontSize: 52 },
+  notFoundTitle: { fontSize: 22, fontWeight: '700', color: COLORS.darkNavy },
+  notFoundSub: { fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 },
+  homeBtn: {
+    marginTop: 12,
     backgroundColor: COLORS.darkNavy,
     borderRadius: 14,
-    paddingVertical: 15,
-    paddingHorizontal: 32,
-    marginTop: 22,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
   },
-  primaryBtnText: { color: COLORS.cardWhite, fontSize: 15, fontWeight: '700' },
+  homeBtnText: { color: COLORS.cardWhite, fontSize: 15, fontWeight: '700' },
 });

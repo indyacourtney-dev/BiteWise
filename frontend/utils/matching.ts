@@ -231,12 +231,44 @@ export interface ScoreOptions {
   pantryThreshold?: number;
 }
 
+/**
+ * How many of the user's onboarding taste tags a recipe carries.
+ * Used ONLY as a tie-breaker between equal match scores — the quiz
+ * answers always outrank standing preferences, because "what I feel
+ * like tonight" should beat "what I generally like."
+ */
+export function favoriteOverlap(recipe: Recipe, favoriteTags: string[]): number {
+  if (favoriteTags.length === 0) return 0;
+  const favs = new Set(favoriteTags.map(t => t.toLowerCase()));
+  return recipe.tags.filter(t => favs.has(t.toLowerCase())).length;
+}
+
+/**
+ * How many "rather skip" tags a recipe carries. Mirrors favoriteOverlap
+ * on the other side of the scale: a SOFT penalty in tie-breaks, never a
+ * hard filter (that's what allergens are for). tasteBias below combines
+ * both so one preference signal decides ties.
+ */
+export function dislikeOverlap(recipe: Recipe, dislikedTags: string[]): number {
+  if (dislikedTags.length === 0) return 0;
+  const bad = new Set(dislikedTags.map(t => t.toLowerCase()));
+  return recipe.tags.filter(t => bad.has(t.toLowerCase())).length;
+}
+
+/** Net taste signal: loves push a recipe up ties, dislikes push it down. */
+function tasteBias(recipe: Recipe, favs: string[], dislikes: string[]): number {
+  return favoriteOverlap(recipe, favs) - dislikeOverlap(recipe, dislikes);
+}
+
 function scoreAll(recipes: Recipe[], opts: ScoreOptions): ScoredRecipe[] {
   const scoringSelections = withVibeSelection(opts.selections, opts.vibe);
 
   return recipes.map(r => ({
     ...r,
-    matchScore: calculateMatchScore(scoringSelections, r.tags),
+    // Score against tags PLUS the recipe's vibe, so the final flavor
+    // question matches on the vibe field instead of relying on the
+    // word happening to appear in the tag list.
+    matchScore: calculateMatchScore(scoringSelections, [...r.tags, r.vibe]),
     isBalanced: isPlateBalanced(r.plate),
     suggestion: getPlateSuggestion(r.plate),
   }));
@@ -259,9 +291,16 @@ export function scoreAndFilterRecipes(
       return getPantryCoverage(r, pantry).percent >= pantryThreshold;
     });
 
+  const favs = opts.preferences.favoriteTags ?? [];
+  const dislikes = opts.preferences.dislikedTags ?? [];
+
   return scoreAll(eligible, opts)
     .filter(r => r.matchScore >= MATCH_THRESHOLD)
-    .sort((a, b) => b.matchScore - a.matchScore);
+    .sort(
+      (a, b) =>
+        b.matchScore - a.matchScore ||
+        tasteBias(b, favs, dislikes) - tasteBias(a, favs, dislikes)
+    );
 }
 
 // ============================================
@@ -279,9 +318,15 @@ export function getNearMisses(
   limit = 3
 ): ScoredRecipe[] {
   const eligible = recipes.filter(r => passesDietaryFilter(r, opts.preferences));
+  const favs = opts.preferences.favoriteTags ?? [];
+  const dislikes = opts.preferences.dislikedTags ?? [];
 
   return scoreAll(eligible, opts)
     .filter(r => r.matchScore > 0)
-    .sort((a, b) => b.matchScore - a.matchScore)
+    .sort(
+      (a, b) =>
+        b.matchScore - a.matchScore ||
+        tasteBias(b, favs, dislikes) - tasteBias(a, favs, dislikes)
+    )
     .slice(0, limit);
 }

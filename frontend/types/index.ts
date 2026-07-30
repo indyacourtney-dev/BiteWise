@@ -34,6 +34,15 @@ export interface PlateComposition {
   healthyFats: number;
 }
 
+/** Per-serving nutrition estimates shown in Plate Balance. */
+export interface Nutrition {
+  calories: number;
+  protein: number;    // g
+  carbs: number;      // g
+  totalFat: number;   // g
+  healthyFat: number; // g — the unsaturated share of totalFat
+}
+
 export interface Ingredient {
   name: string;
   amount: string;      // "2 cups", "1 lb"
@@ -48,6 +57,7 @@ export interface Recipe {
   tags: string[];
   vibe: Vibe;
   plate: PlateComposition;
+  nutrition: Nutrition;
 
   // Recipe details
   prepMinutes: number;
@@ -80,7 +90,15 @@ export type DietaryTag =
   | 'gluten-free'
   | 'dairy-free'
   | 'low-carb'
-  | 'high-protein';
+  | 'high-protein'
+  // Niche additions. A recipe listing one of these SATISFIES that diet;
+  // the filter requires every diet the user selected to be present, so
+  // mislabeling a recipe here surfaces it to someone whose diet it
+  // violates — annotate conservatively.
+  | 'halal'        // no pork or alcohol; shellfish excluded to be safe
+  | 'kosher-style' // no pork/shellfish, no meat+dairy in one dish (not certified)
+  | 'keto'         // very low carb: no grains, potatoes, beans, or sugars
+  | 'paleo';       // no grains, legumes, dairy, or refined sugar
 
 export type Allergen =
   | 'nuts'
@@ -91,7 +109,11 @@ export type Allergen =
   | 'dairy'
   | 'soy'
   | 'gluten'
-  | 'sesame';
+  | 'sesame'
+  // Niche additions — corn covers cornstarch and corn tortillas.
+  | 'mustard'
+  | 'coconut'
+  | 'corn';
 
 export interface UserPreferences {
   name: string;
@@ -100,6 +122,20 @@ export interface UserPreferences {
   maxCookMinutes: number | null;   // null = no limit
   preferredDifficulty: Difficulty | null;
   householdSize: number;
+  /**
+   * Recipe tags collected during onboarding ("what do you enjoy?").
+   * Used as a soft signal: breaks quiz-result ties toward foods the
+   * user likes and weights the Surprise Me randomizer. Never a hard
+   * filter — that's what dietary/allergens are for.
+   */
+  favoriteTags: string[];
+  /** Foods the user said they'd rather avoid — soft signal, steers
+   *  recommendations away without hard-filtering like allergens do. */
+  dislikedTags: string[];
+  /** How hot they like it. null = didn't say. */
+  spiceTolerance: 'mild' | 'medium' | 'hot' | null;
+  /** Cuisines they love (labels, e.g. "Italian"). Soft signal. */
+  cuisines: string[];
 }
 
 // ============================================
