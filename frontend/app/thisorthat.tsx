@@ -23,23 +23,22 @@ import {
   Text,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-import RecipeDetail from '../../components/RecipeDetail';
-import { COLORS } from '../../constants/Colors';
+import RecipeDetail from '@/components/RecipeDetail';
+import { COLORS } from '@/constants/Colors';
 import {
   RECIPES,
   formatTime,
   getTotalTime,
   DIFFICULTY_LABELS,
-} from '../../constants/recipes';
+} from '@/constants/recipes';
 import {
   scoreAndFilterRecipes,
   getNearMisses,
   type UserSelection,
-} from '../../utils/matching';
+} from '@/utils/matching';
 import {
   buildRound,
   pickVibePrompt,
@@ -48,9 +47,9 @@ import {
   VIBE_OPTIONS,
   type QuizQuestion,
   type QuizOption,
-} from '../../data/quizQuestions';
-import { useApp } from '../../context/AppContext';
-import type { GameMode, Vibe, ScoredRecipe } from '../../types';
+} from '@/data/quizQuestions';
+import { useApp } from '@/context/AppContext';
+import type { GameMode, Vibe, ScoredRecipe } from '@/types';
 
 type Screen = 'mode' | 'quiz' | 'vibe' | 'result';
 
@@ -61,8 +60,8 @@ export default function ThisOrThatScreen() {
   // The tab bar floats above screen content, so every ScrollView has to
   // pad past it or the last rows sit underneath and can't be reached.
   // This was cutting off the bottom of the results screen.
-  const tabBarHeight = useBottomTabBarHeight();
-  const scrollPad = { paddingBottom: tabBarHeight + 32 };
+  const insets = useSafeAreaInsets();
+  const scrollPad = { paddingBottom: insets.bottom + 32 };
 
   const [screen, setScreen] = useState<Screen>('mode');
   const [mode, setMode] = useState<GameMode>('weekly');
