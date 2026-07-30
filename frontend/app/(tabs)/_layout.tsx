@@ -18,12 +18,14 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
         }}
       />
+
+      {/* Pantry Tab */}
       <Tabs.Screen
         name="pantry"
         options={{
@@ -31,6 +33,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <FontAwesome name="shopping-basket" size={22} color={color} />,
         }}
       />
+
     </Tabs>
   );
 }
