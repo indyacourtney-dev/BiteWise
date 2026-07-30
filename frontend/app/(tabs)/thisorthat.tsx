@@ -27,19 +27,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-import RecipeDetail from '../components/RecipeDetail';
-import { COLORS } from '../constants/Colors';
+import RecipeDetail from '../../components/RecipeDetail';
+import { COLORS } from '../../constants/Colors';
 import {
   RECIPES,
   formatTime,
   getTotalTime,
   DIFFICULTY_LABELS,
-} from '../constants/recipes';
+} from '../../constants/recipes';
 import {
   scoreAndFilterRecipes,
   getNearMisses,
   type UserSelection,
-} from '../utils/matching';
+} from '../../utils/matching';
 import {
   buildRound,
   pickVibePrompt,
@@ -48,9 +48,9 @@ import {
   VIBE_OPTIONS,
   type QuizQuestion,
   type QuizOption,
-} from '../data/quizQuestions';
-import { useApp } from '../context/AppContext';
-import type { GameMode, Vibe, ScoredRecipe } from '../types';
+} from '../../data/quizQuestions';
+import { useApp } from '../../context/AppContext';
+import type { GameMode, Vibe, ScoredRecipe } from '../../types';
 
 type Screen = 'mode' | 'quiz' | 'vibe' | 'result';
 
