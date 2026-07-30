@@ -33,12 +33,12 @@ import {
   formatTime,
   getTotalTime,
   DIFFICULTY_LABELS,
-} from '../../constants/recipes';
+} from '@/constants/recipes';
 import {
   scoreAndFilterRecipes,
   getNearMisses,
   type UserSelection,
-} from '../../utils/matching';
+} from '@/utils/matching';
 import {
   buildRound,
   pickVibePrompt,
@@ -47,9 +47,9 @@ import {
   VIBE_OPTIONS,
   type QuizQuestion,
   type QuizOption,
-} from '../../data/quizQuestions';
-import { useApp } from '../../context/AppContext';
-import type { GameMode, Vibe, ScoredRecipe } from '../../types';
+} from '@/data/quizQuestions';
+import { useApp } from '@/context/AppContext';
+import type { GameMode, Vibe, ScoredRecipe } from '@/types';
 
 type Screen = 'mode' | 'quiz' | 'vibe' | 'result';
 
@@ -57,9 +57,9 @@ export default function ThisOrThatScreen() {
   const router = useRouter();
   const { preferences, pantry, toggleFavorite, isFavorite, recordQuizRun } = useApp();
 
-  // This screen lives on the root Stack (full-screen, no tab bar), so
-  // useBottomTabBarHeight() would throw here. Pad past the home indicator
-  // with the safe-area inset instead so the last rows stay reachable.
+  // The tab bar floats above screen content, so every ScrollView has to
+  // pad past it or the last rows sit underneath and can't be reached.
+  // This was cutting off the bottom of the results screen.
   const insets = useSafeAreaInsets();
   const scrollPad = { paddingBottom: insets.bottom + 32 };
 

@@ -6,10 +6,10 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { COLORS } from '../constants/Colors';
-import { homeStyles } from '../styles/homeStyles';
-import { useApp } from '../context/AppContext';
-import { useAuth } from '../context/AuthContext';
+import { COLORS } from '@/constants/Colors';
+import { homeStyles } from '@/styles/homeStyles';
+import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 
 // Header section with greeting, brand label, and sign-out
 const HeaderSection = ({
@@ -129,8 +129,8 @@ export default function Home() {
 
   // Prefer the name they typed in onboarding, fall back to their
   // account username, then a friendly generic.
-  const userName =
-  preferences.name?.trim() || user?.user_metadata?.username || 'there';
+  const userName = preferences.name?.trim() || user?.user_metadata?.username || 'there';
+
   return (
     <SafeAreaView style={homeStyles.safeArea} edges={['top']}>
       <View style={homeStyles.topDiagonalBackground} />

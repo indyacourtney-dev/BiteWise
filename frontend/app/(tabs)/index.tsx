@@ -129,7 +129,7 @@ export default function Home() {
 
   // Prefer the name they typed in onboarding, fall back to their
   // account username, then a friendly generic.
-  const userName = preferences.name?.trim() || user?.username || 'there';
+  const userName = preferences.name?.trim() || user?.user_metadata?.username || 'there';
 
   return (
     <SafeAreaView style={homeStyles.safeArea} edges={['top']}>
