@@ -86,6 +86,7 @@ function RootLayoutNav() {
               <Stack.Screen name="randomMeal" />
               <Stack.Screen name="cookWithPantry" />
               <Stack.Screen name="thisorthat" />
+              <Stack.Screen name="planWeek" />
               <Stack.Screen name="recipe/[id]" />
             </Stack>
           </AuthAndOnboardingGate>

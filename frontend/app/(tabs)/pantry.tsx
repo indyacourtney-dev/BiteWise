@@ -109,21 +109,25 @@ export default function PantryScreen() {
           )}
         </View>
 
-        {/* Cook with pantry shortcut */}
-        {pantry.length > 0 && (
-          <TouchableOpacity
-            style={styles.cookBanner}
-            activeOpacity={0.9}
-            onPress={() => router.push('/cookWithPantry')}
-          >
-            <Text style={styles.cookEmoji}>👩‍🍳</Text>
-            <View style={styles.flex1}>
-              <Text style={styles.cookTitle}>Cook with my pantry</Text>
-              <Text style={styles.cookSub}>See meals you can make with these items</Text>
-            </View>
-            <FontAwesome name="chevron-right" size={14} color={COLORS.darkNavy} />
-          </TouchableOpacity>
-        )}
+        {/* Cook with pantry — this is THE way into pantry cooking now that
+            it no longer lives inside the This or That flow. Always visible;
+            the subtitle nudges empty pantries toward adding items first. */}
+        <TouchableOpacity
+          style={styles.cookBanner}
+          activeOpacity={0.9}
+          onPress={() => router.push('/cookWithPantry')}
+        >
+          <Text style={styles.cookEmoji}>👩‍🍳</Text>
+          <View style={styles.flex1}>
+            <Text style={styles.cookTitle}>Cook with my pantry</Text>
+            <Text style={styles.cookSub}>
+              {pantry.length > 0
+                ? 'See meals you can make with these items'
+                : 'Add a few items below, then see what you can make'}
+            </Text>
+          </View>
+          <FontAwesome name="chevron-right" size={14} color={COLORS.darkNavy} />
+        </TouchableOpacity>
 
         {/* Add custom item */}
         <Text style={styles.sectionLabel}>Add an item</Text>

@@ -60,7 +60,9 @@ const FeaturedGameCard = ({ onStartGame }: { onStartGame: () => void }) => (
 
     <Text style={homeStyles.heroTitle}>Can't Decide?</Text>
     <Text style={homeStyles.heroTitleHighlight}>Play "This or That!"</Text>
-    <Text style={homeStyles.heroSubtitle}>Quick game to find your current craving</Text>
+    <Text style={homeStyles.heroSubtitle}>
+      Pick between two dishes, 3 rounds max — we'll find your craving
+    </Text>
 
     <TouchableOpacity style={homeStyles.heroButton} activeOpacity={0.8} onPress={onStartGame}>
       <Text style={homeStyles.heroButtonText}>Start Game</Text>
@@ -176,6 +178,26 @@ export default function Home() {
             onPress={() => router.push('/randomMeal')}
           />
         </View>
+
+        {/* Plan for the Week — the question quiz, shop-for-it mode */}
+        <TouchableOpacity
+          style={homeStyles.planWeekCard}
+          activeOpacity={0.85}
+          onPress={() => router.push('/planWeek')}
+        >
+          <View style={homeStyles.planWeekIconCircle}>
+            <MaterialCommunityIcons name="calendar-week" size={26} color={COLORS.darkNavy} />
+          </View>
+          <View style={homeStyles.planWeekTextWrap}>
+            <Text style={homeStyles.planWeekTitle}>Plan for the Week</Text>
+            <Text style={homeStyles.planWeekSubtitle}>
+              Answer a few quick questions and get a meal worth shopping for
+            </Text>
+          </View>
+          <View style={homeStyles.planWeekArrowCircle}>
+            <Ionicons name="arrow-forward" size={18} color={COLORS.cardWhite} />
+          </View>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

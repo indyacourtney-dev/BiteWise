@@ -1,5 +1,5 @@
 
-export type GameMode = 'pantry' | 'weekly';
+export type GameMode = 'pantry' | 'weekly' | 'thisorthat';
 export type Category = 'protein' | 'carb' | 'greens';
 export type Vibe = 'spicy' | 'savory' | 'sweet';
 
