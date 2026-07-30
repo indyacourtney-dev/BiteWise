@@ -102,7 +102,7 @@ function AuthAndOnboardingGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (initializing) return;
-    const inAuth = segments[0] === 'auth';
+   if (!inAuth) router.replace('/auth');
     const inOnboarding = segments[0] === 'onboarding';
 
     // Defer one tick: on cold launch this effect can run before the root
