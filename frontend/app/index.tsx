@@ -9,9 +9,16 @@ import { useRouter } from 'expo-router';
 import { COLORS } from '../constants/Colors';
 import { homeStyles } from '../styles/homeStyles';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 
-// Header section with greeting and brand label
-const HeaderSection = ({ userName }: { userName: string }) => (
+// Header section with greeting, brand label, and sign-out
+const HeaderSection = ({
+  userName,
+  onSignOut,
+}: {
+  userName: string;
+  onSignOut: () => void;
+}) => (
   <View style={homeStyles.headerContainer}>
     <View style={homeStyles.greetingRow}>
       <View style={homeStyles.waveIconContainer}>
@@ -21,6 +28,24 @@ const HeaderSection = ({ userName }: { userName: string }) => (
         <Text style={homeStyles.greetingTitle}>Hey {userName}!</Text>
         <Text style={homeStyles.greetingSubtitle}>What's the vibe for dinner?</Text>
       </View>
+      {/* Sign out lives on Home so it's always one tap away. The auth
+          gate notices the dropped session and returns to the login. */}
+      <TouchableOpacity
+        onPress={onSignOut}
+        activeOpacity={0.7}
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: COLORS.cardWhite,
+          borderWidth: 1,
+          borderColor: COLORS.borderLight,
+        }}
+      >
+        <Ionicons name="log-out-outline" size={20} color={COLORS.darkNavy} />
+      </TouchableOpacity>
     </View>
     <Text style={homeStyles.brandLogo}>BiteWise</Text>
   </View>
@@ -96,14 +121,16 @@ const QuickDeciderCard: React.FC<QuickDeciderCardProps> = ({
 export default function Home() {
   const router = useRouter();
   const { preferences } = useApp();
+  const { user, signOut } = useAuth();
 
   // The tab bar floats over screen content, so the scroll has to pad past
   // it or the last cards sit underneath it and can't be reached.
   const tabBarHeight = useBottomTabBarHeight();
 
-  // Falls back to a friendly generic until the user sets a name in prefs.
-  const userName = preferences.name?.trim() || 'there';
-
+  // Prefer the name they typed in onboarding, fall back to their
+  // account username, then a friendly generic.
+const userName =
+  preferences.name?.trim() || user?.user_metadata?.username || 'there';
   return (
     <SafeAreaView style={homeStyles.safeArea} edges={['top']}>
       <View style={homeStyles.topDiagonalBackground} />
@@ -112,7 +139,7 @@ export default function Home() {
         contentContainerStyle={[homeStyles.scrollContent, { paddingBottom: tabBarHeight + 32 }]}
         showsVerticalScrollIndicator={false}
       >
-        <HeaderSection userName={userName} />
+        <HeaderSection userName={userName} onSignOut={signOut} />
 
         {/* Start Game -> the quiz, not the pantry */}
         <FeaturedGameCard onStartGame={() => router.push('/thisorthat')} />

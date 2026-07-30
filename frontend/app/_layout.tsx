@@ -102,7 +102,7 @@ function AuthAndOnboardingGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (initializing) return;
-   if (!inAuth) router.replace('/auth');
+   const inAuth = segments[0] === 'auth';
     const inOnboarding = segments[0] === 'onboarding';
 
     // Defer one tick: on cold launch this effect can run before the root
@@ -110,7 +110,7 @@ function AuthAndOnboardingGate({ children }: { children: React.ReactNode }) {
     // "Attempted to navigate before mounting the Root Layout component."
     const t = setTimeout(() => {
       if (!user) {
-        if (!inAuth) router.replace('/auth');
+        const inAuth = segments[0] === 'auth';
         return;
       }
       if (!hydrated) return; // account data still loading from storage
