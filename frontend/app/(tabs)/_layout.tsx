@@ -1,8 +1,8 @@
 // app/(tabs)/_layout.tsx — the bottom tab bar: Home + Pantry.
-import React from 'react';
-import { Tabs } from 'expo-router';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { COLORS } from '@/constants/Colors';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Tabs } from 'expo-router';
+import React from 'react';
 
 export default function TabLayout() {
   return (
@@ -18,7 +18,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="home"
+        name="index"
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
