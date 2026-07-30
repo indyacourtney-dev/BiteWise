@@ -1,13 +1,4 @@
-// app/_layout.tsx
-//
-// ROOT layout. This is a Stack, not a Tabs.
-//
-// Correct structure:
-//   app/_layout.tsx          → Stack (this file) — providers, fonts, splash
-//   app/(tabs)/_layout.tsx   → Tabs — the bottom bar
-//   app/(tabs)/index.tsx     → Home, and the very first screen in Expo Go
-//
-// Fonts load here once for the whole app.
+// app/_layout.tsx — ROOT layout (Stack). Providers, fonts, splash, auth gate.
 
 import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -28,6 +19,7 @@ import {
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AppProvider, useApp } from '@/context/AppContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -66,45 +58,72 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <AppProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <OnboardingGate>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-            <Stack.Screen name="randomMeal" />
-            <Stack.Screen name="recipe/[id]" />
-            <Stack.Screen
-              name="modal"
-              options={{ presentation: 'modal', headerShown: true, title: 'About BiteWise' }}
-            />
-          </Stack>
-        </OnboardingGate>
-      </ThemeProvider>
-    </AppProvider>
+    <AuthProvider>
+      <AppProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <AuthAndOnboardingGate>
+            {/*
+              Only declare screens that need custom options.
+              Every file/folder in app/ is auto-registered by Expo Router,
+              so randomMeal and recipe/[id] don't need entries here —
+              declaring routes whose files don't exist is what produced
+              the "No route named X exists" warnings.
+            */}
+            <Stack screenOptions={{ headerShown: false }}>
+              {/* auth ⇄ onboarding ⇄ tabs are replace() redirects from the
+                  gate, so they fade — a sideways push animation looks wrong
+                  for "you've been rerouted". */}
+              <Stack.Screen
+                name="auth"
+                options={{ gestureEnabled: false, animation: 'fade' }}
+              />
+              <Stack.Screen
+                name="onboarding"
+                options={{ gestureEnabled: false, animation: 'fade' }}
+              />
+              <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+              {/* Pushed screens keep the default slide-from-right + swipe back. */}
+              <Stack.Screen name="randomMeal" />
+              <Stack.Screen name="thisorthat" />
+              <Stack.Screen name="recipe/[id]" />
+            </Stack>
+          </AuthAndOnboardingGate>
+        </ThemeProvider>
+      </AppProvider>
+    </AuthProvider>
   );
 }
 
-/**
- * First-launch redirect. Once saved state has loaded (`hydrated`), any
- * user who hasn't finished setup gets sent to /onboarding; a user who
- * HAS finished can never wander back into it.
- */
-function OnboardingGate({ children }: { children: React.ReactNode }) {
+function AuthAndOnboardingGate({ children }: { children: React.ReactNode }) {
+  const { user, initializing } = useAuth();
   const { hydrated, hasOnboarded } = useApp();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (initializing) return;
+    const inAuth = segments[0] === 'auth';
     const inOnboarding = segments[0] === 'onboarding';
 
-    if (!hasOnboarded && !inOnboarding) {
-      router.replace('/onboarding');
-    } else if (hasOnboarded && inOnboarding) {
-      router.replace('/');
-    }
-  }, [hydrated, hasOnboarded, segments, router]);
+    // Defer one tick: on cold launch this effect can run before the root
+    // navigator has mounted, and calling replace() that early throws
+    // "Attempted to navigate before mounting the Root Layout component."
+    const t = setTimeout(() => {
+      if (!user) {
+        if (!inAuth) router.replace('/auth');
+        return;
+      }
+      if (!hydrated) return; // account data still loading from storage
+
+      if (!hasOnboarded && !inOnboarding) {
+        router.replace('/onboarding');
+      } else if (hasOnboarded && (inAuth || inOnboarding)) {
+        router.replace('/');
+      }
+    }, 0);
+
+    return () => clearTimeout(t);
+  }, [initializing, user, hydrated, hasOnboarded, segments, router]);
 
   return <>{children}</>;
 }
