@@ -84,6 +84,7 @@ function RootLayoutNav() {
               <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
               {/* Pushed screens keep the default slide-from-right + swipe back. */}
               <Stack.Screen name="randomMeal" />
+              <Stack.Screen name="cookWithPantry" />
               <Stack.Screen name="thisorthat" />
               <Stack.Screen name="recipe/[id]" />
             </Stack>

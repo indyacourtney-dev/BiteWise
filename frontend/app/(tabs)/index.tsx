@@ -159,8 +159,8 @@ export default function Home() {
             bgColor={COLORS.lightYellow}
             buttonBgColor={COLORS.goldYellow}
             buttonIconColor={COLORS.darkNavy}
-            borderColor="#FBE396"
-            onPress={() => router.push('/pantry')}
+            borderColor="#EDE28A"
+            onPress={() => router.push('/cookWithPantry')}
           />
 
           <Text style={homeStyles.orDividerText}>OR</Text>

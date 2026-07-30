@@ -1,20 +1,18 @@
 // app/onboarding.tsx
 //
-// First-launch setup. Four quick steps:
-//   1. Welcome + name
-//   2. "What do you enjoy?" — taste chips that map to recipe tags
-//   3. Dietary needs & allergies (hard filters)
-//   4. All set
+// First-launch setup for each NEW ACCOUNT (storage is per-user now, so
+// every fresh account goes through this once). Seven detailed steps:
 //
-// Only shows once: completing it flips `hasOnboarded` in AppContext,
-// which persists to AsyncStorage. The gate in app/_layout.tsx redirects
-// here on first launch and never again after.
+//   0. Name + household size        → greeting, portion context
+//   1. Dietary lifestyle            → hard filter in matching
+//   2. Allergies & must-avoids      → hard filter, safety-critical
+//   3. Cuisines you love            → soft signal
+//   4. Foods & flavors you enjoy    → soft signal (favoriteTags)
+//   5. Foods you'd rather skip      → soft signal (dislikedTags)
+//   6. Spice, skill & time          → tunes recommendations
 //
-// Design choice: tastes are MULTI-select and completely skippable. This
-// step tunes recommendations (tie-breaks + Surprise Me weighting); it
-// never locks anything out. Allergies, by contrast, are hard exclusions
-// downstream in the matching engine — which is exactly why both live in
-// setup: one personalizes, the other protects.
+// Soft signals steer quiz tie-breaks and the Surprise Me randomizer.
+// Hard filters (diet + allergens) exclude recipes outright.
 
 import React, { useMemo, useState } from 'react';
 import {
@@ -33,14 +31,13 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { COLORS } from '../constants/Colors';
 import { useApp } from '../context/AppContext';
-import type { Allergen, DietaryTag } from '../types';
+import type { Allergen, DietaryTag, Difficulty } from '../types';
 
 // ============================================
-// TASTE OPTIONS — each maps to recipe tags
+// OPTIONS
 // ============================================
-// Keep tag strings aligned with constants/recipes.ts. A chip can carry
-// several tags so one honest answer ("I love tacos") lights up every
-// handheld recipe, not just ones literally tagged "taco".
+// Taste chips map to recipe tags in constants/recipes.ts. One chip can
+// carry several tags so an honest answer lights up every related recipe.
 
 interface TasteOption {
   id: string;
@@ -81,10 +78,10 @@ const TASTE_OPTIONS: TasteOption[] = [
   { id: 'hearty', label: 'Big hearty portions', emoji: '💪', tags: ['hearty', 'portion-large'] },
 ];
 
-const DIETARY_OPTIONS: { key: DietaryTag; label: string; emoji: string }[] = [
-  { key: 'vegetarian', label: 'Vegetarian', emoji: '🥕' },
-  { key: 'vegan', label: 'Vegan', emoji: '🌱' },
-  { key: 'pescatarian', label: 'Pescatarian', emoji: '🐟' },
+const DIETARY_OPTIONS: { key: DietaryTag; label: string; emoji: string; hint?: string }[] = [
+  { key: 'vegetarian', label: 'Vegetarian', emoji: '🥕', hint: 'No meat or fish' },
+  { key: 'vegan', label: 'Vegan', emoji: '🌱', hint: 'No animal products' },
+  { key: 'pescatarian', label: 'Pescatarian', emoji: '🐟', hint: 'Fish yes, meat no' },
   { key: 'gluten-free', label: 'Gluten-free', emoji: '🌾' },
   { key: 'dairy-free', label: 'Dairy-free', emoji: '🥛' },
   { key: 'high-protein', label: 'High-protein', emoji: '💪' },
@@ -95,22 +92,63 @@ const DIETARY_OPTIONS: { key: DietaryTag; label: string; emoji: string }[] = [
   { key: 'paleo', label: 'Paleo', emoji: '🦴' },
 ];
 
-const ALLERGEN_OPTIONS: { key: Allergen; label: string }[] = [
-  { key: 'nuts', label: 'Tree nuts' },
-  { key: 'peanuts', label: 'Peanuts' },
-  { key: 'shellfish', label: 'Shellfish' },
-  { key: 'fish', label: 'Fish' },
-  { key: 'eggs', label: 'Eggs' },
-  { key: 'dairy', label: 'Dairy' },
-  { key: 'soy', label: 'Soy' },
-  { key: 'gluten', label: 'Gluten' },
-  { key: 'sesame', label: 'Sesame' },
-  { key: 'mustard', label: 'Mustard' },
-  { key: 'coconut', label: 'Coconut' },
-  { key: 'corn', label: 'Corn' },
+const ALLERGEN_OPTIONS: { key: Allergen; label: string; emoji: string }[] = [
+  { key: 'peanuts', label: 'Peanuts', emoji: '🥜' },
+  { key: 'nuts', label: 'Tree nuts', emoji: '🌰' },
+  { key: 'shellfish', label: 'Shellfish', emoji: '🦐' },
+  { key: 'fish', label: 'Fish', emoji: '🐟' },
+  { key: 'eggs', label: 'Eggs', emoji: '🥚' },
+  { key: 'dairy', label: 'Dairy', emoji: '🥛' },
+  { key: 'soy', label: 'Soy', emoji: '🫛' },
+  { key: 'gluten', label: 'Gluten / wheat', emoji: '🌾' },
+  { key: 'sesame', label: 'Sesame', emoji: '🫓' },
+  { key: 'mustard', label: 'Mustard', emoji: '🟡' },
+  { key: 'coconut', label: 'Coconut', emoji: '🥥' },
+  { key: 'corn', label: 'Corn', emoji: '🌽' },
 ];
 
-const TOTAL_STEPS = 4;
+const CUISINE_OPTIONS: { id: string; label: string; emoji: string }[] = [
+  { id: 'american', label: 'American', emoji: '🍔' },
+  { id: 'italian', label: 'Italian', emoji: '🍕' },
+  { id: 'mexican', label: 'Mexican', emoji: '🌮' },
+  { id: 'chinese', label: 'Chinese', emoji: '🥡' },
+  { id: 'japanese', label: 'Japanese', emoji: '🍣' },
+  { id: 'thai', label: 'Thai', emoji: '🍜' },
+  { id: 'indian', label: 'Indian', emoji: '🍛' },
+  { id: 'mediterranean', label: 'Mediterranean', emoji: '🫒' },
+  { id: 'middle-eastern', label: 'Middle Eastern', emoji: '🧆' },
+  { id: 'korean', label: 'Korean', emoji: '🍲' },
+  { id: 'caribbean', label: 'Caribbean', emoji: '🏝️' },
+  { id: 'soul', label: 'Southern / Soul', emoji: '🍗' },
+];
+
+const SPICE_OPTIONS: { key: 'mild' | 'medium' | 'hot'; label: string; emoji: string; hint: string }[] = [
+  { key: 'mild', label: 'Mild', emoji: '😌', hint: 'Keep it gentle' },
+  { key: 'medium', label: 'Medium', emoji: '🌶️', hint: 'Some kick is good' },
+  { key: 'hot', label: 'Hot', emoji: '🔥', hint: 'Bring the heat' },
+];
+
+const SKILL_OPTIONS: { key: Difficulty; label: string; emoji: string; hint: string }[] = [
+  { key: 'easy', label: 'Beginner', emoji: '🥄', hint: 'Simple steps, few pans' },
+  { key: 'medium', label: 'Comfortable', emoji: '🍳', hint: 'Happy to follow a real recipe' },
+  { key: 'hard', label: 'Confident', emoji: '👨‍🍳', hint: 'Bring on the technique' },
+];
+
+const TIME_OPTIONS: { key: number | null; label: string }[] = [
+  { key: 15, label: '15 min' },
+  { key: 30, label: '30 min' },
+  { key: 45, label: '45 min' },
+  { key: null, label: 'No limit' },
+];
+
+const HOUSEHOLD_OPTIONS: { key: number; label: string }[] = [
+  { key: 1, label: 'Just me' },
+  { key: 2, label: '2 people' },
+  { key: 4, label: '3–4' },
+  { key: 6, label: '5+' },
+];
+
+const TOTAL_STEPS = 7;
 
 // ============================================
 // SCREEN
@@ -122,32 +160,57 @@ export default function OnboardingScreen() {
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState(preferences.name ?? '');
-  const [tastes, setTastes] = useState<Set<string>>(new Set());
+  const [household, setHousehold] = useState<number>(preferences.householdSize ?? 2);
   const [dietary, setDietary] = useState<Set<DietaryTag>>(new Set(preferences.dietary));
   const [allergens, setAllergens] = useState<Set<Allergen>>(new Set(preferences.avoidAllergens));
+  const [cuisines, setCuisines] = useState<Set<string>>(new Set(preferences.cuisines));
+  const [loves, setLoves] = useState<Set<string>>(new Set());
+  const [dislikes, setDislikes] = useState<Set<string>>(new Set());
+  const [spice, setSpice] = useState<'mild' | 'medium' | 'hot' | null>(preferences.spiceTolerance);
+  const [skill, setSkill] = useState<Difficulty | null>(preferences.preferredDifficulty);
+  const [maxTime, setMaxTime] = useState<number | null>(preferences.maxCookMinutes);
 
-  const toggle = <T,>(set: Set<T>, value: T, update: (s: Set<T>) => void) => {
+  const toggle = <T,>(set: Set<T>, setter: (s: Set<T>) => void, v: T) => {
     const next = new Set(set);
-    next.has(value) ? next.delete(value) : next.add(value);
-    update(next);
+    next.has(v) ? next.delete(v) : next.add(v);
+    setter(next);
   };
 
-  const favoriteTags = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          TASTE_OPTIONS.filter(t => tastes.has(t.id)).flatMap(t => t.tags)
-        )
-      ),
-    [tastes]
-  );
+  // A food can't be loved and avoided at once — picking on one screen
+  // clears it from the other.
+  const toggleLove = (id: string) => {
+    toggle(loves, setLoves, id);
+    if (dislikes.has(id)) toggle(dislikes, setDislikes, id);
+  };
+  const toggleDislike = (id: string) => {
+    toggle(dislikes, setDislikes, id);
+    if (loves.has(id)) toggle(loves, setLoves, id);
+  };
+
+  const favoriteTags = useMemo(() => {
+    const t = new Set<string>();
+    TASTE_OPTIONS.filter(o => loves.has(o.id)).forEach(o => o.tags.forEach(x => t.add(x)));
+    return Array.from(t);
+  }, [loves]);
+
+  const dislikedTags = useMemo(() => {
+    const t = new Set<string>();
+    TASTE_OPTIONS.filter(o => dislikes.has(o.id)).forEach(o => o.tags.forEach(x => t.add(x)));
+    return Array.from(t);
+  }, [dislikes]);
 
   const finish = () => {
     updatePreferences({
       name: name.trim(),
-      favoriteTags,
+      householdSize: household,
       dietary: Array.from(dietary),
       avoidAllergens: Array.from(allergens),
+      cuisines: Array.from(cuisines),
+      favoriteTags,
+      dislikedTags,
+      spiceTolerance: spice,
+      preferredDifficulty: skill,
+      maxCookMinutes: maxTime,
     });
     completeOnboarding();
     router.replace('/');
@@ -156,13 +219,30 @@ export default function OnboardingScreen() {
   const next = () => (step < TOTAL_STEPS - 1 ? setStep(step + 1) : finish());
   const back = () => step > 0 && setStep(step - 1);
 
+  // Steps where skipping is fine (soft signals). Diet/allergy steps keep
+  // a "None apply" feel via just tapping Continue with nothing selected.
+  const skippable = step >= 3 && step <= 5;
+
+  const ctaLabel = () => {
+    switch (step) {
+      case 0: return 'Get started';
+      case 1: return dietary.size > 0 ? `Continue (${dietary.size} selected)` : 'No restrictions — continue';
+      case 2: return allergens.size > 0 ? `Continue (${allergens.size} selected)` : 'No allergies — continue';
+      case 3: return cuisines.size > 0 ? `Continue (${cuisines.size} picked)` : 'Continue';
+      case 4: return loves.size > 0 ? `Continue (${loves.size} picked)` : 'Continue';
+      case 5: return dislikes.size > 0 ? `Continue (${dislikes.size} to avoid)` : 'Continue';
+      case 6: return "Let's eat";
+      default: return 'Continue';
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.flex1}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* PROGRESS DOTS */}
+        {/* PROGRESS */}
         <View style={styles.header}>
           {step > 0 ? (
             <TouchableOpacity onPress={back} style={styles.backBtn} activeOpacity={0.7}>
@@ -184,13 +264,13 @@ export default function OnboardingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ============ STEP 1 — WELCOME + NAME ============ */}
+          {/* ===== STEP 0 — NAME + HOUSEHOLD ===== */}
           {step === 0 && (
             <View>
               <Text style={styles.brand}>BiteWise</Text>
               <Text style={styles.h1}>Let's set you up 👋</Text>
               <Text style={styles.sub}>
-                Thirty seconds of questions so every recommendation actually fits you.
+                A minute of questions so every recommendation actually fits you.
                 You can change all of this later.
               </Text>
 
@@ -203,40 +283,51 @@ export default function OnboardingScreen() {
                 placeholderTextColor={COLORS.inactiveGray}
                 autoCapitalize="words"
                 autoCorrect={false}
-                returnKeyType="done"
-                onSubmitEditing={next}
               />
+
+              <Text style={styles.fieldLabel}>Who are you usually cooking for?</Text>
+              <View style={styles.segmentRow}>
+                {HOUSEHOLD_OPTIONS.map(o => (
+                  <TouchableOpacity
+                    key={o.key}
+                    style={[styles.segment, household === o.key && styles.segmentOn]}
+                    onPress={() => setHousehold(o.key)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.segmentText, household === o.key && styles.segmentTextOn]}>
+                      {o.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           )}
 
-          {/* ============ STEP 2 — TASTES ============ */}
+          {/* ===== STEP 1 — DIETARY ===== */}
           {step === 1 && (
             <View>
-              <Text style={styles.h1}>What do you enjoy{name.trim() ? `, ${name.trim()}` : ''}?</Text>
+              <Text style={styles.h1}>Any dietary lifestyle?</Text>
               <Text style={styles.sub}>
-                Pick as many as you like. We'll lean your recommendations toward these —
-                nothing gets hidden.
+                We'll only show recipes that fit. Pick all that apply — or none.
               </Text>
-
               <View style={styles.chipGrid}>
-                {TASTE_OPTIONS.map(opt => {
-                  const on = tastes.has(opt.id);
+                {DIETARY_OPTIONS.map(o => {
+                  const on = dietary.has(o.key);
                   return (
                     <TouchableOpacity
-                      key={opt.id}
-                      style={[styles.tasteChip, on && styles.tasteChipOn]}
+                      key={o.key}
+                      style={[styles.smallChip, on && styles.smallChipOn]}
+                      onPress={() => toggle(dietary, setDietary, o.key)}
                       activeOpacity={0.8}
-                      onPress={() => toggle(tastes, opt.id, setTastes)}
                     >
-                      <Text style={styles.tasteEmoji}>{opt.emoji}</Text>
-                      <Text style={[styles.tasteLabel, on && styles.tasteLabelOn]}>
-                        {opt.label}
-                      </Text>
-                      {on && (
-                        <View style={styles.check}>
-                          <FontAwesome name="check" size={9} color={COLORS.cardWhite} />
-                        </View>
-                      )}
+                      <Text style={styles.smallChipEmoji}>{o.emoji}</Text>
+                      <View style={styles.chipTextWrap}>
+                        <Text style={[styles.smallChipText, on && styles.smallChipTextOn]}>
+                          {o.label}
+                        </Text>
+                        {o.hint ? <Text style={styles.chipHint}>{o.hint}</Text> : null}
+                      </View>
+                      {on && <FontAwesome name="check" size={12} color={COLORS.cardWhite} style={styles.check} />}
                     </TouchableOpacity>
                   );
                 })}
@@ -244,48 +335,29 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ============ STEP 3 — DIETARY + ALLERGIES ============ */}
+          {/* ===== STEP 2 — ALLERGIES ===== */}
           {step === 2 && (
             <View>
-              <Text style={styles.h1}>Any dietary needs?</Text>
+              <Text style={styles.h1}>Allergies or must-avoids? 🚫</Text>
               <Text style={styles.sub}>
-                These are strict — we'll never show a recipe that breaks them.
+                This one matters most — anything you select is completely
+                excluded from every recommendation, quiz result, and Surprise Me.
               </Text>
-
-              <Text style={styles.fieldLabel}>I eat…</Text>
               <View style={styles.chipGrid}>
-                {DIETARY_OPTIONS.map(opt => {
-                  const on = dietary.has(opt.key);
+                {ALLERGEN_OPTIONS.map(o => {
+                  const on = allergens.has(o.key);
                   return (
                     <TouchableOpacity
-                      key={opt.key}
-                      style={[styles.smallChip, on && styles.smallChipOn]}
-                      activeOpacity={0.8}
-                      onPress={() => toggle(dietary, opt.key, setDietary)}
-                    >
-                      <Text style={styles.smallChipEmoji}>{opt.emoji}</Text>
-                      <Text style={[styles.smallChipText, on && styles.smallChipTextOn]}>
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Text style={[styles.fieldLabel, { marginTop: 28 }]}>Allergies to avoid</Text>
-              <View style={styles.chipGrid}>
-                {ALLERGEN_OPTIONS.map(opt => {
-                  const on = allergens.has(opt.key);
-                  return (
-                    <TouchableOpacity
-                      key={opt.key}
+                      key={o.key}
                       style={[styles.smallChip, on && styles.allergenChipOn]}
+                      onPress={() => toggle(allergens, setAllergens, o.key)}
                       activeOpacity={0.8}
-                      onPress={() => toggle(allergens, opt.key, setAllergens)}
                     >
+                      <Text style={styles.smallChipEmoji}>{o.emoji}</Text>
                       <Text style={[styles.smallChipText, on && styles.allergenChipTextOn]}>
-                        {opt.label}
+                        {o.label}
                       </Text>
+                      {on && <FontAwesome name="ban" size={12} color={COLORS.cardWhite} style={styles.check} />}
                     </TouchableOpacity>
                   );
                 })}
@@ -293,23 +365,152 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ============ STEP 4 — DONE ============ */}
+          {/* ===== STEP 3 — CUISINES ===== */}
           {step === 3 && (
-            <View style={styles.doneWrap}>
-              <Text style={styles.doneEmoji}>🎉</Text>
-              <Text style={styles.h1Center}>
-                You're all set{name.trim() ? `, ${name.trim()}` : ''}!
+            <View>
+              <Text style={styles.h1}>Cuisines you love 🌍</Text>
+              <Text style={styles.sub}>
+                Pick your go-tos. We'll lean toward these flavors when it's a
+                close call.
               </Text>
-              <Text style={styles.subCenter}>
-                {tastes.size > 0
-                  ? `We'll tune your picks toward the ${tastes.size} taste${
-                      tastes.size === 1 ? '' : 's'
-                    } you chose.`
-                  : "You skipped tastes — no problem, the quiz will figure you out."}
-                {'\n\n'}
-                Play "This or That" when you can't decide, or hit Surprise Me to
-                get a meal instantly.
+              <View style={styles.chipGrid}>
+                {CUISINE_OPTIONS.map(o => {
+                  const on = cuisines.has(o.id);
+                  return (
+                    <TouchableOpacity
+                      key={o.id}
+                      style={[styles.smallChip, on && styles.smallChipOn]}
+                      onPress={() => toggle(cuisines, setCuisines, o.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.smallChipEmoji}>{o.emoji}</Text>
+                      <Text style={[styles.smallChipText, on && styles.smallChipTextOn]}>
+                        {o.label}
+                      </Text>
+                      {on && <FontAwesome name="check" size={12} color={COLORS.cardWhite} style={styles.check} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* ===== STEP 4 — FOODS YOU ENJOY ===== */}
+          {step === 4 && (
+            <View>
+              <Text style={styles.h1}>What do you enjoy? 😋</Text>
+              <Text style={styles.sub}>
+                Tap everything that sounds good. The more you pick, the smarter
+                your matches get.
               </Text>
+              <View style={styles.chipGrid}>
+                {TASTE_OPTIONS.map(o => {
+                  const on = loves.has(o.id);
+                  return (
+                    <TouchableOpacity
+                      key={o.id}
+                      style={[styles.tasteChip, on && styles.tasteChipOn]}
+                      onPress={() => toggleLove(o.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.tasteEmoji}>{o.emoji}</Text>
+                      <Text style={[styles.tasteLabel, on && styles.tasteLabelOn]}>{o.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* ===== STEP 5 — FOODS TO SKIP ===== */}
+          {step === 5 && (
+            <View>
+              <Text style={styles.h1}>Anything you'd rather skip? 🙅</Text>
+              <Text style={styles.sub}>
+                Not allergies — just foods that aren't your thing. We'll steer
+                recommendations away from these.
+              </Text>
+              <View style={styles.chipGrid}>
+                {TASTE_OPTIONS.map(o => {
+                  const on = dislikes.has(o.id);
+                  const loved = loves.has(o.id);
+                  return (
+                    <TouchableOpacity
+                      key={o.id}
+                      style={[
+                        styles.tasteChip,
+                        on && styles.dislikeChipOn,
+                        loved && styles.chipDimmed,
+                      ]}
+                      onPress={() => toggleDislike(o.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.tasteEmoji}>{o.emoji}</Text>
+                      <Text style={[styles.tasteLabel, on && styles.tasteLabelOn]}>{o.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* ===== STEP 6 — SPICE, SKILL, TIME ===== */}
+          {step === 6 && (
+            <View>
+              <Text style={styles.h1}>How do you cook? 🍳</Text>
+              <Text style={styles.sub}>Last one — this tunes what we suggest.</Text>
+
+              <Text style={styles.fieldLabel}>Spice tolerance</Text>
+              <View style={styles.segmentRow}>
+                {SPICE_OPTIONS.map(o => (
+                  <TouchableOpacity
+                    key={o.key}
+                    style={[styles.segmentTall, spice === o.key && styles.segmentOn]}
+                    onPress={() => setSpice(spice === o.key ? null : o.key)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.segmentEmoji}>{o.emoji}</Text>
+                    <Text style={[styles.segmentText, spice === o.key && styles.segmentTextOn]}>
+                      {o.label}
+                    </Text>
+                    <Text style={styles.segmentHint}>{o.hint}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.fieldLabel}>Comfort in the kitchen</Text>
+              <View style={styles.segmentRow}>
+                {SKILL_OPTIONS.map(o => (
+                  <TouchableOpacity
+                    key={o.key}
+                    style={[styles.segmentTall, skill === o.key && styles.segmentOn]}
+                    onPress={() => setSkill(skill === o.key ? null : o.key)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.segmentEmoji}>{o.emoji}</Text>
+                    <Text style={[styles.segmentText, skill === o.key && styles.segmentTextOn]}>
+                      {o.label}
+                    </Text>
+                    <Text style={styles.segmentHint}>{o.hint}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.fieldLabel}>Weeknight time budget</Text>
+              <View style={styles.segmentRow}>
+                {TIME_OPTIONS.map(o => (
+                  <TouchableOpacity
+                    key={String(o.key)}
+                    style={[styles.segment, maxTime === o.key && styles.segmentOn]}
+                    onPress={() => setMaxTime(o.key)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.segmentText, maxTime === o.key && styles.segmentTextOn]}>
+                      {o.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           )}
         </ScrollView>
@@ -317,18 +518,11 @@ export default function OnboardingScreen() {
         {/* FOOTER */}
         <View style={styles.footer}>
           <TouchableOpacity style={styles.primaryBtn} onPress={next} activeOpacity={0.9}>
-            <Text style={styles.primaryBtnText}>
-              {step === 0 && 'Get started'}
-              {step === 1 && (tastes.size > 0 ? `Continue (${tastes.size} picked)` : 'Continue')}
-              {step === 2 && 'Continue'}
-              {step === 3 && "Let's eat"}
-            </Text>
-            <FontAwesome name="arrow-right" size={14} color={COLORS.cardWhite} />
+            <Text style={styles.primaryBtnText}>{ctaLabel()}</Text>
           </TouchableOpacity>
-
-          {(step === 1 || step === 2) && (
+          {skippable && (
             <TouchableOpacity style={styles.skipBtn} onPress={next} activeOpacity={0.7}>
-              <Text style={styles.skipText}>Skip for now</Text>
+              <Text style={styles.skipText}>Skip this step</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -344,67 +538,36 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   flex1: { flex: 1 },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dots: { flexDirection: 'row', gap: 8 },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.borderLight,
-  },
-  dotActive: { backgroundColor: COLORS.goldYellow, width: 22 },
+  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  dots: { flexDirection: 'row', gap: 7 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.borderLight },
+  dotActive: { backgroundColor: COLORS.darkGold, width: 20 },
 
-  scroll: { paddingHorizontal: 24, paddingBottom: 24, flexGrow: 1 },
+  scroll: { paddingHorizontal: 24, paddingBottom: 24 },
 
   brand: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: 1,
     color: COLORS.darkGold,
     textTransform: 'uppercase',
-    marginTop: 8,
+    marginBottom: 6,
   },
-  h1: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: COLORS.darkNavy,
-    marginTop: 10,
-    lineHeight: 36,
-  },
-  h1Center: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: COLORS.darkNavy,
-    textAlign: 'center',
-    lineHeight: 36,
-  },
-  sub: { fontSize: 15, color: COLORS.textMuted, marginTop: 10, lineHeight: 22, marginBottom: 24 },
-  subCenter: {
-    fontSize: 15,
-    color: COLORS.textMuted,
-    marginTop: 14,
-    lineHeight: 23,
-    textAlign: 'center',
-  },
+  h1: { fontSize: 27, fontWeight: '700', color: COLORS.darkNavy, lineHeight: 34, marginTop: 4 },
+  sub: { fontSize: 15, color: COLORS.textMuted, marginTop: 8, marginBottom: 20, lineHeight: 22 },
 
   fieldLabel: {
     fontSize: 13,
     fontWeight: '700',
     color: COLORS.darkNavy,
+    marginTop: 18,
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -415,73 +578,94 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderLight,
     borderRadius: 14,
     paddingHorizontal: 16,
-    paddingVertical: 15,
+    paddingVertical: 14,
     fontSize: 16,
     color: COLORS.darkNavy,
   },
 
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
 
-  tasteChip: {
+  // Small chips (dietary / allergens / cuisines)
+  smallChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     backgroundColor: COLORS.cardWhite,
     borderWidth: 1.5,
     borderColor: COLORS.borderLight,
-    borderRadius: 999,
-    paddingHorizontal: 14,
+    borderRadius: 14,
     paddingVertical: 10,
+    paddingHorizontal: 13,
   },
-  tasteChipOn: {
-    backgroundColor: COLORS.lightYellow,
-    borderColor: COLORS.goldYellow,
-  },
-  tasteEmoji: { fontSize: 16 },
-  tasteLabel: { fontSize: 14, fontWeight: '600', color: COLORS.darkNavy },
-  tasteLabelOn: { color: COLORS.darkGold },
-  check: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.darkGold,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  smallChipOn: { backgroundColor: COLORS.darkNavy, borderColor: COLORS.darkNavy },
+  allergenChipOn: { backgroundColor: COLORS.redAccent, borderColor: COLORS.redAccent },
+  smallChipEmoji: { fontSize: 15 },
+  chipTextWrap: { flexShrink: 1 },
+  smallChipText: { fontSize: 14, fontWeight: '600', color: COLORS.darkNavy },
+  smallChipTextOn: { color: COLORS.cardWhite },
+  allergenChipTextOn: { color: COLORS.cardWhite },
+  chipHint: { fontSize: 11, color: COLORS.textMuted, marginTop: 1 },
+  check: { marginLeft: 2 },
 
-  smallChip: {
+  // Taste chips (loves / dislikes)
+  tasteChip: {
+    width: '47.5%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 9,
     backgroundColor: COLORS.cardWhite,
     borderWidth: 1.5,
     borderColor: COLORS.borderLight,
-    borderRadius: 999,
-    paddingHorizontal: 13,
-    paddingVertical: 9,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
   },
-  smallChipOn: { backgroundColor: COLORS.lightYellow, borderColor: COLORS.goldYellow },
-  smallChipEmoji: { fontSize: 14 },
-  smallChipText: { fontSize: 13, fontWeight: '600', color: COLORS.darkNavy },
-  smallChipTextOn: { color: COLORS.darkGold },
+  tasteChipOn: { backgroundColor: COLORS.darkNavy, borderColor: COLORS.darkNavy },
+  dislikeChipOn: { backgroundColor: COLORS.redAccent, borderColor: COLORS.redAccent },
+  chipDimmed: { opacity: 0.35 },
+  tasteEmoji: { fontSize: 18 },
+  tasteLabel: { flexShrink: 1, fontSize: 13.5, fontWeight: '600', color: COLORS.darkNavy },
+  tasteLabelOn: { color: COLORS.cardWhite },
 
-  allergenChipOn: { backgroundColor: '#FDECEA', borderColor: COLORS.redAccent },
-  allergenChipTextOn: { color: COLORS.redAccent },
+  // Segments (household / spice / skill / time)
+  segmentRow: { flexDirection: 'row', gap: 9, flexWrap: 'wrap' },
+  segment: {
+    flexGrow: 1,
+    alignItems: 'center',
+    backgroundColor: COLORS.cardWhite,
+    borderWidth: 1.5,
+    borderColor: COLORS.borderLight,
+    borderRadius: 13,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+  },
+  segmentTall: {
+    flex: 1,
+    minWidth: '30%',
+    alignItems: 'center',
+    backgroundColor: COLORS.cardWhite,
+    borderWidth: 1.5,
+    borderColor: COLORS.borderLight,
+    borderRadius: 13,
+    paddingVertical: 13,
+    paddingHorizontal: 8,
+    gap: 3,
+  },
+  segmentOn: { backgroundColor: COLORS.darkNavy, borderColor: COLORS.darkNavy },
+  segmentEmoji: { fontSize: 20 },
+  segmentText: { fontSize: 13.5, fontWeight: '700', color: COLORS.darkNavy, textAlign: 'center' },
+  segmentTextOn: { color: COLORS.cardWhite },
+  segmentHint: { fontSize: 10.5, color: COLORS.textMuted, textAlign: 'center' },
 
-  doneWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 40 },
-  doneEmoji: { fontSize: 60, marginBottom: 16 },
-
-  footer: { paddingHorizontal: 24, paddingBottom: 12, paddingTop: 8 },
+  footer: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 14, gap: 4 },
   primaryBtn: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
     backgroundColor: COLORS.darkNavy,
     borderRadius: 14,
-    paddingVertical: 17,
+    paddingVertical: 16,
   },
   primaryBtnText: { color: COLORS.cardWhite, fontSize: 16, fontWeight: '700' },
-  skipBtn: { alignItems: 'center', paddingVertical: 14 },
-  skipText: { fontSize: 14, color: COLORS.textMuted, fontWeight: '600' },
+  skipBtn: { alignItems: 'center', paddingVertical: 10 },
+  skipText: { fontSize: 14, color: COLORS.darkGold, fontWeight: '700' },
 });

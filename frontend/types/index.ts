@@ -34,6 +34,15 @@ export interface PlateComposition {
   healthyFats: number;
 }
 
+/** Per-serving nutrition estimates shown in Plate Balance. */
+export interface Nutrition {
+  calories: number;
+  protein: number;    // g
+  carbs: number;      // g
+  totalFat: number;   // g
+  healthyFat: number; // g — the unsaturated share of totalFat
+}
+
 export interface Ingredient {
   name: string;
   amount: string;      // "2 cups", "1 lb"
@@ -48,6 +57,7 @@ export interface Recipe {
   tags: string[];
   vibe: Vibe;
   plate: PlateComposition;
+  nutrition: Nutrition;
 
   // Recipe details
   prepMinutes: number;
@@ -119,6 +129,13 @@ export interface UserPreferences {
    * filter — that's what dietary/allergens are for.
    */
   favoriteTags: string[];
+  /** Foods the user said they'd rather avoid — soft signal, steers
+   *  recommendations away without hard-filtering like allergens do. */
+  dislikedTags: string[];
+  /** How hot they like it. null = didn't say. */
+  spiceTolerance: 'mild' | 'medium' | 'hot' | null;
+  /** Cuisines they love (labels, e.g. "Italian"). Soft signal. */
+  cuisines: string[];
 }
 
 // ============================================

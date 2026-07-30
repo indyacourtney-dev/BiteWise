@@ -372,10 +372,9 @@ export default function ThisOrThatScreen() {
               ? "Nothing was a full match, so here's the closest fit."
               : undefined
           }
-          /* The recipe is printed in full below, but a lot of users expect a
-             button rather than a scroll. This puts the same content one tap
-             away on its own screen, right under the plate breakdown. */
-          onOpenRecipe={() => router.push(`/recipe/${meal.id}?match=${meal.matchScore}`)}
+          /* No onOpenRecipe here on purpose: the full recipe is already
+             rendered on this screen, so a button to a duplicate screen was
+             redundant. Alternates below still open their own screens. */
         />
 
         {/* OTHER OPTIONS — always visible, tap to open the full recipe */}

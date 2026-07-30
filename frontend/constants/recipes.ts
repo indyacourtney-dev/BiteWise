@@ -30,6 +30,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 48, protein: 26, carbs: 21, healthyFats: 5 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 495, protein: 39, carbs: 52, totalFat: 24, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 25,
     servings: 4,
@@ -68,6 +70,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'spicy',
     plate: { produce: 22, protein: 30, carbs: 40, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 535, protein: 46, carbs: 71, totalFat: 29, healthyFat: 11 },
     prepMinutes: 15,
     cookMinutes: 20,
     servings: 4,
@@ -106,6 +110,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 50, protein: 25, carbs: 18, healthyFats: 7 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 525, protein: 39, carbs: 48, totalFat: 31, healthyFat: 12 },
     prepMinutes: 15,
     cookMinutes: 25,
     servings: 4,
@@ -144,6 +150,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 12, protein: 26, carbs: 50, healthyFats: 12 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 685, protein: 43, carbs: 85, totalFat: 37, healthyFat: 14 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -181,6 +189,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'spicy',
     plate: { produce: 38, protein: 24, carbs: 30, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 545, protein: 38, carbs: 58, totalFat: 31, healthyFat: 12 },
     prepMinutes: 20,
     cookMinutes: 25,
     servings: 4,
@@ -221,6 +231,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 54, protein: 21, carbs: 15, healthyFats: 10 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 410, protein: 34, carbs: 45, totalFat: 24, healthyFat: 9 },
     prepMinutes: 15,
     cookMinutes: 0,
     servings: 2,
@@ -260,6 +272,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 30, protein: 34, carbs: 29, healthyFats: 7 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 650, protein: 48, carbs: 57, totalFat: 29, healthyFat: 11 },
     prepMinutes: 15,
     cookMinutes: 30,
     servings: 4,
@@ -298,6 +312,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'sweet',
     plate: { produce: 42, protein: 26, carbs: 25, healthyFats: 7 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 635, protein: 40, carbs: 54, totalFat: 28, healthyFat: 13 },
     prepMinutes: 20,
     cookMinutes: 25,
     servings: 4,
@@ -337,6 +353,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 50, protein: 22, carbs: 20, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 410, protein: 38, carbs: 46, totalFat: 18, healthyFat: 13 },
     prepMinutes: 15,
     cookMinutes: 30,
     servings: 4,
@@ -375,6 +393,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'sweet',
     plate: { produce: 46, protein: 27, carbs: 21, healthyFats: 6 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 505, protein: 40, carbs: 52, totalFat: 22, healthyFat: 16 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -414,6 +434,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 20, protein: 30, carbs: 42, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 600, protein: 48, carbs: 75, totalFat: 29, healthyFat: 11 },
     prepMinutes: 20,
     cookMinutes: 15,
     servings: 4,
@@ -455,6 +477,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 44, protein: 28, carbs: 22, healthyFats: 6 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 605, protein: 41, carbs: 53, totalFat: 26, healthyFat: 10 },
     prepMinutes: 15,
     cookMinutes: 15,
     servings: 4,
@@ -496,6 +520,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'spicy',
     plate: { produce: 44, protein: 20, carbs: 30, healthyFats: 6 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 510, protein: 34, carbs: 60, totalFat: 20, healthyFat: 10 },
     prepMinutes: 15,
     cookMinutes: 30,
     servings: 4,
@@ -536,6 +562,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 24, protein: 26, carbs: 40, healthyFats: 10 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 685, protein: 40, carbs: 70, totalFat: 32, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -576,6 +604,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'spicy',
     plate: { produce: 34, protein: 32, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 555, protein: 48, carbs: 56, totalFat: 28, healthyFat: 11 },
     prepMinutes: 20,
     cookMinutes: 90,
     servings: 6,
@@ -621,6 +651,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 42, protein: 27, carbs: 24, healthyFats: 7 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 585, protein: 40, carbs: 54, totalFat: 30, healthyFat: 11 },
     prepMinutes: 15,
     cookMinutes: 40,
     servings: 4,
@@ -660,6 +692,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'sweet',
     plate: { produce: 44, protein: 22, carbs: 27, healthyFats: 7 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 525, protein: 37, carbs: 56, totalFat: 27, healthyFat: 17 },
     prepMinutes: 20,
     cookMinutes: 25,
     servings: 4,
@@ -701,6 +735,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'spicy',
     plate: { produce: 36, protein: 26, carbs: 30, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 620, protein: 40, carbs: 61, totalFat: 32, healthyFat: 15 },
     prepMinutes: 20,
     cookMinutes: 18,
     servings: 4,
@@ -743,6 +779,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 30, protein: 18, carbs: 42, healthyFats: 10 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 605, protein: 33, carbs: 75, totalFat: 30, healthyFat: 14 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -784,6 +822,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'sweet',
     plate: { produce: 52, protein: 28, carbs: 12, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 525, protein: 38, carbs: 40, totalFat: 27, healthyFat: 13 },
     prepMinutes: 15,
     cookMinutes: 15,
     servings: 4,
@@ -826,6 +866,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'savory',
     plate: { produce: 48, protein: 20, carbs: 22, healthyFats: 10 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 480, protein: 36, carbs: 54, totalFat: 26, healthyFat: 19 },
     prepMinutes: 20,
     cookMinutes: 15,
     servings: 4,
@@ -868,6 +910,8 @@ export const RECIPES: Recipe[] = [
     ],
     vibe: 'spicy',
     plate: { produce: 34, protein: 30, carbs: 30, healthyFats: 6 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 600, protein: 44, carbs: 58, totalFat: 24, healthyFat: 12 },
     prepMinutes: 20,
     cookMinutes: 20,
     servings: 4,
@@ -905,6 +949,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beef', 'red-meat', 'grilled', 'charred', 'tender', 'juicy', 'potato', 'root-veg', 'greens', 'roasted', 'tangy', 'acidic', 'fresh', 'olive-oil', 'global', 'adventurous', 'plated', 'side', 'warm', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 32, protein: 32, carbs: 28, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 660, protein: 48, carbs: 55, totalFat: 31, healthyFat: 12 },
     prepMinutes: 15,
     cookMinutes: 30,
     servings: 4,
@@ -937,6 +983,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'juicy', 'rice', 'grain', 'greens', 'steamed', 'veggies-large', 'saucy', 'rich', 'global', 'adventurous', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 530, protein: 44, carbs: 57, totalFat: 25, healthyFat: 16 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -969,6 +1017,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'fried', 'crispy', 'tender', 'juicy', 'rice', 'grain', 'roasted', 'veggies-large', 'colorful', 'peppers', 'charred', 'spicy', 'global', 'adventurous', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 550, protein: 43, carbs: 55, totalFat: 28, healthyFat: 15 },
     prepMinutes: 15,
     cookMinutes: 20,
     servings: 4,
@@ -1001,6 +1051,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'baked', 'roasted', 'tender', 'juicy', 'potato', 'root-veg', 'greens', 'steamed', 'tangy', 'acidic', 'plated', 'side', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 37, protein: 27, carbs: 28, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 500, protein: 41, carbs: 58, totalFat: 25, healthyFat: 14 },
     prepMinutes: 10,
     cookMinutes: 35,
     servings: 4,
@@ -1032,6 +1084,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'juicy', 'rice', 'grain', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'spicy', 'rich', 'comfort', 'classic', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 575, protein: 40, carbs: 58, totalFat: 29, healthyFat: 11 },
     prepMinutes: 10,
     cookMinutes: 18,
     servings: 4,
@@ -1063,6 +1117,8 @@ export const RECIPES: Recipe[] = [
     tags: ['tofu', 'plant-based', 'vegetarian', 'fried', 'crispy', 'tender', 'juicy', 'noodles', 'pasta', 'greens', 'steamed', 'fresh', 'rich', 'creamy', 'saucy', 'global', 'adventurous', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 31, protein: 27, carbs: 34, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 565, protein: 44, carbs: 63, totalFat: 31, healthyFat: 12 },
     prepMinutes: 20,
     cookMinutes: 15,
     servings: 4,
@@ -1094,6 +1150,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'fried', 'crispy', 'tender', 'juicy', 'low-carb', 'light', 'greens', 'charred', 'roasted', 'rich', 'simple', 'comfort', 'plated', 'side', 'warm', 'portion-small', 'quick', 'easy'],
     vibe: 'savory',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 525, protein: 44, carbs: 29, totalFat: 29, healthyFat: 11 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -1122,6 +1180,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'simmered', 'saucy', 'slow-cooked', 'tender', 'rice', 'grain', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'comfort', 'classic', 'sweet', 'bowl', 'mixed-in', 'warm', 'portion-large', 'hearty', 'project'],
     vibe: 'sweet',
     plate: { produce: 34, protein: 32, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 585, protein: 48, carbs: 54, totalFat: 31, healthyFat: 12 },
     prepMinutes: 15,
     cookMinutes: 150,
     servings: 6,
@@ -1152,6 +1212,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beef', 'red-meat', 'fried', 'crispy', 'tender', 'noodles', 'pasta', 'greens', 'steamed', 'fresh', 'saucy', 'global', 'adventurous', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 31, protein: 27, carbs: 34, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 500, protein: 43, carbs: 66, totalFat: 28, healthyFat: 13 },
     prepMinutes: 15,
     cookMinutes: 15,
     servings: 4,
@@ -1184,6 +1246,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'grilled', 'charred', 'tender', 'juicy', 'quinoa', 'grain', 'whole-grain', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'tangy', 'acidic', 'light', 'simple', 'olive-oil', 'bowl', 'mixed-in', 'warm', 'portion-small', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 38, protein: 30, carbs: 24, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 440, protein: 44, carbs: 49, totalFat: 17, healthyFat: 12 },
     prepMinutes: 15,
     cookMinutes: 20,
     servings: 4,
@@ -1218,6 +1282,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'fried', 'crispy', 'tender', 'juicy', 'tortilla', 'bread', 'handheld', 'sandwich', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'tangy', 'acidic', 'global', 'adventurous', 'warm', 'portion-medium', 'balanced', 'quick', 'easy'],
     vibe: 'spicy',
     plate: { produce: 35, protein: 27, carbs: 30, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 555, protein: 43, carbs: 62, totalFat: 27, healthyFat: 17 },
     prepMinutes: 15,
     cookMinutes: 10,
     servings: 4,
@@ -1250,6 +1316,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'baked', 'roasted', 'tender', 'juicy', 'potato', 'root-veg', 'charred', 'veggies-large', 'tangy', 'acidic', 'rich', 'plated', 'side', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 450, protein: 40, carbs: 57, totalFat: 22, healthyFat: 11 },
     prepMinutes: 15,
     cookMinutes: 30,
     servings: 4,
@@ -1280,6 +1348,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'simmered', 'saucy', 'tender', 'rice', 'grain', 'greens', 'steamed', 'fresh', 'rich', 'creamy', 'global', 'adventurous', 'warm', 'mixed-in', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 440, protein: 42, carbs: 58, totalFat: 21, healthyFat: 10 },
     prepMinutes: 15,
     cookMinutes: 20,
     servings: 4,
@@ -1311,6 +1381,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'grilled', 'charred', 'tender', 'juicy', 'quinoa', 'grain', 'whole-grain', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'tangy', 'creamy', 'global', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 41, protein: 27, carbs: 24, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 465, protein: 40, carbs: 56, totalFat: 21, healthyFat: 10 },
     prepMinutes: 20,
     cookMinutes: 18,
     servings: 4,
@@ -1345,6 +1417,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'baked', 'roasted', 'tender', 'juicy', 'rice', 'grain', 'whole-grain', 'greens', 'steamed', 'veggies-large', 'saucy', 'rich', 'sweet', 'plated', 'side', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 485, protein: 42, carbs: 55, totalFat: 27, healthyFat: 17 },
     prepMinutes: 10,
     cookMinutes: 30,
     servings: 4,
@@ -1376,6 +1450,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'juicy', 'pasta', 'noodles', 'high-carb', 'greens', 'leafy', 'steamed', 'spicy', 'charred', 'global', 'adventurous', 'mixed-in', 'warm', 'bowl', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 20, protein: 32, carbs: 40, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 590, protein: 48, carbs: 72, totalFat: 25, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -1406,6 +1482,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beef', 'red-meat', 'simmered', 'saucy', 'tender', 'pasta', 'noodles', 'high-carb', 'greens', 'leafy', 'steamed', 'comfort', 'classic', 'warm', 'plated', 'side', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 20, protein: 32, carbs: 40, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 530, protein: 45, carbs: 68, totalFat: 26, healthyFat: 12 },
     prepMinutes: 15,
     cookMinutes: 25,
     servings: 4,
@@ -1437,6 +1515,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'juicy', 'pasta', 'noodles', 'high-carb', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'rich', 'cheesy', 'classic', 'mixed-in', 'warm', 'bowl', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 20, protein: 32, carbs: 40, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 530, protein: 48, carbs: 74, totalFat: 25, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -1468,6 +1548,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'baked', 'roasted', 'tender', 'juicy', 'rice', 'grain', 'greens', 'steamed', 'veggies-large', 'saucy', 'rich', 'global', 'adventurous', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 505, protein: 43, carbs: 55, totalFat: 28, healthyFat: 13 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -1500,6 +1582,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beef', 'red-meat', 'grilled', 'charred', 'tender', 'juicy', 'low-carb', 'light', 'roasted', 'veggies-large', 'colorful', 'peppers', 'tangy', 'acidic', 'fresh', 'olive-oil', 'global', 'adventurous', 'bowl', 'mixed-in', 'warm', 'portion-small', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 440, protein: 46, carbs: 31, totalFat: 17, healthyFat: 12 },
     prepMinutes: 15,
     cookMinutes: 20,
     servings: 4,
@@ -1534,6 +1618,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'juicy', 'low-carb', 'light', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'spicy', 'rich', 'comfort', 'classic', 'bowl', 'mixed-in', 'warm', 'portion-small', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 585, protein: 46, carbs: 35, totalFat: 30, healthyFat: 14 },
     prepMinutes: 10,
     cookMinutes: 16,
     servings: 4,
@@ -1565,6 +1651,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'grilled', 'charred', 'tender', 'juicy', 'tortilla', 'bread', 'handheld', 'sandwich', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'tangy', 'acidic', 'light', 'simple', 'olive-oil', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 35, protein: 27, carbs: 30, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 610, protein: 40, carbs: 57, totalFat: 29, healthyFat: 14 },
     prepMinutes: 15,
     cookMinutes: 12,
     servings: 4,
@@ -1597,6 +1685,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'baked', 'roasted', 'tender', 'juicy', 'low-carb', 'light', 'root-veg', 'colorful', 'tangy', 'acidic', 'plated', 'side', 'warm', 'portion-small', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 460, protein: 46, carbs: 33, totalFat: 22, healthyFat: 11 },
     prepMinutes: 10,
     cookMinutes: 22,
     servings: 4,
@@ -1626,6 +1716,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'simmered', 'saucy', 'tender', 'rice', 'grain', 'greens', 'leafy', 'rich', 'creamy', 'global', 'adventurous', 'warm', 'mixed-in', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 520, protein: 44, carbs: 57, totalFat: 21, healthyFat: 10 },
     prepMinutes: 10,
     cookMinutes: 22,
     servings: 4,
@@ -1657,6 +1749,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'simmered', 'saucy', 'tender', 'bread', 'bun', 'handheld', 'sandwich', 'high-carb', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'comfort', 'classic', 'sweet', 'warm', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 24, protein: 32, carbs: 36, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 600, protein: 48, carbs: 68, totalFat: 29, healthyFat: 11 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -1687,6 +1781,8 @@ export const RECIPES: Recipe[] = [
     tags: ['tofu', 'plant-based', 'vegetarian', 'fried', 'crispy', 'tender', 'rice', 'grain', 'greens', 'steamed', 'veggies-large', 'saucy', 'global', 'adventurous', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 520, protein: 42, carbs: 55, totalFat: 26, healthyFat: 17 },
     prepMinutes: 20,
     cookMinutes: 15,
     servings: 4,
@@ -1719,6 +1815,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'baked', 'roasted', 'tender', 'juicy', 'potato', 'root-veg', 'greens', 'steamed', 'tangy', 'acidic', 'fresh', 'light', 'simple', 'olive-oil', 'plated', 'side', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 37, protein: 27, carbs: 28, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 430, protein: 43, carbs: 56, totalFat: 17, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 30,
     servings: 4,
@@ -1751,6 +1849,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'simmered', 'saucy', 'tender', 'rice', 'grain', 'whole-grain', 'roasted', 'veggies-large', 'colorful', 'peppers', 'charred', 'tangy', 'acidic', 'global', 'adventurous', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 555, protein: 44, carbs: 57, totalFat: 24, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 30,
     servings: 4,
@@ -1784,6 +1884,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beef', 'red-meat', 'fried', 'crispy', 'tender', 'juicy', 'low-carb', 'light', 'roasted', 'veggies-large', 'colorful', 'peppers', 'charred', 'rich', 'simple', 'comfort', 'plated', 'side', 'warm', 'portion-small', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 510, protein: 48, carbs: 34, totalFat: 29, healthyFat: 11 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -1814,6 +1916,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'noodles', 'pasta', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'rich', 'creamy', 'saucy', 'global', 'adventurous', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 31, protein: 27, carbs: 34, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 585, protein: 44, carbs: 62, totalFat: 31, healthyFat: 12 },
     prepMinutes: 15,
     cookMinutes: 15,
     servings: 4,
@@ -1846,6 +1950,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'simmered', 'saucy', 'tender', 'quinoa', 'grain', 'whole-grain', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'tangy', 'creamy', 'global', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 41, protein: 27, carbs: 24, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 535, protein: 40, carbs: 54, totalFat: 27, healthyFat: 13 },
     prepMinutes: 10,
     cookMinutes: 30,
     servings: 4,
@@ -1880,6 +1986,8 @@ export const RECIPES: Recipe[] = [
     tags: ['tofu', 'plant-based', 'vegetarian', 'baked', 'roasted', 'tender', 'juicy', 'rice', 'grain', 'charred', 'veggies-large', 'saucy', 'rich', 'sweet', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 555, protein: 40, carbs: 55, totalFat: 27, healthyFat: 15 },
     prepMinutes: 20,
     cookMinutes: 25,
     servings: 4,
@@ -1911,6 +2019,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'fried', 'crispy', 'tender', 'juicy', 'low-carb', 'light', 'roasted', 'veggies-large', 'colorful', 'peppers', 'charred', 'spicy', 'global', 'adventurous', 'plated', 'side', 'warm', 'portion-small', 'quick', 'easy'],
     vibe: 'spicy',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 515, protein: 46, carbs: 34, totalFat: 27, healthyFat: 15 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -1943,6 +2053,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'grilled', 'charred', 'tender', 'juicy', 'pasta', 'noodles', 'high-carb', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'tangy', 'acidic', 'rich', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 25, protein: 27, carbs: 40, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 525, protein: 40, carbs: 72, totalFat: 28, healthyFat: 13 },
     prepMinutes: 15,
     cookMinutes: 20,
     servings: 4,
@@ -1975,6 +2087,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beef', 'red-meat', 'fried', 'crispy', 'tender', 'rice', 'grain', 'greens', 'steamed', 'veggies-large', 'saucy', 'rich', 'global', 'adventurous', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'quick', 'easy'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 515, protein: 39, carbs: 58, totalFat: 26, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -2007,6 +2121,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'grilled', 'charred', 'tender', 'juicy', 'potato', 'root-veg', 'salad', 'fresh', 'raw', 'leafy', 'greens', 'cold', 'tangy', 'acidic', 'olive-oil', 'global', 'adventurous', 'plated', 'side', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 425, protein: 40, carbs: 55, totalFat: 18, healthyFat: 12 },
     prepMinutes: 15,
     cookMinutes: 30,
     servings: 4,
@@ -2040,6 +2156,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'fried', 'crispy', 'tender', 'juicy', 'rice', 'grain', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'spicy', 'rich', 'comfort', 'classic', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'quick', 'easy'],
     vibe: 'spicy',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 595, protein: 40, carbs: 54, totalFat: 32, healthyFat: 15 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -2071,6 +2189,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'baked', 'roasted', 'tender', 'juicy', 'quinoa', 'grain', 'whole-grain', 'salad', 'fresh', 'raw', 'leafy', 'greens', 'cold', 'tangy', 'acidic', 'light', 'simple', 'olive-oil', 'bowl', 'mixed-in', 'warm', 'portion-small', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 38, protein: 30, carbs: 24, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 585, protein: 46, carbs: 53, totalFat: 32, healthyFat: 15 },
     prepMinutes: 10,
     cookMinutes: 25,
     servings: 4,
@@ -2104,6 +2224,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'fried', 'crispy', 'tender', 'juicy', 'rice', 'grain', 'greens', 'steamed', 'fresh', 'saucy', 'global', 'adventurous', 'plated', 'side', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 495, protein: 44, carbs: 53, totalFat: 27, healthyFat: 19 },
     prepMinutes: 10,
     cookMinutes: 18,
     servings: 4,
@@ -2136,6 +2258,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'grilled', 'charred', 'tender', 'juicy', 'bread', 'bun', 'handheld', 'sandwich', 'high-carb', 'salad', 'fresh', 'raw', 'leafy', 'greens', 'cold', 'tangy', 'acidic', 'warm', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 24, protein: 32, carbs: 36, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 440, protein: 48, carbs: 66, totalFat: 18, healthyFat: 13 },
     prepMinutes: 15,
     cookMinutes: 15,
     servings: 4,
@@ -2168,6 +2292,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'simmered', 'saucy', 'tender', 'pasta', 'noodles', 'high-carb', 'greens', 'leafy', 'steamed', 'comfort', 'classic', 'warm', 'mixed-in', 'bowl', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 20, protein: 32, carbs: 40, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 420, protein: 46, carbs: 72, totalFat: 19, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 22,
     servings: 4,
@@ -2199,6 +2325,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'grilled', 'charred', 'tender', 'juicy', 'rice', 'grain', 'roasted', 'veggies-large', 'colorful', 'peppers', 'tangy', 'acidic', 'global', 'adventurous', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 455, protein: 43, carbs: 56, totalFat: 19, healthyFat: 12 },
     prepMinutes: 15,
     cookMinutes: 20,
     servings: 4,
@@ -2232,6 +2360,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'fried', 'crispy', 'tender', 'juicy', 'low-carb', 'light', 'greens', 'steamed', 'fresh', 'tangy', 'acidic', 'simple', 'olive-oil', 'mixed-in', 'warm', 'bowl', 'portion-small', 'quick', 'easy'],
     vibe: 'savory',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 510, protein: 44, carbs: 32, totalFat: 25, healthyFat: 18 },
     prepMinutes: 10,
     cookMinutes: 12,
     servings: 4,
@@ -2263,6 +2393,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'baked', 'roasted', 'tender', 'juicy', 'low-carb', 'light', 'veggies-large', 'colorful', 'peppers', 'charred', 'rich', 'fresh', 'cheesy', 'classic', 'plated', 'side', 'warm', 'portion-small', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 460, protein: 44, carbs: 34, totalFat: 28, healthyFat: 20 },
     prepMinutes: 10,
     cookMinutes: 22,
     servings: 4,
@@ -2292,6 +2424,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'simmered', 'saucy', 'tender', 'potato', 'root-veg', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'comfort', 'classic', 'sweet', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 455, protein: 40, carbs: 55, totalFat: 23, healthyFat: 11 },
     prepMinutes: 15,
     cookMinutes: 30,
     servings: 4,
@@ -2322,6 +2456,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'simmered', 'saucy', 'tender', 'rice', 'grain', 'greens', 'leafy', 'steamed', 'rich', 'creamy', 'global', 'adventurous', 'warm', 'mixed-in', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 545, protein: 44, carbs: 55, totalFat: 30, healthyFat: 11 },
     prepMinutes: 10,
     cookMinutes: 30,
     servings: 4,
@@ -2353,6 +2489,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'juicy', 'rice', 'grain', 'roasted', 'veggies-large', 'colorful', 'peppers', 'charred', 'spicy', 'global', 'adventurous', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 610, protein: 43, carbs: 53, totalFat: 29, healthyFat: 11 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -2385,6 +2523,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'baked', 'roasted', 'tender', 'juicy', 'bread', 'handheld', 'veggies-large', 'colorful', 'peppers', 'charred', 'tangy', 'acidic', 'rich', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 31, protein: 27, carbs: 34, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 470, protein: 44, carbs: 67, totalFat: 20, healthyFat: 11 },
     prepMinutes: 15,
     cookMinutes: 25,
     servings: 4,
@@ -2417,6 +2557,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beef', 'red-meat', 'grilled', 'charred', 'tender', 'juicy', 'potato', 'root-veg', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'tangy', 'creamy', 'global', 'plated', 'side', 'warm', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 32, protein: 32, carbs: 28, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 495, protein: 46, carbs: 57, totalFat: 23, healthyFat: 11 },
     prepMinutes: 15,
     cookMinutes: 30,
     servings: 4,
@@ -2451,6 +2593,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'baked', 'roasted', 'tender', 'juicy', 'potato', 'root-veg', 'greens', 'leafy', 'saucy', 'rich', 'sweet', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 560, protein: 44, carbs: 56, totalFat: 29, healthyFat: 14 },
     prepMinutes: 15,
     cookMinutes: 30,
     servings: 4,
@@ -2482,6 +2626,8 @@ export const RECIPES: Recipe[] = [
     tags: ['tofu', 'plant-based', 'vegetarian', 'fried', 'crispy', 'tender', 'juicy', 'rice', 'grain', 'whole-grain', 'greens', 'steamed', 'veggies-large', 'rich', 'creamy', 'saucy', 'global', 'adventurous', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 590, protein: 36, carbs: 56, totalFat: 31, healthyFat: 12 },
     prepMinutes: 20,
     cookMinutes: 25,
     servings: 4,
@@ -2513,6 +2659,8 @@ export const RECIPES: Recipe[] = [
     tags: ['plant-based', 'vegetarian', 'fried', 'crispy', 'tender', 'juicy', 'potato', 'root-veg', 'greens', 'leafy', 'steamed', 'tangy', 'acidic', 'fresh', 'light', 'simple', 'olive-oil', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 37, protein: 27, carbs: 28, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 595, protein: 43, carbs: 56, totalFat: 29, healthyFat: 11 },
     prepMinutes: 10,
     cookMinutes: 30,
     servings: 4,
@@ -2545,6 +2693,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'baked', 'roasted', 'tender', 'juicy', 'rice', 'grain', 'greens', 'steamed', 'veggies-large', 'saucy', 'rich', 'global', 'adventurous', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 440, protein: 40, carbs: 57, totalFat: 18, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 25,
     servings: 4,
@@ -2577,6 +2727,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'grilled', 'charred', 'tender', 'juicy', 'quinoa', 'grain', 'whole-grain', 'greens', 'roasted', 'tangy', 'acidic', 'fresh', 'olive-oil', 'global', 'adventurous', 'plated', 'side', 'warm', 'portion-small', 'light', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 38, protein: 30, carbs: 24, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 555, protein: 44, carbs: 55, totalFat: 27, healthyFat: 17 },
     prepMinutes: 15,
     cookMinutes: 18,
     servings: 4,
@@ -2609,6 +2761,8 @@ export const RECIPES: Recipe[] = [
     tags: ['tofu', 'plant-based', 'vegetarian', 'fried', 'crispy', 'tender', 'juicy', 'bread', 'bun', 'handheld', 'sandwich', 'high-carb', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'spicy', 'rich', 'comfort', 'classic', 'warm', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 24, protein: 32, carbs: 36, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 605, protein: 46, carbs: 69, totalFat: 29, healthyFat: 14 },
     prepMinutes: 20,
     cookMinutes: 15,
     servings: 4,
@@ -2640,6 +2794,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'juicy', 'rice', 'grain', 'greens', 'steamed', 'rich', 'simple', 'comfort', 'plated', 'side', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 550, protein: 42, carbs: 58, totalFat: 29, healthyFat: 14 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -2670,6 +2826,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'juicy', 'tortilla', 'bread', 'handheld', 'sandwich', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'tangy', 'acidic', 'global', 'adventurous', 'warm', 'portion-medium', 'balanced', 'quick', 'easy'],
     vibe: 'spicy',
     plate: { produce: 35, protein: 27, carbs: 30, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 560, protein: 40, carbs: 59, totalFat: 32, healthyFat: 15 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -2703,6 +2861,8 @@ export const RECIPES: Recipe[] = [
     tags: ['plant-based', 'vegetarian', 'fried', 'crispy', 'tender', 'rice', 'grain', 'greens', 'steamed', 'fresh', 'saucy', 'global', 'adventurous', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'quick', 'easy'],
     vibe: 'savory',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 510, protein: 40, carbs: 55, totalFat: 27, healthyFat: 17 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -2735,6 +2895,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'grilled', 'charred', 'tender', 'juicy', 'bread', 'handheld', 'salad', 'fresh', 'raw', 'leafy', 'greens', 'cold', 'tangy', 'acidic', 'warm', 'portion-medium', 'balanced', 'quick', 'easy'],
     vibe: 'sweet',
     plate: { produce: 31, protein: 27, carbs: 34, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 390, protein: 41, carbs: 64, totalFat: 18, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -2767,6 +2929,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'simmered', 'saucy', 'tender', 'potato', 'root-veg', 'greens', 'steamed', 'comfort', 'classic', 'warm', 'plated', 'side', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 37, protein: 27, carbs: 28, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 410, protein: 43, carbs: 60, totalFat: 18, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 30,
     servings: 4,
@@ -2798,6 +2962,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'simmered', 'saucy', 'tender', 'rice', 'grain', 'roasted', 'veggies-large', 'colorful', 'peppers', 'charred', 'spicy', 'global', 'adventurous', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 375, protein: 44, carbs: 57, totalFat: 17, healthyFat: 11 },
     prepMinutes: 10,
     cookMinutes: 25,
     servings: 4,
@@ -2830,6 +2996,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beef', 'red-meat', 'grilled', 'charred', 'tender', 'juicy', 'low-carb', 'light', 'salad', 'fresh', 'raw', 'leafy', 'greens', 'cold', 'tangy', 'acidic', 'rich', 'bowl', 'mixed-in', 'warm', 'portion-small', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 415, protein: 46, carbs: 33, totalFat: 22, healthyFat: 8 },
     prepMinutes: 15,
     cookMinutes: 15,
     servings: 4,
@@ -2859,6 +3027,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'simmered', 'saucy', 'tender', 'low-carb', 'light', 'greens', 'leafy', 'steamed', 'rich', 'creamy', 'global', 'adventurous', 'warm', 'mixed-in', 'bowl', 'portion-small', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 430, protein: 46, carbs: 34, totalFat: 21, healthyFat: 8 },
     prepMinutes: 10,
     cookMinutes: 22,
     servings: 4,
@@ -2890,6 +3060,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'grilled', 'charred', 'tender', 'juicy', 'quinoa', 'grain', 'whole-grain', 'roasted', 'veggies-large', 'colorful', 'peppers', 'tangy', 'acidic', 'fresh', 'light', 'simple', 'olive-oil', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 41, protein: 27, carbs: 24, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 465, protein: 37, carbs: 50, totalFat: 19, healthyFat: 12 },
     prepMinutes: 15,
     cookMinutes: 25,
     servings: 4,
@@ -2923,6 +3095,8 @@ export const RECIPES: Recipe[] = [
     tags: ['plant-based', 'vegetarian', 'fried', 'crispy', 'tender', 'juicy', 'bread', 'handheld', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'rich', 'cheesy', 'classic', 'warm', 'portion-medium', 'balanced', 'quick', 'easy'],
     vibe: 'savory',
     plate: { produce: 31, protein: 27, carbs: 34, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 640, protein: 40, carbs: 68, totalFat: 29, healthyFat: 14 },
     prepMinutes: 10,
     cookMinutes: 12,
     servings: 4,
@@ -2954,6 +3128,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'baked', 'roasted', 'tender', 'juicy', 'quinoa', 'grain', 'whole-grain', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'tangy', 'creamy', 'global', 'plated', 'side', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 41, protein: 27, carbs: 24, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 605, protein: 43, carbs: 50, totalFat: 29, healthyFat: 14 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -2988,6 +3164,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'juicy', 'rice', 'grain', 'greens', 'steamed', 'fresh', 'saucy', 'rich', 'global', 'adventurous', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 520, protein: 42, carbs: 55, totalFat: 26, healthyFat: 17 },
     prepMinutes: 10,
     cookMinutes: 18,
     servings: 4,
@@ -3020,6 +3198,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'simmered', 'saucy', 'tender', 'quinoa', 'grain', 'whole-grain', 'roasted', 'veggies-large', 'colorful', 'peppers', 'charred', 'tangy', 'acidic', 'fresh', 'olive-oil', 'global', 'adventurous', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 41, protein: 27, carbs: 24, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 485, protein: 41, carbs: 56, totalFat: 19, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 25,
     servings: 4,
@@ -3054,6 +3234,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'juicy', 'bread', 'handheld', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'spicy', 'rich', 'comfort', 'classic', 'warm', 'portion-large', 'hearty', 'quick', 'easy'],
     vibe: 'spicy',
     plate: { produce: 26, protein: 32, carbs: 34, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 585, protein: 48, carbs: 64, totalFat: 32, healthyFat: 15 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -3085,6 +3267,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'fried', 'crispy', 'tender', 'juicy', 'low-carb', 'light', 'greens', 'leafy', 'steamed', 'rich', 'simple', 'comfort', 'mixed-in', 'warm', 'bowl', 'portion-small', 'quick', 'easy'],
     vibe: 'savory',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 535, protein: 46, carbs: 30, totalFat: 29, healthyFat: 14 },
     prepMinutes: 10,
     cookMinutes: 12,
     servings: 4,
@@ -3115,6 +3299,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'baked', 'roasted', 'tender', 'juicy', 'rice', 'grain', 'whole-grain', 'greens', 'leafy', 'saucy', 'rich', 'sweet', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 605, protein: 43, carbs: 55, totalFat: 32, healthyFat: 15 },
     prepMinutes: 10,
     cookMinutes: 28,
     servings: 4,
@@ -3146,6 +3332,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'baked', 'roasted', 'tender', 'juicy', 'potato', 'root-veg', 'charred', 'veggies-large', 'spicy', 'global', 'adventurous', 'plated', 'side', 'warm', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 34, protein: 32, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 615, protein: 48, carbs: 54, totalFat: 32, healthyFat: 12 },
     prepMinutes: 15,
     cookMinutes: 30,
     servings: 4,
@@ -3176,6 +3364,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beef', 'red-meat', 'fried', 'crispy', 'tender', 'noodles', 'pasta', 'greens', 'steamed', 'veggies-large', 'rich', 'creamy', 'saucy', 'global', 'adventurous', 'mixed-in', 'warm', 'bowl', 'portion-large', 'hearty', 'quick', 'easy'],
     vibe: 'savory',
     plate: { produce: 26, protein: 32, carbs: 34, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 610, protein: 46, carbs: 66, totalFat: 30, healthyFat: 11 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -3207,6 +3397,8 @@ export const RECIPES: Recipe[] = [
     tags: ['tofu', 'plant-based', 'vegetarian', 'baked', 'roasted', 'tender', 'juicy', 'quinoa', 'grain', 'whole-grain', 'veggies-large', 'colorful', 'peppers', 'charred', 'tangy', 'acidic', 'rich', 'bowl', 'mixed-in', 'warm', 'portion-small', 'light', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 38, protein: 30, carbs: 24, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 495, protein: 44, carbs: 53, totalFat: 27, healthyFat: 10 },
     prepMinutes: 20,
     cookMinutes: 25,
     servings: 4,
@@ -3239,6 +3431,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beef', 'red-meat', 'grilled', 'charred', 'tender', 'juicy', 'low-carb', 'light', 'salad', 'fresh', 'raw', 'leafy', 'greens', 'cold', 'tangy', 'acidic', 'bowl', 'mixed-in', 'warm', 'portion-small', 'quick', 'easy'],
     vibe: 'sweet',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 355, protein: 44, carbs: 32, totalFat: 17, healthyFat: 9 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -3269,6 +3463,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'simmered', 'saucy', 'tender', 'pasta', 'noodles', 'high-carb', 'greens', 'leafy', 'steamed', 'comfort', 'classic', 'warm', 'mixed-in', 'bowl', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 20, protein: 32, carbs: 40, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 475, protein: 46, carbs: 69, totalFat: 25, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 22,
     servings: 4,
@@ -3300,6 +3496,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'low-carb', 'light', 'salad', 'fresh', 'raw', 'leafy', 'greens', 'cold', 'saucy', 'global', 'adventurous', 'bowl', 'mixed-in', 'warm', 'portion-small', 'quick', 'easy'],
     vibe: 'savory',
     plate: { produce: 54, protein: 30, carbs: 8, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 435, protein: 48, carbs: 31, totalFat: 26, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 12,
     servings: 4,
@@ -3331,6 +3529,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beef', 'red-meat', 'grilled', 'charred', 'tender', 'juicy', 'tortilla', 'bread', 'handheld', 'sandwich', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'tangy', 'acidic', 'global', 'adventurous', 'warm', 'portion-large', 'hearty', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 30, protein: 32, carbs: 30, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 565, protein: 46, carbs: 56, totalFat: 25, healthyFat: 10 },
     prepMinutes: 15,
     cookMinutes: 12,
     servings: 4,
@@ -3364,6 +3564,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'simmered', 'saucy', 'tender', 'noodles', 'pasta', 'greens', 'steamed', 'fresh', 'rich', 'creamy', 'global', 'adventurous', 'warm', 'mixed-in', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 31, protein: 27, carbs: 34, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 480, protein: 40, carbs: 63, totalFat: 24, healthyFat: 12 },
     prepMinutes: 10,
     cookMinutes: 18,
     servings: 4,
@@ -3395,6 +3597,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'simmered', 'saucy', 'tender', 'tortilla', 'bread', 'handheld', 'sandwich', 'salad', 'fresh', 'raw', 'cold', 'colorful', 'tangy', 'acidic', 'light', 'simple', 'olive-oil', 'warm', 'portion-medium', 'balanced', 'quick', 'easy'],
     vibe: 'savory',
     plate: { produce: 35, protein: 27, carbs: 30, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 475, protein: 43, carbs: 61, totalFat: 23, healthyFat: 11 },
     prepMinutes: 10,
     cookMinutes: 15,
     servings: 4,
@@ -3427,6 +3631,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'grilled', 'charred', 'tender', 'juicy', 'quinoa', 'grain', 'whole-grain', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'rich', 'cheesy', 'classic', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 41, protein: 27, carbs: 24, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 440, protein: 44, carbs: 52, totalFat: 18, healthyFat: 13 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,
@@ -3458,6 +3664,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'baked', 'roasted', 'tender', 'juicy', 'rice', 'grain', 'root-veg', 'colorful', 'saucy', 'comfort', 'classic', 'sweet', 'plated', 'side', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'sweet',
     plate: { produce: 39, protein: 27, carbs: 26, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 490, protein: 44, carbs: 55, totalFat: 26, healthyFat: 19 },
     prepMinutes: 10,
     cookMinutes: 22,
     servings: 4,
@@ -3487,6 +3695,8 @@ export const RECIPES: Recipe[] = [
     tags: ['chicken', 'poultry', 'fried', 'crispy', 'tender', 'juicy', 'potato', 'root-veg', 'greens', 'steamed', 'tangy', 'acidic', 'fresh', 'light', 'simple', 'olive-oil', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 37, protein: 27, carbs: 28, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 570, protein: 44, carbs: 60, totalFat: 28, healthyFat: 20 },
     prepMinutes: 15,
     cookMinutes: 25,
     servings: 4,
@@ -3519,6 +3729,8 @@ export const RECIPES: Recipe[] = [
     tags: ['plant-based', 'vegetarian', 'fried', 'crispy', 'tender', 'juicy', 'potato', 'root-veg', 'greens', 'leafy', 'steamed', 'spicy', 'rich', 'comfort', 'classic', 'mixed-in', 'warm', 'bowl', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'spicy',
     plate: { produce: 37, protein: 27, carbs: 28, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 620, protein: 43, carbs: 60, totalFat: 30, healthyFat: 14 },
     prepMinutes: 10,
     cookMinutes: 25,
     servings: 4,
@@ -3549,6 +3761,8 @@ export const RECIPES: Recipe[] = [
     tags: ['fish', 'seafood', 'fried', 'crispy', 'tender', 'noodles', 'pasta', 'greens', 'steamed', 'fresh', 'saucy', 'global', 'adventurous', 'bowl', 'mixed-in', 'warm', 'portion-medium', 'balanced', 'quick', 'easy'],
     vibe: 'savory',
     plate: { produce: 31, protein: 27, carbs: 34, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 605, protein: 43, carbs: 64, totalFat: 29, healthyFat: 14 },
     prepMinutes: 10,
     cookMinutes: 12,
     servings: 4,
@@ -3581,6 +3795,8 @@ export const RECIPES: Recipe[] = [
     tags: ['plant-based', 'vegetarian', 'fried', 'crispy', 'tender', 'juicy', 'potato', 'root-veg', 'greens', 'charred', 'roasted', 'tangy', 'acidic', 'fresh', 'olive-oil', 'global', 'adventurous', 'plated', 'side', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 37, protein: 27, carbs: 28, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 600, protein: 43, carbs: 58, totalFat: 28, healthyFat: 20 },
     prepMinutes: 10,
     cookMinutes: 28,
     servings: 4,
@@ -3613,6 +3829,8 @@ export const RECIPES: Recipe[] = [
     tags: ['beans', 'plant-based', 'vegetarian', 'baked', 'roasted', 'tender', 'juicy', 'bread', 'handheld', 'salad', 'fresh', 'raw', 'colorful', 'cold', 'tangy', 'creamy', 'global', 'warm', 'portion-medium', 'balanced', 'weeknight'],
     vibe: 'savory',
     plate: { produce: 31, protein: 27, carbs: 34, healthyFats: 8 },
+    // Per-serving estimates derived from plate composition & ingredients.
+    nutrition: { calories: 500, protein: 41, carbs: 67, totalFat: 24, healthyFat: 15 },
     prepMinutes: 10,
     cookMinutes: 20,
     servings: 4,

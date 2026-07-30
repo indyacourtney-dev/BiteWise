@@ -97,7 +97,7 @@ export const homeStyles = StyleSheet.create({
     marginBottom: 6,
   },
   heroSubtitle: {
-    color: '#9CA3AF',
+    color: '#8298AE',
     fontSize: 13,
     marginBottom: 20,
     textAlign: 'center',

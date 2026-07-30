@@ -2,10 +2,21 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { COLORS } from '@/constants/Colors';
 
 export default function TabLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: COLORS.darkNavy,
+          borderTopWidth: 0,
+        },
+        tabBarActiveTintColor: COLORS.yellowAccent,
+        tabBarInactiveTintColor: COLORS.inactiveGray,
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{

@@ -71,17 +71,17 @@ export default function RecipeDetail({
         </Text>
       </View>
 
-      {/* PLATE BALANCE */}
+      {/* PLATE BALANCE + MACROS */}
       <Text style={styles.sectionTitle}>Plate balance</Text>
-      <View style={styles.card}>
-        <PlateVisualization plate={recipe.plate} />
-        {suggestion ? (
+      <PlateVisualization plate={recipe.plate} nutrition={recipe.nutrition} />
+      {suggestion ? (
+        <View style={[styles.card, styles.tipCard]}>
           <View style={styles.tipBox}>
             <FontAwesome name="lightbulb-o" size={14} color="#D46B08" />
             <Text style={styles.tipText}>{suggestion}</Text>
           </View>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
 
       {/* JUMP TO FULL RECIPE */}
       {onOpenRecipe ? (
@@ -295,6 +295,7 @@ const styles = StyleSheet.create({
 
   noBorder: { borderBottomWidth: 0 },
 
+  tipCard: { marginTop: 10 },
   tipBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',

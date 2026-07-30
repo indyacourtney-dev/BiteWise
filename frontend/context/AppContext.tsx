@@ -22,6 +22,7 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { useAuth } from './AuthContext';
 import type {
   PantryItem,
   PantryCategoryId,
@@ -43,15 +44,22 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   preferredDifficulty: null,
   householdSize: 2,
   favoriteTags: [],
+  dislikedTags: [],
+  spiceTolerance: null,
+  cuisines: [],
 };
 
-const KEYS = {
-  pantry: '@bitewise/pantry',
-  preferences: '@bitewise/preferences',
-  favorites: '@bitewise/favorites',
-  history: '@bitewise/history',
-  onboarded: '@bitewise/onboarded',
-} as const;
+// Storage keys are scoped PER ACCOUNT. Before this, keys were device-wide,
+// so the second account created on a phone skipped onboarding and inherited
+// the first account's pantry and preferences.
+const keysFor = (userId: string) =>
+  ({
+    pantry: `@bitewise/${userId}/pantry`,
+    preferences: `@bitewise/${userId}/preferences`,
+    favorites: `@bitewise/${userId}/favorites`,
+    history: `@bitewise/${userId}/history`,
+    onboarded: `@bitewise/${userId}/onboarded`,
+  }) as const;
 
 // ============================================
 // CONTEXT SHAPE
@@ -96,6 +104,8 @@ const AppContext = createContext<AppContextValue | null>(null);
 // ============================================
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [hydrated, setHydrated] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
   const [pantry, setPantry] = useState<PantryItem[]>([]);
@@ -103,9 +113,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<SavedRecipe[]>([]);
   const [history, setHistory] = useState<QuizRun[]>([]);
 
-  // ---------- Hydrate once on mount ----------
+  // ---------- Hydrate per account ----------
+  // Runs on mount AND whenever the logged-in user changes: reset to
+  // defaults, then load that account's slices from its own keys.
 
   useEffect(() => {
+    setHydrated(false);
+    setPantry([]);
+    setPreferences(DEFAULT_PREFERENCES);
+    setFavorites([]);
+    setHistory([]);
+    setHasOnboarded(false);
+
+    if (!userId) return; // logged out: stay on defaults, gate handles routing
+
+    const KEYS = keysFor(userId);
     (async () => {
       try {
         const entries = await AsyncStorage.multiGet(Object.values(KEYS));
@@ -113,7 +135,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         if (data[KEYS.pantry]) setPantry(JSON.parse(data[KEYS.pantry]!));
         if (data[KEYS.preferences]) {
-          // Spread over defaults so newly added fields (like favoriteTags)
+          // Spread over defaults so newly added fields (like dislikedTags)
           // exist even for users who saved preferences before the field did.
           setPreferences({ ...DEFAULT_PREFERENCES, ...JSON.parse(data[KEYS.preferences]!) });
         }
@@ -127,25 +149,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setHydrated(true);
       }
     })();
-  }, []);
+  }, [userId]);
 
   // ---------- Save slices after hydration ----------
 
   const persist = useCallback(
-    (key: string, value: unknown) => {
-      if (!hydrated) return; // never overwrite disk with defaults mid-load
-      AsyncStorage.setItem(key, JSON.stringify(value)).catch(e =>
+    (key: keyof ReturnType<typeof keysFor>, value: unknown) => {
+      if (!hydrated || !userId) return; // never write defaults mid-load or logged out
+      AsyncStorage.setItem(keysFor(userId)[key], JSON.stringify(value)).catch(e =>
         console.warn('BiteWise: failed to save', key, e)
       );
     },
-    [hydrated]
+    [hydrated, userId]
   );
 
-  useEffect(() => persist(KEYS.pantry, pantry), [pantry, persist]);
-  useEffect(() => persist(KEYS.preferences, preferences), [preferences, persist]);
-  useEffect(() => persist(KEYS.favorites, favorites), [favorites, persist]);
-  useEffect(() => persist(KEYS.history, history), [history, persist]);
-  useEffect(() => persist(KEYS.onboarded, hasOnboarded), [hasOnboarded, persist]);
+  useEffect(() => persist('pantry', pantry), [pantry, persist]);
+  useEffect(() => persist('preferences', preferences), [preferences, persist]);
+  useEffect(() => persist('favorites', favorites), [favorites, persist]);
+  useEffect(() => persist('history', history), [history, persist]);
+  useEffect(() => persist('onboarded', hasOnboarded), [hasOnboarded, persist]);
 
   // ---------- Onboarding ----------
 

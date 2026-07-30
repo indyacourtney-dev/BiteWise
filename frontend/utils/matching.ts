@@ -243,6 +243,23 @@ export function favoriteOverlap(recipe: Recipe, favoriteTags: string[]): number 
   return recipe.tags.filter(t => favs.has(t.toLowerCase())).length;
 }
 
+/**
+ * How many "rather skip" tags a recipe carries. Mirrors favoriteOverlap
+ * on the other side of the scale: a SOFT penalty in tie-breaks, never a
+ * hard filter (that's what allergens are for). tasteBias below combines
+ * both so one preference signal decides ties.
+ */
+export function dislikeOverlap(recipe: Recipe, dislikedTags: string[]): number {
+  if (dislikedTags.length === 0) return 0;
+  const bad = new Set(dislikedTags.map(t => t.toLowerCase()));
+  return recipe.tags.filter(t => bad.has(t.toLowerCase())).length;
+}
+
+/** Net taste signal: loves push a recipe up ties, dislikes push it down. */
+function tasteBias(recipe: Recipe, favs: string[], dislikes: string[]): number {
+  return favoriteOverlap(recipe, favs) - dislikeOverlap(recipe, dislikes);
+}
+
 function scoreAll(recipes: Recipe[], opts: ScoreOptions): ScoredRecipe[] {
   const scoringSelections = withVibeSelection(opts.selections, opts.vibe);
 
@@ -275,13 +292,14 @@ export function scoreAndFilterRecipes(
     });
 
   const favs = opts.preferences.favoriteTags ?? [];
+  const dislikes = opts.preferences.dislikedTags ?? [];
 
   return scoreAll(eligible, opts)
     .filter(r => r.matchScore >= MATCH_THRESHOLD)
     .sort(
       (a, b) =>
         b.matchScore - a.matchScore ||
-        favoriteOverlap(b, favs) - favoriteOverlap(a, favs)
+        tasteBias(b, favs, dislikes) - tasteBias(a, favs, dislikes)
     );
 }
 
@@ -301,13 +319,14 @@ export function getNearMisses(
 ): ScoredRecipe[] {
   const eligible = recipes.filter(r => passesDietaryFilter(r, opts.preferences));
   const favs = opts.preferences.favoriteTags ?? [];
+  const dislikes = opts.preferences.dislikedTags ?? [];
 
   return scoreAll(eligible, opts)
     .filter(r => r.matchScore > 0)
     .sort(
       (a, b) =>
         b.matchScore - a.matchScore ||
-        favoriteOverlap(b, favs) - favoriteOverlap(a, favs)
+        tasteBias(b, favs, dislikes) - tasteBias(a, favs, dislikes)
     )
     .slice(0, limit);
 }

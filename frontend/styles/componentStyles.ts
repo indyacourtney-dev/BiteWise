@@ -26,7 +26,7 @@ export const componentStyles = StyleSheet.create({
     borderRadius: 10,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#EAECEE',
+    borderColor: '#D9E4F1',
   },
   pillText: {
     fontFamily: 'Inter_400Regular',
@@ -36,7 +36,7 @@ export const componentStyles = StyleSheet.create({
   captionText: { 
     fontFamily: 'Inter_400Regular', 
     fontSize: 11, 
-    color: '#7F8C8D' 
+    color: '#5B6C80' 
   },
   listContainer: { 
     marginBottom: 25 
@@ -46,17 +46,17 @@ export const componentStyles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#EAECEE',
+    borderColor: '#D9E4F1',
     overflow: 'hidden',
   },
   categoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F8F9F9',
+    backgroundColor: '#EDF4FE',
     padding: 14,
     borderBottomWidth: 1,
-    borderColor: '#EAECEE',
+    borderColor: '#D9E4F1',
   },
   categoryTitleGroup: {
     flexDirection: 'row',
@@ -78,7 +78,7 @@ export const componentStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F3F4',
+    borderBottomColor: '#E2EDFC',
   },
   itemName: {
     fontFamily: 'Inter_400Regular',
@@ -91,7 +91,7 @@ export const componentStyles = StyleSheet.create({
     alignItems: 'center',
   },
   controlButton: {
-    backgroundColor: '#F2F3F4',
+    backgroundColor: '#E2EDFC',
     width: 24,
     height: 24,
     borderRadius: 4,
@@ -114,7 +114,7 @@ export const componentStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#D5DBDB',
+    borderColor: '#C7D8EC',
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 3,
