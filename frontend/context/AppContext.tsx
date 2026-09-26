@@ -269,6 +269,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const KEYS = keysFor(userId);
     (async () => {
+      const startTime = performance.now();
+
       try {
         const entries = await AsyncStorage.multiGet(Object.values(KEYS));
         const data = Object.fromEntries(entries);
@@ -302,6 +304,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // Corrupt or missing storage: fall back to defaults rather than crash.
         console.warn('BiteWise: failed to load saved data', e);
       } finally {
+        const endTime = performance.now();
+        console.log(`BiteWise local data load time: ${(endTime - startTime).toFixed(2)} ms`);
         setHydrated(true);
       }
     })();
