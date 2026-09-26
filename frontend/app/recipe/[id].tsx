@@ -7,24 +7,64 @@
 //   full recipe screen, so no "See full recipe" button).
 // - Unknown ids get a friendly not-found state instead of a crash, so a
 //   stale link can never strand the user.
+// - Curated recipes load instantly from constants/recipes.ts; imported and
+//   community recipes (Decide for Me, Favorites, chat cards) load from
+//   Supabase.
+// - Header: add to my week (app/planWeek.tsx), share-to-chat and heart.
 
-import React from 'react';
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import RecipeDetail from '@/components/RecipeDetail';
+import FavoriteButton from '@/components/FavoriteButton';
+import ShareToRoomModal from '@/components/ShareToRoomModal';
+import AddToWeekModal from '@/components/AddToWeekModal';
 import { getRecipeById } from '@/constants/recipes';
 import { COLORS } from '@/constants/Colors';
+import { configured } from '@/lib/supabase';
+import { fetchRecipeById } from '@/lib/recipesApi';
+import { useApp } from '@/context/AppContext';
+import { ageAllowsRecipe } from '@/utils/matching';
+import { LEGAL_DRINKING_AGE } from '@/utils/age';
+import type { Recipe } from '@/types';
 
 export default function RecipeScreen() {
   const { id, match } = useLocalSearchParams<{ id: string; match?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const recipe = id ? getRecipeById(id) : undefined;
+  const local = id ? getRecipeById(id) : undefined;
+  const [remote, setRemote] = useState<Recipe | undefined>(undefined);
+  const [loading, setLoading] = useState(!local && Boolean(id) && configured);
+  const [sharing, setSharing] = useState(false);
+  const [planning, setPlanning] = useState(false);
+  const found = local ?? remote;
+  // Age safeguard: however someone got here (link, chat, favorites), a
+  // recipe made with alcohol isn't shown to under-21s.
+  const { preferences } = useApp();
+  const blocked = !!found && !ageAllowsRecipe(found, preferences);
+  const recipe = blocked ? undefined : found;
   const matchScore = match ? Number(match) : undefined;
+
+  useEffect(() => {
+    if (local || !id || !configured) return;
+    let cancelled = false;
+    setLoading(true);
+    fetchRecipeById(id)
+      .then(r => {
+        if (!cancelled) setRemote(r);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, local]);
 
   // Back should pop when pushed; if this screen was somehow opened
   // directly (deep link, reload), fall back to Home instead of a dead end.
@@ -40,9 +80,46 @@ export default function RecipeScreen() {
           <FontAwesome name="chevron-left" size={16} color={COLORS.darkNavy} />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
+        {recipe ? (
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.shareBtn}
+              onPress={() => setPlanning(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Add to my week"
+            >
+              <FontAwesome name="calendar-plus-o" size={17} color={COLORS.darkNavy} />
+            </TouchableOpacity>
+            {configured ? (
+              <TouchableOpacity style={styles.shareBtn} onPress={() => setSharing(true)} activeOpacity={0.7}>
+                <FontAwesome name="comments-o" size={18} color={COLORS.darkNavy} />
+              </TouchableOpacity>
+            ) : null}
+            <FavoriteButton recipeId={recipe.id} boxed />
+          </View>
+        ) : null}
       </View>
 
-      {recipe ? (
+      <ShareToRoomModal visible={sharing} recipe={recipe ?? null} onClose={() => setSharing(false)} />
+      <AddToWeekModal visible={planning} recipe={recipe ?? null} onClose={() => setPlanning(false)} />
+
+      {loading ? (
+        <View style={styles.notFound}>
+          <ActivityIndicator color={COLORS.darkNavy} />
+        </View>
+      ) : blocked ? (
+        <View style={styles.notFound}>
+          <Text style={styles.notFoundEmoji}>🔞</Text>
+          <Text style={styles.notFoundTitle}>This recipe is for {LEGAL_DRINKING_AGE}+</Text>
+          <Text style={styles.notFoundSub}>
+            It's made with alcohol, so it isn't available on your account.
+          </Text>
+          <TouchableOpacity style={styles.homeBtn} onPress={goBack} activeOpacity={0.9}>
+            <Text style={styles.homeBtnText}>Go back</Text>
+          </TouchableOpacity>
+        </View>
+      ) : recipe ? (
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
           showsVerticalScrollIndicator={false}
@@ -74,7 +151,24 @@ export default function RecipeScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
-  header: { paddingHorizontal: 16, paddingVertical: 10 },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  shareBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.cardWhite,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',

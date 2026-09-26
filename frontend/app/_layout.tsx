@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import {
   PlayfairDisplay_600SemiBold,
@@ -65,7 +65,7 @@ function RootLayoutNav() {
             {/*
               Only declare screens that need custom options.
               Every file/folder in app/ is auto-registered by Expo Router,
-              so randomMeal and recipe/[id] don't need entries here —
+              so recipe/[id] doesn't strictly need an entry here —
               declaring routes whose files don't exist is what produced
               the "No route named X exists" warnings.
             */}
@@ -82,12 +82,24 @@ function RootLayoutNav() {
                 options={{ gestureEnabled: false, animation: 'fade' }}
               />
               <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+              <Stack.Screen
+                name="ageCheck"
+                options={{ gestureEnabled: false, animation: 'fade' }}
+              />
               {/* Pushed screens keep the default slide-from-right + swipe back. */}
-              <Stack.Screen name="randomMeal" />
               <Stack.Screen name="cookWithPantry" />
               <Stack.Screen name="thisorthat" />
               <Stack.Screen name="planWeek" />
               <Stack.Screen name="recipe/[id]" />
+              <Stack.Screen name="decide" />
+              <Stack.Screen name="profile" />
+              <Stack.Screen name="settings/account" />
+              <Stack.Screen name="settings/preferences" />
+              <Stack.Screen name="settings/accessibility" />
+              <Stack.Screen name="settings/privacy" />
+              <Stack.Screen name="settings/about" />
+              <Stack.Screen name="shareRecipe" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="chat/[roomId]" />
             </Stack>
           </AuthAndOnboardingGate>
         </ThemeProvider>
@@ -98,7 +110,7 @@ function RootLayoutNav() {
 
 function AuthAndOnboardingGate({ children }: { children: React.ReactNode }) {
   const { user, initializing } = useAuth();
-  const { hydrated, hasOnboarded } = useApp();
+  const { hydrated, hasOnboarded, birthDate, birthDateChecked } = useApp();
   const segments = useSegments();
   const router = useRouter();
 
@@ -106,6 +118,7 @@ function AuthAndOnboardingGate({ children }: { children: React.ReactNode }) {
     if (initializing) return;
     const inAuth = segments[0] === 'auth';
     const inOnboarding = segments[0] === 'onboarding';
+    const inAgeCheck = segments[0] === 'ageCheck';
 
     // Defer one tick: on cold launch this effect can run before the root
     // navigator has mounted, and calling replace() that early throws
@@ -119,13 +132,16 @@ function AuthAndOnboardingGate({ children }: { children: React.ReactNode }) {
 
       if (!hasOnboarded && !inOnboarding) {
         router.replace('/onboarding');
+      } else if (hasOnboarded && birthDateChecked && !birthDate && !inAgeCheck) {
+        // Age safeguard: accounts from before it existed give their birthday once.
+        router.replace('/ageCheck');
       } else if (hasOnboarded && (inAuth || inOnboarding)) {
         router.replace('/');
       }
     }, 0);
 
     return () => clearTimeout(t);
-  }, [initializing, user, hydrated, hasOnboarded, segments, router]);
+  }, [initializing, user, hydrated, hasOnboarded, birthDate, birthDateChecked, segments, router]);
 
   return <>{children}</>;
 }

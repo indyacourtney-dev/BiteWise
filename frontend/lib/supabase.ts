@@ -2,18 +2,17 @@
  
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
-
+ 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const supabasePublishableKey =
-  process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? ''; 
-
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+ 
 // The auth screen shows a "backend isn't configured" banner off this flag,
 // so a missing .env fails loudly and helpfully instead of as a network error.
-export const configured = Boolean(supabaseUrl && supabasePublishableKey);
-
+export const configured = Boolean(supabaseUrl && supabaseAnonKey);
+ 
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabasePublishableKey || 'placeholder-key',
+  supabaseUrl || 'https://jlqlplmqnisminaovbre.supabase.co',
+  supabaseAnonKey || 'sb_publishable_Qz6R2P5fawINeBNfP_pJvA_6OSRxLtj',
   {
     auth: {
       persistSession: false,

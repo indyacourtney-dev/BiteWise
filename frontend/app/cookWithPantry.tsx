@@ -13,7 +13,7 @@
 //                    grocery run unlocks them
 // Tapping a meal opens the full recipe with its coverage as the match %.
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -21,8 +21,15 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { COLORS } from '@/constants/Colors';
 import { useApp } from '@/context/AppContext';
-import { RECIPES, getTotalTime, formatTime } from '@/constants/recipes';
+import { getTotalTime, formatTime } from '@/constants/recipes';
 import { getPantryCoverage, passesDietaryFilter } from '@/utils/matching';
+import MealTypePicker from '@/components/MealTypePicker';
+import FavoriteButton from '@/components/FavoriteButton';
+import { useRecipeLibrary } from '@/hooks/useRecipeLibrary';
+import { fetchPantryMatches } from '@/lib/pantryApi';
+import { fetchRecipesByIds } from '@/lib/recipesApi';
+import { MEAL_INFO } from '@/utils/meals';
+import { findPantryLibraryItem } from '@/constants/pantryData';
 import type { Recipe } from '@/types';
 
 interface RankedMeal {
@@ -35,16 +42,53 @@ interface RankedMeal {
 export default function CookWithPantryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { pantry, preferences } = useApp();
+  const { pantry, preferences, mealType, setMealType } = useApp();
+
+  // Curated + database recipes for this meal, already allergy/diet filtered.
+  const { recipes: library } = useRecipeLibrary(mealType, preferences);
+
+  // The server ranks the WHOLE database against the pantry with proper
+  // ingredient matching ("chicken breasts" = chicken breast = counts for
+  // "chicken"), which a local name comparison can't do.
+  const [serverRanked, setServerRanked] = useState<RankedMeal[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    if (pantry.length === 0) {
+      setServerRanked([]);
+      return;
+    }
+    (async () => {
+      try {
+        const matches = await fetchPantryMatches(pantry, preferences, { mealType, minPercent: 50, maxMissing: 4, limit: 30 });
+        const recipes = await fetchRecipesByIds(matches.map(m => m.recipeId));
+        const byId = new Map(recipes.map(r => [r.id, r]));
+        const ranked = matches
+          // The database already applied allergies and diets; this adds the
+          // user's own typed allergies / foods to avoid (Profile).
+          .filter(m => byId.has(m.recipeId) && passesDietaryFilter(byId.get(m.recipeId)!, preferences))
+          .map(m => ({
+            recipe: byId.get(m.recipeId)!,
+            percent: m.percent,
+            have: Array<string>(m.haveCount).fill(''),
+            missing: m.missingIngredients,
+          }));
+        if (!cancelled) setServerRanked(ranked);
+      } catch {
+        if (!cancelled) setServerRanked([]);   // offline: local ranking still works
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pantry, preferences, mealType]);
 
   const { ready, almost } = useMemo(() => {
-    const ranked: RankedMeal[] = RECIPES
-      // Hard filters first: never suggest what they can't eat
-      .filter(r => passesDietaryFilter(r, preferences))
-      .map(recipe => {
-        const cov = getPantryCoverage(recipe, pantry);
-        return { recipe, percent: cov.percent, have: cov.have, missing: cov.missing };
-      })
+    const local: RankedMeal[] = library.map(recipe => {
+      const cov = getPantryCoverage(recipe, pantry);
+      return { recipe, percent: cov.percent, have: cov.have, missing: cov.missing };
+    });
+    const serverIds = new Set(serverRanked.map(m => m.recipe.id));
+    const ranked = [...serverRanked, ...local.filter(m => !serverIds.has(m.recipe.id))]
       .sort(
         (a, b) => b.percent - a.percent || a.missing.length - b.missing.length
       );
@@ -53,7 +97,7 @@ export default function CookWithPantryScreen() {
       ready: ranked.filter(m => m.percent >= 80).slice(0, 12),
       almost: ranked.filter(m => m.percent >= 50 && m.percent < 80).slice(0, 8),
     };
-  }, [pantry, preferences]);
+  }, [library, pantry, serverRanked]);
 
   const openRecipe = (m: RankedMeal) =>
     router.push(`/recipe/${m.recipe.id}?match=${m.percent}`);
@@ -69,10 +113,13 @@ export default function CookWithPantryScreen() {
           <Text style={styles.h1}>Cook With My Pantry</Text>
           <Text style={styles.sub}>
             {pantry.length > 0
-              ? `Matching meals to your ${pantry.length} pantry item${pantry.length === 1 ? '' : 's'}`
+              ? `${MEAL_INFO[mealType].label} ideas from your ${pantry.length} pantry item${pantry.length === 1 ? '' : 's'}`
               : 'Meals from what you already have'}
           </Text>
         </View>
+      </View>
+      <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+        <MealTypePicker value={mealType} onChange={setMealType} />
       </View>
 
       <ScrollView
@@ -155,6 +202,11 @@ function MealCard({
 }) {
   const { recipe, percent, have, missing } = meal;
   const total = have.length + missing.length;
+  const { grocery, addGroceryItem } = useApp();
+  const listed = new Set(grocery.filter(g => !g.checked).map(g => g.name.toLowerCase()));
+  const allListed = missing.every(m => listed.has(m.toLowerCase()) || listed.has((findPantryLibraryItem(m)?.name ?? '').toLowerCase()));
+  const addMissing = () =>
+    missing.forEach(name => addGroceryItem(name, { source: 'recipe', note: `For ${recipe.name}` }));
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={onPress}>
@@ -163,12 +215,15 @@ function MealCard({
         <View style={styles.flex1}>
           <Text style={styles.cardName}>{recipe.name}</Text>
           <Text style={styles.cardMeta}>
-            {formatTime(getTotalTime(recipe))} · {recipe.nutrition.calories} cal ·{' '}
-            {recipe.difficulty}
+            {formatTime(getTotalTime(recipe))}
+            {recipe.nutrition.calories > 0 ? ` · ${recipe.nutrition.calories} cal` : ''} · {recipe.difficulty}
           </Text>
         </View>
-        <View style={[styles.pctPill, percent >= 100 && styles.pctPillFull]}>
-          <Text style={styles.pctText}>{percent}%</Text>
+        <View style={{ alignItems: 'flex-end', gap: 8 }}>
+          <View style={[styles.pctPill, percent >= 100 && styles.pctPillFull]}>
+            <Text style={styles.pctText}>{percent}%</Text>
+          </View>
+          <FavoriteButton recipeId={recipe.id} size={16} />
         </View>
       </View>
 
@@ -193,11 +248,37 @@ function MealCard({
           )}
         </View>
       )}
+
+      {showMissing && missing.length > 0 && (
+        <TouchableOpacity
+          style={[styles.listBtn, allListed && styles.listBtnDone]}
+          onPress={addMissing}
+          disabled={allListed}
+          accessibilityRole="button"
+        >
+          <FontAwesome name={allListed ? 'check' : 'cart-plus'} size={14} color={COLORS.darkNavy} />
+          <Text style={styles.listBtnText}>
+            {allListed ? 'On your grocery list' : `Add ${missing.length === 1 ? 'it' : `all ${missing.length}`} to my grocery list`}
+          </Text>
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
+  listBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: COLORS.goldYellow,
+  },
+  listBtnDone: { backgroundColor: COLORS.lightYellow },
+  listBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.darkNavy },
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   flex1: { flex: 1 },
 

@@ -27,6 +27,8 @@
 // dimension instead of being a hard filter, so picking "spicy" nudges
 // results rather than deleting two-thirds of the library.
 
+import { findCustomConflicts } from './customFoods';
+import { recipeHasAlcohol } from './alcohol';
 import type {
   Recipe,
   ScoredRecipe,
@@ -155,7 +157,7 @@ function normalize(s: string): string {
 }
 
 /** Loose match so "Chicken Breast" in the pantry satisfies "chicken" in a recipe. */
-function pantryHas(pantry: PantryItem[], ingredientName: string): boolean {
+export function pantryHas(pantry: PantryItem[], ingredientName: string): boolean {
   const needle = normalize(ingredientName);
   return pantry.some(item => {
     if (item.quantity <= 0) return false;
@@ -198,12 +200,39 @@ export function getPantryCoverage(
  * Allergens are a hard exclusion — never surface a recipe containing
  * something the user flagged.
  */
+/**
+ * Age safeguard on its own, for screens that show a recipe without the
+ * other filters (a shared link, chat, Community, favorites).
+ */
+export function ageAllowsRecipe(recipe: Recipe, prefs: Pick<UserPreferences, 'allowAlcohol'>): boolean {
+  return prefs.allowAlcohol === true || !recipeHasAlcohol(recipe);
+}
+
 export function passesDietaryFilter(
   recipe: Recipe,
   prefs: UserPreferences
 ): boolean {
+  // Age safeguard: recipes made with alcohol only for people 21+ (utils/alcohol.ts).
+  if (!ageAllowsRecipe(recipe, prefs)) return false;
+
   const hasAllergen = recipe.allergens.some(a => prefs.avoidAllergens.includes(a));
   if (hasAllergen) return false;
+
+  // Recipes from the database can also list hidden allergens ("bread may
+  // contain eggs"), and imported/community recipes with an unrecognised
+  // ingredient have allergensVerified === false. For anyone with an
+  // allergy, both mean "don't show it".
+  const customAllergies = prefs.customAllergies ?? [];
+  if (prefs.avoidAllergens.length > 0 || customAllergies.length > 0) {
+    if (recipe.allergensVerified === false) return false;
+    if (recipe.mayContain?.some(a => prefs.avoidAllergens.includes(a))) return false;
+  }
+
+  // Allergies and foods-to-avoid the user typed in Profile.
+  if (customAllergies.length > 0 || (prefs.customAvoid ?? []).length > 0) {
+    const conflicts = findCustomConflicts(recipe, prefs);
+    if (conflicts.allergies.length > 0 || conflicts.avoid.length > 0) return false;
+  }
 
   const meetsDiet = prefs.dietary.every(tag => recipe.dietary.includes(tag));
   if (!meetsDiet) return false;
