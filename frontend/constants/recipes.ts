@@ -36,7 +36,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'high-protein', 'halal', 'kosher-style'],
+    dietary: ['dairy-free', 'high-protein', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'low-sodium', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: [],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -76,7 +77,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['halal'],
+    dietary: ['halal', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'hypoglycemia-friendly', 'low-sodium', 'high-fiber', 'low-sugar'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'dairy', 'corn'],
     ingredients: [
       { name: 'ground beef', amount: '1 lb', category: 'proteins' },
@@ -116,7 +118,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'high-protein', 'low-carb', 'keto', 'paleo', 'halal', 'kosher-style'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'high-protein', 'low-carb', 'keto', 'paleo', 'halal', 'kosher-style', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'healthy-fats', 'low-sodium'],
+    mealTypes: ['dinner'],
     allergens: ['fish'],
     ingredients: [
       { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
@@ -156,7 +159,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'medium',
-    dietary: [],
+    dietary: ['fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alcohol-free', 'gout-friendly', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'dairy', 'eggs'],
     ingredients: [
       { name: 'spaghetti', amount: '1 lb', category: 'grains' },
@@ -195,7 +199,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['gluten-free', 'dairy-free'],
+    dietary: ['gluten-free', 'dairy-free', 'egg-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'corn-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['coconut', 'shellfish'],
     // Note: red curry paste commonly contains shrimp paste — hence the
     // shellfish flag and no kosher-style tag. Use a vegan paste to lift both.
@@ -237,7 +242,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 0,
     servings: 2,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'gluten-free', 'low-carb', 'halal', 'kosher-style', 'pescatarian'],
+    dietary: ['vegetarian', 'gluten-free', 'low-carb', 'halal', 'kosher-style', 'pescatarian', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy', 'nuts'],
     ingredients: [
       { name: 'mixed greens', amount: '6 cups', category: 'produce' },
@@ -278,7 +284,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['gluten-free', 'dairy-free', 'high-protein', 'paleo', 'halal', 'kosher-style'],
+    dietary: ['gluten-free', 'dairy-free', 'high-protein', 'paleo', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'healthy-fats', 'low-sodium'],
+    mealTypes: ['dinner'],
     allergens: [],
     ingredients: [
       { name: 'sirloin steak', amount: '1.5 lbs', category: 'proteins' },
@@ -318,8 +325,9 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['dairy-free', 'halal', 'kosher-style'],
-    allergens: ['soy'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'low-fat'],
+    mealTypes: ['dinner'],
+    allergens: ['soy', 'gluten'],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
       { name: 'brown rice', amount: '1.5 cups dry', category: 'grains' },
@@ -359,7 +367,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'pescatarian'],
+    dietary: ['vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'pescatarian', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'heart-healthy', 'low-cholesterol', 'healthy-fats', 'low-sodium', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['sesame'],
     ingredients: [
       { name: 'quinoa', amount: '1 cup dry', category: 'grains' },
@@ -399,8 +408,9 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'dairy-free', 'high-protein', 'halal', 'kosher-style'],
-    allergens: ['fish', 'soy'],
+    dietary: ['pescatarian', 'dairy-free', 'high-protein', 'halal', 'kosher-style', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'healthy-fats'],
+    mealTypes: ['lunch', 'dinner'],
+    allergens: ['fish', 'soy', 'gluten'],
     ingredients: [
       { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
       { name: 'jasmine rice', amount: '1.5 cups dry', category: 'grains' },
@@ -440,7 +450,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['halal'],
+    dietary: ['halal', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'healthy-fats', 'low-sodium', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'dairy', 'eggs'],
     ingredients: [
       { name: 'chicken thighs', amount: '4 boneless', category: 'proteins' },
@@ -483,8 +494,9 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style'],
-    allergens: ['soy', 'gluten', 'corn'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'nightshade-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gerd-friendly', 'low-cholesterol'],
+    mealTypes: ['dinner'],
+    allergens: ['soy', 'gluten', 'corn', 'sesame'],
     ingredients: [
       { name: 'flank steak', amount: '1.25 lbs', category: 'proteins' },
       { name: 'broccoli', amount: '2 heads', category: 'produce' },
@@ -526,7 +538,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'vegan', 'dairy-free', 'halal', 'kosher-style', 'pescatarian'],
+    dietary: ['vegetarian', 'vegan', 'dairy-free', 'halal', 'kosher-style', 'pescatarian', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'heart-healthy', 'low-cholesterol', 'low-sodium', 'low-fat', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'corn'],
     ingredients: [
       { name: 'sweet potato', amount: '2 large', category: 'produce' },
@@ -568,7 +581,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian'],
+    dietary: ['pescatarian', 'fish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['shellfish', 'gluten', 'dairy'],
     ingredients: [
       { name: 'shrimp', amount: '1 lb peeled', category: 'proteins' },
@@ -610,7 +624,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 90,
     servings: 6,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'high-protein', 'halal'],
+    dietary: ['gluten-free', 'high-protein', 'halal', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'hypoglycemia-friendly', 'high-fiber', 'low-sugar'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy'],
     // Cheddar topping is optional; it is still flagged as a dairy
     // allergen for safety. No kosher-style tag since the dish is built
@@ -657,7 +672,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 40,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'high-protein', 'paleo', 'halal', 'kosher-style'],
+    dietary: ['gluten-free', 'dairy-free', 'high-protein', 'paleo', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'healthy-fats', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: [],
     ingredients: [
       { name: 'chicken thighs', amount: '6 bone-in', category: 'proteins' },
@@ -698,8 +714,9 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['vegetarian', 'vegan', 'dairy-free', 'halal', 'kosher-style', 'pescatarian'],
-    allergens: ['soy', 'corn'],
+    dietary: ['vegetarian', 'dairy-free', 'halal', 'kosher-style', 'pescatarian', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'low-cholesterol', 'healthy-fats', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
+    allergens: ['soy', 'corn', 'gluten'],
     ingredients: [
       { name: 'extra-firm tofu', amount: '2 blocks', category: 'proteins' },
       { name: 'jasmine rice', amount: '1.5 cups dry', category: 'grains' },
@@ -741,8 +758,9 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 18,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['pescatarian', 'halal', 'kosher-style'],
-    allergens: ['fish', 'gluten', 'dairy', 'corn'],
+    dietary: ['pescatarian', 'halal', 'kosher-style', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'low-fat', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
+    allergens: ['fish', 'gluten', 'dairy', 'corn', 'eggs'],
     ingredients: [
       { name: 'white fish fillets', amount: '1.5 lbs', category: 'proteins' },
       { name: 'panko breadcrumbs', amount: '1.5 cups', category: 'pantry' },
@@ -785,7 +803,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'halal', 'kosher-style', 'pescatarian'],
+    dietary: ['vegetarian', 'halal', 'kosher-style', 'pescatarian', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'dairy'],
     ingredients: [
       { name: 'rigatoni', amount: '1 lb', category: 'grains' },
@@ -828,7 +847,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'high-protein', 'paleo', 'halal', 'kosher-style'],
+    dietary: ['gluten-free', 'high-protein', 'paleo', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'healthy-fats', 'low-sodium'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['nuts', 'mustard'],
     ingredients: [
       { name: 'chicken breast', amount: '1.25 lbs', category: 'proteins' },
@@ -872,7 +892,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'gluten-free', 'halal', 'kosher-style', 'pescatarian'],
+    dietary: ['vegetarian', 'gluten-free', 'halal', 'kosher-style', 'pescatarian', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'healthy-fats', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy', 'sesame'],
     ingredients: [
       { name: 'chickpeas', amount: '2 cans', category: 'proteins' },
@@ -916,7 +937,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['gluten-free', 'high-protein', 'halal'],
+    dietary: ['gluten-free', 'high-protein', 'halal', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-sodium', 'low-fat', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy'],
     ingredients: [
       { name: 'skirt steak', amount: '1.5 lbs', category: 'proteins' },
@@ -955,7 +977,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'hypoglycemia-friendly', 'low-sodium', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: [],
     ingredients: [
       { name: 'sirloin steak', amount: '1.5 lbs', category: 'proteins' },
@@ -989,7 +1012,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'soy', 'corn'],
     ingredients: [
       { name: 'chicken thighs', amount: '1.5 lbs boneless', category: 'proteins' },
@@ -1023,7 +1047,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'high-protein'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'high-protein', 'egg-free', 'fish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'low-fat', 'low-calorie'],
+    mealTypes: ['dinner'],
     allergens: ['shellfish'],
     ingredients: [
       { name: 'shrimp', amount: '1.25 lbs peeled', category: 'proteins' },
@@ -1057,7 +1082,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 35,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'hypoglycemia-friendly', 'low-sodium', 'low-fat', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['mustard'],
     ingredients: [
       { name: 'chicken thighs', amount: '1.5 lbs boneless', category: 'proteins' },
@@ -1090,7 +1116,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 18,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'halal', 'high-protein'],
+    dietary: ['gluten-free', 'halal', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly', 'low-sugar'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy'],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -1123,7 +1150,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'healthy-fats', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'soy', 'peanuts'],
     ingredients: [
       { name: 'extra-firm tofu', amount: '2 blocks', category: 'proteins' },
@@ -1156,7 +1184,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'low-carb', 'keto', 'halal', 'kosher-style'],
+    dietary: ['pescatarian', 'gluten-free', 'low-carb', 'keto', 'halal', 'kosher-style', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['dairy', 'fish'],
     ingredients: [
       { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
@@ -1186,7 +1215,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 150,
     servings: 6,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: [],
     ingredients: [
       { name: 'chicken thighs', amount: '1.5 lbs boneless', category: 'proteins' },
@@ -1218,7 +1248,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gerd-friendly', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'soy', 'sesame'],
     ingredients: [
       { name: 'sirloin steak', amount: '1.5 lbs', category: 'proteins' },
@@ -1252,7 +1283,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'healthy-fats', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: [],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -1288,7 +1320,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 10,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'high-protein'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'high-protein', 'egg-free', 'fish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'low-sodium', 'low-fat', 'low-calorie', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['shellfish', 'corn'],
     ingredients: [
       { name: 'shrimp', amount: '1.25 lbs peeled', category: 'proteins' },
@@ -1322,7 +1355,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: [],
     ingredients: [
       { name: 'chicken thighs', amount: '1.5 lbs boneless', category: 'proteins' },
@@ -1354,7 +1388,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'high-protein'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'high-protein', 'egg-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'corn-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['shellfish', 'coconut'],
     ingredients: [
       { name: 'shrimp', amount: '1.25 lbs peeled', category: 'proteins' },
@@ -1387,7 +1422,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 18,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'halal', 'high-protein'],
+    dietary: ['gluten-free', 'halal', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'low-sodium', 'low-fat', 'low-calorie'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy'],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -1423,7 +1459,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly', 'healthy-fats', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'soy', 'fish'],
     ingredients: [
       { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
@@ -1456,7 +1493,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'low-fat', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['gluten'],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -1488,7 +1526,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-sodium', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['gluten'],
     ingredients: [
       { name: 'ground beef', amount: '1.25 lbs', category: 'proteins' },
@@ -1521,7 +1560,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['halal', 'high-protein'],
+    dietary: ['halal', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'healthy-fats', 'low-sodium', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['dairy', 'gluten', 'nuts'],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -1554,7 +1594,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'healthy-fats'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'soy', 'fish', 'corn'],
     ingredients: [
       { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
@@ -1588,7 +1629,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['gluten-free', 'dairy-free', 'low-carb', 'keto', 'paleo', 'halal', 'kosher-style'],
+    dietary: ['gluten-free', 'dairy-free', 'low-carb', 'keto', 'paleo', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-sodium', 'low-calorie'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: [],
     ingredients: [
       { name: 'sirloin steak', amount: '1.5 lbs', category: 'proteins' },
@@ -1624,7 +1666,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 16,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'low-carb', 'keto', 'halal'],
+    dietary: ['gluten-free', 'low-carb', 'keto', 'halal', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-calorie'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy'],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -1657,7 +1700,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 12,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'heart-healthy', 'low-cholesterol', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['fish', 'corn'],
     ingredients: [
       { name: 'white fish fillets', amount: '1.5 lbs', category: 'proteins' },
@@ -1691,7 +1735,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 22,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'low-carb', 'paleo', 'halal', 'kosher-style'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'low-carb', 'paleo', 'halal', 'kosher-style', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'healthy-fats', 'low-sodium'],
+    mealTypes: ['dinner'],
     allergens: ['fish', 'mustard'],
     ingredients: [
       { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
@@ -1722,7 +1767,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 22,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'corn-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['coconut'],
     ingredients: [
       { name: 'chickpeas', amount: '2 cans', category: 'proteins' },
@@ -1755,7 +1801,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten'],
     ingredients: [
       { name: 'ground turkey', amount: '1.25 lbs', category: 'proteins' },
@@ -1787,7 +1834,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-cholesterol', 'healthy-fats', 'high-fiber', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'soy', 'sesame'],
     ingredients: [
       { name: 'extra-firm tofu', amount: '2 blocks', category: 'proteins' },
@@ -1821,7 +1869,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'heart-healthy', 'low-cholesterol', 'low-sodium', 'low-fat', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['fish'],
     ingredients: [
       { name: 'white fish fillets', amount: '1.5 lbs', category: 'proteins' },
@@ -1855,7 +1904,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'heart-healthy', 'low-cholesterol', 'low-sodium', 'low-fat', 'low-calorie', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: [],
     ingredients: [
       { name: 'black beans', amount: '2 cans', category: 'proteins' },
@@ -1890,7 +1940,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'low-carb', 'keto', 'halal'],
+    dietary: ['gluten-free', 'low-carb', 'keto', 'halal', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-sodium', 'low-calorie'],
+    mealTypes: ['dinner'],
     allergens: ['dairy'],
     ingredients: [
       { name: 'sirloin steak', amount: '1.5 lbs', category: 'proteins' },
@@ -1922,7 +1973,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly', 'healthy-fats', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'soy', 'peanuts'],
     ingredients: [
       { name: 'chicken thighs', amount: '1.5 lbs boneless', category: 'proteins' },
@@ -1956,7 +2008,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'pescatarian', 'gluten-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'pescatarian', 'gluten-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'heart-healthy', 'low-cholesterol', 'low-sodium', 'low-fat', 'low-calorie', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy'],
     ingredients: [
       { name: 'brown or green lentils', amount: '1.5 cups dry', category: 'proteins' },
@@ -1992,7 +2045,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly', 'heart-healthy', 'low-cholesterol', 'healthy-fats', 'low-sodium', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'soy'],
     ingredients: [
       { name: 'extra-firm tofu', amount: '2 blocks', category: 'proteins' },
@@ -2025,7 +2079,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'low-carb', 'keto', 'paleo', 'halal', 'kosher-style'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'low-carb', 'keto', 'paleo', 'halal', 'kosher-style', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'heart-healthy', 'low-cholesterol', 'low-sodium', 'low-fat', 'low-calorie'],
+    mealTypes: ['dinner'],
     allergens: ['fish'],
     ingredients: [
       { name: 'white fish fillets', amount: '1.5 lbs', category: 'proteins' },
@@ -2059,7 +2114,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'low-fat'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten'],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -2093,7 +2149,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'nightshade-free', 'no-pork', 'no-processed-meat', 'alcohol-free'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'soy', 'corn'],
     ingredients: [
       { name: 'ground beef', amount: '1.25 lbs', category: 'proteins' },
@@ -2127,7 +2184,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium'],
+    mealTypes: ['dinner'],
     allergens: [],
     ingredients: [
       { name: 'chicken thighs', amount: '1.5 lbs boneless', category: 'proteins' },
@@ -2162,7 +2220,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'high-protein'],
+    dietary: ['pescatarian', 'gluten-free', 'high-protein', 'egg-free', 'fish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly', 'low-fat', 'low-sugar'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy', 'shellfish'],
     ingredients: [
       { name: 'shrimp', amount: '1.25 lbs peeled', category: 'proteins' },
@@ -2195,7 +2254,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'heart-healthy', 'low-cholesterol', 'healthy-fats', 'low-sodium', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: [],
     ingredients: [
       { name: 'chickpeas', amount: '2 cans', category: 'proteins' },
@@ -2230,7 +2290,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 18,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'healthy-fats', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'soy', 'fish', 'sesame'],
     ingredients: [
       { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
@@ -2264,7 +2325,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'low-calorie'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'mustard'],
     ingredients: [
       { name: 'ground turkey', amount: '1.25 lbs', category: 'proteins' },
@@ -2298,7 +2360,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 22,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'heart-healthy', 'low-cholesterol', 'low-sodium', 'low-fat', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['gluten'],
     ingredients: [
       { name: 'chickpeas', amount: '2 cans', category: 'proteins' },
@@ -2331,7 +2394,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'low-fat', 'low-calorie'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: [],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -2366,7 +2430,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 12,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'low-carb', 'keto', 'paleo'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'low-carb', 'keto', 'paleo', 'egg-free', 'fish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['shellfish'],
     ingredients: [
       { name: 'shrimp', amount: '1.25 lbs peeled', category: 'proteins' },
@@ -2399,7 +2464,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 22,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'low-carb', 'keto', 'halal', 'kosher-style'],
+    dietary: ['pescatarian', 'gluten-free', 'low-carb', 'keto', 'halal', 'kosher-style', 'egg-free', 'shellfish-free', 'mollusc-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium'],
+    mealTypes: ['dinner'],
     allergens: ['dairy', 'fish', 'nuts'],
     ingredients: [
       { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
@@ -2430,7 +2496,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-cholesterol', 'low-fat', 'low-calorie', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: [],
     ingredients: [
       { name: 'black beans', amount: '2 cans', category: 'proteins' },
@@ -2462,7 +2529,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'corn-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['coconut'],
     ingredients: [
       { name: 'brown or green lentils', amount: '1.5 cups dry', category: 'proteins' },
@@ -2495,7 +2563,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium'],
+    mealTypes: ['dinner'],
     allergens: [],
     ingredients: [
       { name: 'ground turkey', amount: '1.25 lbs', category: 'proteins' },
@@ -2529,7 +2598,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'pescatarian', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'low-cholesterol', 'low-fat', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['gluten'],
     ingredients: [
       { name: 'chickpeas', amount: '2 cans', category: 'proteins' },
@@ -2563,7 +2633,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['gluten-free', 'halal', 'high-protein'],
+    dietary: ['gluten-free', 'halal', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'diabetic-friendly', 'hypoglycemia-friendly', 'low-sodium', 'low-fat', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['dairy'],
     ingredients: [
       { name: 'sirloin steak', amount: '1.5 lbs', category: 'proteins' },
@@ -2599,7 +2670,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly', 'hypoglycemia-friendly', 'low-calorie'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'soy'],
     ingredients: [
       { name: 'chicken thighs', amount: '1.5 lbs boneless', category: 'proteins' },
@@ -2632,7 +2704,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly', 'healthy-fats', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'soy', 'peanuts'],
     ingredients: [
       { name: 'extra-firm tofu', amount: '2 blocks', category: 'proteins' },
@@ -2665,7 +2738,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'pescatarian', 'gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['vegetarian', 'pescatarian', 'gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'healthy-fats', 'low-sodium', 'low-calorie', 'high-fiber', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['eggs'],
     ingredients: [
       { name: 'eggs', amount: '8', category: 'proteins' },
@@ -2699,7 +2773,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'pescatarian', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'low-cholesterol', 'low-fat', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'soy', 'corn'],
     ingredients: [
       { name: 'chickpeas', amount: '2 cans', category: 'proteins' },
@@ -2733,7 +2808,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 18,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'low-cholesterol', 'healthy-fats', 'low-sodium', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['fish'],
     ingredients: [
       { name: 'white fish fillets', amount: '1.5 lbs', category: 'proteins' },
@@ -2767,7 +2843,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['vegetarian', 'pescatarian', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['vegetarian', 'pescatarian', 'halal', 'kosher-style', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'hypoglycemia-friendly', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy', 'gluten', 'soy'],
     ingredients: [
       { name: 'extra-firm tofu', amount: '2 blocks', category: 'proteins' },
@@ -2800,7 +2877,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'halal', 'high-protein'],
+    dietary: ['gluten-free', 'halal', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'low-sodium', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['dairy'],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -2832,7 +2910,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['corn'],
     ingredients: [
       { name: 'ground turkey', amount: '1.25 lbs', category: 'proteins' },
@@ -2867,7 +2946,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['vegetarian', 'pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['eggs', 'gluten', 'soy', 'sesame'],
     ingredients: [
       { name: 'eggs', amount: '8', category: 'proteins' },
@@ -2901,7 +2981,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'hypoglycemia-friendly', 'low-sodium', 'low-fat', 'low-calorie'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'mustard'],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -2935,7 +3016,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'heart-healthy', 'low-cholesterol', 'low-sodium', 'low-fat', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['fish'],
     ingredients: [
       { name: 'white fish fillets', amount: '1.5 lbs', category: 'proteins' },
@@ -2968,7 +3050,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-cholesterol', 'low-fat', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: [],
     ingredients: [
       { name: 'black beans', amount: '2 cans', category: 'proteins' },
@@ -3002,7 +3085,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'low-carb', 'paleo', 'halal', 'kosher-style'],
+    dietary: ['gluten-free', 'dairy-free', 'low-carb', 'paleo', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'nightshade-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gerd-friendly', 'low-sodium', 'low-calorie'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: [],
     ingredients: [
       { name: 'sirloin steak', amount: '1.5 lbs', category: 'proteins' },
@@ -3033,7 +3117,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 22,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'low-carb', 'keto', 'paleo', 'halal', 'kosher-style'],
+    dietary: ['gluten-free', 'dairy-free', 'low-carb', 'keto', 'paleo', 'halal', 'kosher-style', 'egg-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'corn-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['coconut'],
     ingredients: [
       { name: 'chicken thighs', amount: '1.5 lbs boneless', category: 'proteins' },
@@ -3066,7 +3151,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'healthy-fats', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: [],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -3101,7 +3187,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 12,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'pescatarian', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['vegetarian', 'pescatarian', 'halal', 'kosher-style', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'peanut-free', 'soy-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'hypoglycemia-friendly', 'healthy-fats'],
+    mealTypes: ['breakfast', 'brunch', 'dinner'],
     allergens: ['dairy', 'eggs', 'gluten', 'nuts'],
     ingredients: [
       { name: 'eggs', amount: '8', category: 'proteins' },
@@ -3134,7 +3221,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['pescatarian', 'gluten-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'healthy-fats', 'low-sodium', 'low-calorie'],
+    mealTypes: ['dinner'],
     allergens: ['dairy', 'fish'],
     ingredients: [
       { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
@@ -3170,7 +3258,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 18,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'soy', 'corn'],
     ingredients: [
       { name: 'ground turkey', amount: '1.25 lbs', category: 'proteins' },
@@ -3204,7 +3293,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-cholesterol', 'healthy-fats', 'low-sodium', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: [],
     ingredients: [
       { name: 'black beans', amount: '2 cans', category: 'proteins' },
@@ -3240,7 +3330,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['halal', 'high-protein'],
+    dietary: ['halal', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'hypoglycemia-friendly'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy', 'gluten'],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -3273,7 +3364,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 12,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'low-carb', 'keto'],
+    dietary: ['pescatarian', 'gluten-free', 'low-carb', 'keto', 'egg-free', 'fish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'diabetic-friendly', 'low-sodium', 'low-calorie', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['dairy', 'shellfish'],
     ingredients: [
       { name: 'shrimp', amount: '1.25 lbs peeled', category: 'proteins' },
@@ -3305,7 +3397,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 28,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['pescatarian', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly', 'healthy-fats'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'soy', 'fish'],
     ingredients: [
       { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
@@ -3338,7 +3431,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: [],
     ingredients: [
       { name: 'chicken thighs', amount: '1.5 lbs boneless', category: 'proteins' },
@@ -3370,7 +3464,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'high-fiber', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'soy', 'peanuts'],
     ingredients: [
       { name: 'ground beef', amount: '1.25 lbs', category: 'proteins' },
@@ -3403,7 +3498,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['vegetarian', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'heart-healthy', 'low-cholesterol', 'healthy-fats', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['soy'],
     ingredients: [
       { name: 'extra-firm tofu', amount: '2 blocks', category: 'proteins' },
@@ -3437,7 +3533,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'low-carb', 'paleo', 'halal', 'kosher-style'],
+    dietary: ['gluten-free', 'dairy-free', 'low-carb', 'paleo', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'nightshade-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gerd-friendly', 'low-sodium', 'low-calorie'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['mustard'],
     ingredients: [
       { name: 'sirloin steak', amount: '1.5 lbs', category: 'proteins' },
@@ -3469,7 +3566,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 22,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['dairy-free', 'halal', 'kosher-style', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['gluten'],
     ingredients: [
       { name: 'ground turkey', amount: '1.25 lbs', category: 'proteins' },
@@ -3502,7 +3600,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 12,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'low-carb', 'keto', 'halal', 'kosher-style'],
+    dietary: ['dairy-free', 'low-carb', 'keto', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'low-calorie', 'low-sugar'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'soy', 'sesame'],
     ingredients: [
       { name: 'chicken thighs', amount: '1.5 lbs boneless', category: 'proteins' },
@@ -3535,7 +3634,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 12,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'diabetic-friendly', 'hypoglycemia-friendly', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['corn'],
     ingredients: [
       { name: 'sirloin steak', amount: '1.5 lbs', category: 'proteins' },
@@ -3570,7 +3670,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 18,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'corn-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['fish', 'coconut'],
     ingredients: [
       { name: 'white fish fillets', amount: '1.5 lbs', category: 'proteins' },
@@ -3603,7 +3704,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'vegan', 'pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'heart-healthy', 'low-cholesterol', 'low-sodium', 'low-fat', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['corn'],
     ingredients: [
       { name: 'black beans', amount: '2 cans', category: 'proteins' },
@@ -3637,7 +3739,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'halal', 'high-protein'],
+    dietary: ['gluten-free', 'halal', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'healthy-fats', 'low-sodium', 'low-sugar'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['dairy', 'nuts'],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs', category: 'proteins' },
@@ -3670,7 +3773,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 22,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['pescatarian', 'gluten-free', 'dairy-free', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'healthy-fats', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['fish'],
     ingredients: [
       { name: 'salmon fillet', amount: '4 pieces', category: 'proteins' },
@@ -3701,7 +3805,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'healthy-fats', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: [],
     ingredients: [
       { name: 'ground turkey', amount: '1.25 lbs', category: 'proteins' },
@@ -3735,7 +3840,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'pescatarian', 'gluten-free', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['vegetarian', 'pescatarian', 'gluten-free', 'halal', 'kosher-style', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly', 'hypoglycemia-friendly', 'low-calorie', 'low-sugar'],
+    mealTypes: ['breakfast', 'brunch', 'dinner'],
     allergens: ['dairy', 'eggs'],
     ingredients: [
       { name: 'eggs', amount: '8', category: 'proteins' },
@@ -3767,7 +3873,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 12,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['pescatarian', 'dairy-free', 'high-protein'],
+    dietary: ['pescatarian', 'dairy-free', 'high-protein', 'egg-free', 'fish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'low-fat', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['gluten', 'soy', 'shellfish', 'sesame'],
     ingredients: [
       { name: 'shrimp', amount: '1.25 lbs peeled', category: 'proteins' },
@@ -3801,7 +3908,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 28,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'pescatarian', 'gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein'],
+    dietary: ['vegetarian', 'pescatarian', 'gluten-free', 'dairy-free', 'paleo', 'halal', 'kosher-style', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'hypoglycemia-friendly', 'healthy-fats', 'low-sodium', 'low-sugar'],
+    mealTypes: ['breakfast', 'brunch', 'dinner'],
     allergens: ['eggs'],
     ingredients: [
       { name: 'eggs', amount: '8', category: 'proteins' },
@@ -3835,7 +3943,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['vegetarian', 'pescatarian', 'halal', 'kosher-style'],
+    dietary: ['vegetarian', 'pescatarian', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-cholesterol', 'low-fat', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['dairy', 'gluten'],
     ingredients: [
       { name: 'chickpeas', amount: '2 cans', category: 'proteins' },
@@ -3884,7 +3993,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 50,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['high-protein', 'halal'],
+    dietary: ['high-protein', 'halal', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'dairy', 'eggs'],
     ingredients: [
       { name: 'chicken thighs and drumsticks', amount: '2.5 lbs', category: 'proteins' },
@@ -3925,7 +4035,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 40,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['high-protein', 'halal'],
+    dietary: ['high-protein', 'halal', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'mustard-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'healthy-fats', 'low-sodium', 'low-calorie'],
+    mealTypes: ['dinner'],
     allergens: ['gluten'],
     ingredients: [
       { name: 'chicken thighs', amount: '2 lbs', category: 'proteins' },
@@ -3965,7 +4076,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['pescatarian', 'gluten-free', 'high-protein'],
+    dietary: ['pescatarian', 'gluten-free', 'high-protein', 'egg-free', 'fish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'gerd-friendly', 'hypoglycemia-friendly', 'low-sugar'],
+    mealTypes: ['breakfast', 'brunch', 'dinner'],
     allergens: ['shellfish', 'dairy', 'corn'],
     ingredients: [
       { name: 'shrimp', amount: '1.5 lbs, peeled', category: 'proteins' },
@@ -4005,7 +4117,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 180,
     servings: 6,
     difficulty: 'medium',
-    dietary: ['dairy-free', 'high-protein', 'halal', 'kosher-style'],
+    dietary: ['dairy-free', 'high-protein', 'halal', 'kosher-style', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'hypoglycemia-friendly', 'low-sodium', 'low-calorie'],
+    mealTypes: ['dinner'],
     allergens: ['corn'],
     ingredients: [
       { name: 'beef chuck roast', amount: '3 lbs', category: 'proteins' },
@@ -4046,7 +4159,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['high-protein', 'halal'],
+    dietary: ['high-protein', 'halal', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'dairy', 'eggs'],
     ingredients: [
       { name: 'chicken breast', amount: '4 cutlets', category: 'proteins' },
@@ -4086,7 +4200,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 40,
     servings: 6,
     difficulty: 'medium',
-    dietary: ['dairy-free', 'high-protein', 'halal'],
+    dietary: ['dairy-free', 'high-protein', 'halal', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'soy-free', 'sesame-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'alcohol-free', 'gout-friendly', 'low-fat', 'low-calorie'],
+    mealTypes: ['dinner'],
     allergens: [],
     ingredients: [
       { name: 'chicken thighs', amount: '1 lb, cubed', category: 'proteins' },
@@ -4126,7 +4241,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 55,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['high-protein', 'halal'],
+    dietary: ['high-protein', 'halal', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['gluten', 'eggs', 'dairy'],
     ingredients: [
       { name: 'ground turkey', amount: '1.5 lbs', category: 'proteins' },
@@ -4167,7 +4283,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['dairy-free', 'high-protein'],
+    dietary: ['dairy-free', 'high-protein', 'mollusc-free', 'nut-free', 'wheat-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'low-fodmap', 'gout-friendly'],
+    mealTypes: ['dinner'],
     allergens: ['peanuts', 'eggs', 'fish', 'soy'],
     ingredients: [
       { name: 'chicken breast', amount: '1 lb, sliced thin', category: 'proteins' },
@@ -4208,7 +4325,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 10,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'high-protein'],
+    dietary: ['dairy-free', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'nightshade-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gerd-friendly'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['soy', 'gluten', 'sesame'],
     ingredients: [
       { name: 'flank steak', amount: '1.5 lbs, sliced paper-thin', category: 'proteins' },
@@ -4248,8 +4366,9 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 30,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['dairy-free', 'high-protein'],
-    allergens: ['gluten', 'soy', 'eggs'],
+    dietary: ['dairy-free', 'high-protein', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'mustard-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'nightshade-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-calorie', 'low-sugar'],
+    mealTypes: ['dinner'],
+    allergens: ['gluten', 'soy', 'eggs', 'corn'],
     ingredients: [
       { name: 'chicken thighs', amount: '1.5 lbs', category: 'proteins' },
       { name: 'ramen noodles', amount: '4 portions', category: 'grains' },
@@ -4289,7 +4408,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 15,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'high-protein'],
+    dietary: ['dairy-free', 'high-protein', 'egg-free', 'nut-free', 'peanut-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sugar'],
+    mealTypes: ['dinner'],
     allergens: ['soy', 'gluten', 'fish'],
     ingredients: [
       { name: 'ground chicken', amount: '1.5 lbs', category: 'proteins' },
@@ -4330,7 +4450,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 25,
     servings: 4,
     difficulty: 'medium',
-    dietary: ['gluten-free', 'high-protein'],
+    dietary: ['gluten-free', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'hypoglycemia-friendly', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['corn', 'dairy'],
     ingredients: [
       { name: 'cooked shredded chicken', amount: '3 cups', category: 'proteins' },
@@ -4369,7 +4490,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 10,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'gluten-free', 'high-protein', 'halal'],
+    dietary: ['dairy-free', 'gluten-free', 'high-protein', 'halal', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'nightshade-free', 'no-pork', 'no-processed-meat', 'alcohol-free', 'diabetic-friendly', 'hypoglycemia-friendly', 'low-sodium', 'high-fiber'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: ['corn'],
     ingredients: [
       { name: 'flank or skirt steak', amount: '1.5 lbs', category: 'proteins' },
@@ -4408,7 +4530,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 20,
     servings: 4,
     difficulty: 'easy',
-    dietary: ['dairy-free', 'gluten-free', 'high-protein', 'halal'],
+    dietary: ['dairy-free', 'gluten-free', 'high-protein', 'halal', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'celery-free', 'lupin-free', 'sulphite-free', 'corn-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'low-sodium', 'low-fat'],
+    mealTypes: ['lunch', 'dinner'],
     allergens: [],
     ingredients: [
       { name: 'chicken breast', amount: '1.5 lbs, sliced', category: 'proteins' },
@@ -4447,7 +4570,8 @@ export const RECIPES: Recipe[] = [
     cookMinutes: 45,
     servings: 6,
     difficulty: 'medium',
-    dietary: ['dairy-free', 'gluten-free', 'halal', 'high-protein'],
+    dietary: ['dairy-free', 'gluten-free', 'halal', 'high-protein', 'egg-free', 'fish-free', 'shellfish-free', 'mollusc-free', 'nut-free', 'peanut-free', 'wheat-free', 'soy-free', 'sesame-free', 'mustard-free', 'lupin-free', 'sulphite-free', 'coconut-free', 'alpha-gal-safe', 'no-red-meat', 'no-pork', 'no-processed-meat', 'alcohol-free', 'gout-friendly', 'diabetic-friendly', 'hypoglycemia-friendly', 'low-calorie', 'high-fiber'],
+    mealTypes: ['dinner'],
     allergens: ['corn'],
     ingredients: [
       { name: 'chicken thighs', amount: '2 lbs', category: 'proteins' },
@@ -4496,14 +4620,3 @@ export const DIFFICULTY_LABELS = {
   medium: 'Medium',
   hard: 'Advanced',
 } as const;
-
-/**
- * Picks a random recipe, optionally avoiding ones already shown.
- * Used by the "Surprise Me" randomizer so hitting redo cycles the whole
- * library before it repeats anything.
- */
-export function getRandomRecipe(excludeIds: string[] = []): Recipe {
-  const pool = RECIPES.filter(r => !excludeIds.includes(r.id));
-  const source = pool.length > 0 ? pool : RECIPES;
-  return source[Math.floor(Math.random() * source.length)];
-}

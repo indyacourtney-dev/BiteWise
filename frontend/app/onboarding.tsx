@@ -1,17 +1,19 @@
 // app/onboarding.tsx
 //
 // First-launch setup for each NEW ACCOUNT (storage is per-user now, so
-// every fresh account goes through this once). Seven detailed steps:
+// every fresh account goes through this once). Eight steps:
 //
-//   0. Name + household size        → greeting, portion context
-//   1. Dietary lifestyle            → hard filter in matching
-//   2. Allergies & must-avoids      → hard filter, safety-critical
-//   3. Cuisines you love            → soft signal
-//   4. Foods & flavors you enjoy    → soft signal (favoriteTags)
-//   5. Foods you'd rather skip      → soft signal (dislikedTags)
-//   6. Spice, skill & time          → tunes recommendations
+//   0. Birthday (can't skip)        → age safeguard: locked once saved;
+//                                     alcohol recipes only for 21+
+//   1. Name + household size        → greeting, portion context
+//   2. Dietary lifestyle            → hard filter in matching
+//   3. Allergies & must-avoids      → hard filter, safety-critical
+//   4. Cuisines you love            → soft signal
+//   5. Foods & flavors you enjoy    → soft signal (favoriteTags)
+//   6. Foods you'd rather skip      → soft signal (dislikedTags)
+//   7. Spice, skill & time          → tunes recommendations
 //
-// Soft signals steer quiz tie-breaks and the Surprise Me randomizer.
+// Soft signals steer quiz tie-breaks, This or That and Decide for me.
 // Hard filters (diet + allergens) exclude recipes outright.
 
 import React, { useMemo, useState } from 'react';
@@ -29,9 +31,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
+import BirthdayForm from '../components/BirthdayForm';
 import { COLORS } from '../constants/Colors';
 import { useApp } from '../context/AppContext';
 import type { Allergen, DietaryTag, Difficulty } from '../types';
+import {
+  ALLERGEN_OPTIONS, CUISINE_OPTIONS, DIETARY_OPTIONS, HOUSEHOLD_OPTIONS, SKILL_OPTIONS, SPICE_OPTIONS,
+  TASTE_OPTIONS, TIME_OPTIONS,
+} from '@/constants/preferenceOptions';
 
 // ============================================
 // OPTIONS
@@ -39,116 +46,7 @@ import type { Allergen, DietaryTag, Difficulty } from '../types';
 // Taste chips map to recipe tags in constants/recipes.ts. One chip can
 // carry several tags so an honest answer lights up every related recipe.
 
-interface TasteOption {
-  id: string;
-  label: string;
-  emoji: string;
-  tags: string[];
-}
-
-const TASTE_OPTIONS: TasteOption[] = [
-  // Proteins
-  { id: 'chicken', label: 'Chicken', emoji: '🍗', tags: ['chicken', 'poultry'] },
-  { id: 'beef', label: 'Beef & steak', emoji: '🥩', tags: ['beef', 'red-meat'] },
-  { id: 'seafood', label: 'Fish & seafood', emoji: '🐟', tags: ['fish', 'seafood'] },
-  { id: 'plant', label: 'Plant-based', emoji: '🫘', tags: ['beans', 'tofu', 'plant-based', 'vegetarian'] },
-
-  // Formats
-  { id: 'pasta', label: 'Pasta & noodles', emoji: '🍝', tags: ['pasta', 'noodles'] },
-  { id: 'rice', label: 'Rice bowls', emoji: '🍚', tags: ['rice', 'grain', 'bowl'] },
-  { id: 'handheld', label: 'Tacos & sandwiches', emoji: '🌮', tags: ['handheld', 'tortilla', 'bread', 'sandwich'] },
-  { id: 'salad', label: 'Salads & fresh', emoji: '🥗', tags: ['salad', 'fresh', 'raw', 'light'] },
-  { id: 'potato', label: 'Potatoes', emoji: '🥔', tags: ['potato', 'root-veg'] },
-  { id: 'soup', label: 'Stews & curries', emoji: '🍲', tags: ['simmered', 'saucy', 'slow-cooked'] },
-
-  // Cooking styles
-  { id: 'grilled', label: 'Grilled & smoky', emoji: '🔥', tags: ['grilled', 'charred'] },
-  { id: 'crispy', label: 'Crispy & fried', emoji: '🍤', tags: ['fried', 'crispy'] },
-  { id: 'cheesy', label: 'Cheesy & creamy', emoji: '🧀', tags: ['cheesy', 'creamy', 'rich'] },
-
-  // Flavor directions
-  { id: 'comfort', label: 'Comfort classics', emoji: '🏠', tags: ['comfort', 'classic'] },
-  { id: 'spicy', label: 'Spicy food', emoji: '🌶️', tags: ['spicy'] },
-  { id: 'sweet', label: 'Sweet & glazed', emoji: '🍯', tags: ['sweet', 'saucy'] },
-  { id: 'tangy', label: 'Bright & tangy', emoji: '🍋', tags: ['tangy', 'acidic'] },
-  { id: 'global', label: 'Global flavors', emoji: '🌍', tags: ['global', 'adventurous'] },
-
-  // Lifestyle
-  { id: 'quick', label: 'Quick & easy', emoji: '⚡', tags: ['quick', 'easy', 'weeknight'] },
-  { id: 'hearty', label: 'Big hearty portions', emoji: '💪', tags: ['hearty', 'portion-large'] },
-];
-
-const DIETARY_OPTIONS: { key: DietaryTag; label: string; emoji: string; hint?: string }[] = [
-  { key: 'vegetarian', label: 'Vegetarian', emoji: '🥕', hint: 'No meat or fish' },
-  { key: 'vegan', label: 'Vegan', emoji: '🌱', hint: 'No animal products' },
-  { key: 'pescatarian', label: 'Pescatarian', emoji: '🐟', hint: 'Fish yes, meat no' },
-  { key: 'gluten-free', label: 'Gluten-free', emoji: '🌾' },
-  { key: 'dairy-free', label: 'Dairy-free', emoji: '🥛' },
-  { key: 'high-protein', label: 'High-protein', emoji: '💪' },
-  { key: 'low-carb', label: 'Low-carb', emoji: '📉' },
-  { key: 'halal', label: 'Halal', emoji: '☪️' },
-  { key: 'kosher-style', label: 'Kosher-style', emoji: '✡️' },
-  { key: 'keto', label: 'Keto', emoji: '🥑' },
-  { key: 'paleo', label: 'Paleo', emoji: '🦴' },
-];
-
-const ALLERGEN_OPTIONS: { key: Allergen; label: string; emoji: string }[] = [
-  { key: 'peanuts', label: 'Peanuts', emoji: '🥜' },
-  { key: 'nuts', label: 'Tree nuts', emoji: '🌰' },
-  { key: 'shellfish', label: 'Shellfish', emoji: '🦐' },
-  { key: 'fish', label: 'Fish', emoji: '🐟' },
-  { key: 'eggs', label: 'Eggs', emoji: '🥚' },
-  { key: 'dairy', label: 'Dairy', emoji: '🥛' },
-  { key: 'soy', label: 'Soy', emoji: '🫛' },
-  { key: 'gluten', label: 'Gluten / wheat', emoji: '🌾' },
-  { key: 'sesame', label: 'Sesame', emoji: '🫓' },
-  { key: 'mustard', label: 'Mustard', emoji: '🟡' },
-  { key: 'coconut', label: 'Coconut', emoji: '🥥' },
-  { key: 'corn', label: 'Corn', emoji: '🌽' },
-];
-
-const CUISINE_OPTIONS: { id: string; label: string; emoji: string }[] = [
-  { id: 'american', label: 'American', emoji: '🍔' },
-  { id: 'italian', label: 'Italian', emoji: '🍕' },
-  { id: 'mexican', label: 'Mexican', emoji: '🌮' },
-  { id: 'chinese', label: 'Chinese', emoji: '🥡' },
-  { id: 'japanese', label: 'Japanese', emoji: '🍣' },
-  { id: 'thai', label: 'Thai', emoji: '🍜' },
-  { id: 'indian', label: 'Indian', emoji: '🍛' },
-  { id: 'mediterranean', label: 'Mediterranean', emoji: '🫒' },
-  { id: 'middle-eastern', label: 'Middle Eastern', emoji: '🧆' },
-  { id: 'korean', label: 'Korean', emoji: '🍲' },
-  { id: 'caribbean', label: 'Caribbean', emoji: '🏝️' },
-  { id: 'soul', label: 'Southern / Soul', emoji: '🍗' },
-];
-
-const SPICE_OPTIONS: { key: 'mild' | 'medium' | 'hot'; label: string; emoji: string; hint: string }[] = [
-  { key: 'mild', label: 'Mild', emoji: '😌', hint: 'Keep it gentle' },
-  { key: 'medium', label: 'Medium', emoji: '🌶️', hint: 'Some kick is good' },
-  { key: 'hot', label: 'Hot', emoji: '🔥', hint: 'Bring the heat' },
-];
-
-const SKILL_OPTIONS: { key: Difficulty; label: string; emoji: string; hint: string }[] = [
-  { key: 'easy', label: 'Beginner', emoji: '🥄', hint: 'Simple steps, few pans' },
-  { key: 'medium', label: 'Comfortable', emoji: '🍳', hint: 'Happy to follow a real recipe' },
-  { key: 'hard', label: 'Confident', emoji: '👨‍🍳', hint: 'Bring on the technique' },
-];
-
-const TIME_OPTIONS: { key: number | null; label: string }[] = [
-  { key: 15, label: '15 min' },
-  { key: 30, label: '30 min' },
-  { key: 45, label: '45 min' },
-  { key: null, label: 'No limit' },
-];
-
-const HOUSEHOLD_OPTIONS: { key: number; label: string }[] = [
-  { key: 1, label: 'Just me' },
-  { key: 2, label: '2 people' },
-  { key: 4, label: '3–4' },
-  { key: 6, label: '5+' },
-];
-
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 
 // ============================================
 // SCREEN
@@ -156,7 +54,7 @@ const TOTAL_STEPS = 7;
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { updatePreferences, completeOnboarding, preferences } = useApp();
+  const { updatePreferences, completeOnboarding, preferences, birthDate } = useApp();
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState(preferences.name ?? '');
@@ -216,22 +114,26 @@ export default function OnboardingScreen() {
     router.replace('/');
   };
 
-  const next = () => (step < TOTAL_STEPS - 1 ? setStep(step + 1) : finish());
+  const next = () => {
+    if (step === 0 && !birthDate) return; // the age check can't be skipped
+    step < TOTAL_STEPS - 1 ? setStep(step + 1) : finish();
+  };
   const back = () => step > 0 && setStep(step - 1);
 
   // Steps where skipping is fine (soft signals). Diet/allergy steps keep
   // a "None apply" feel via just tapping Continue with nothing selected.
-  const skippable = step >= 3 && step <= 5;
+  const skippable = step >= 4 && step <= 6;
 
   const ctaLabel = () => {
     switch (step) {
-      case 0: return 'Get started';
-      case 1: return dietary.size > 0 ? `Continue (${dietary.size} selected)` : 'No restrictions — continue';
-      case 2: return allergens.size > 0 ? `Continue (${allergens.size} selected)` : 'No allergies — continue';
-      case 3: return cuisines.size > 0 ? `Continue (${cuisines.size} picked)` : 'Continue';
-      case 4: return loves.size > 0 ? `Continue (${loves.size} picked)` : 'Continue';
-      case 5: return dislikes.size > 0 ? `Continue (${dislikes.size} to avoid)` : 'Continue';
-      case 6: return "Let's eat";
+      case 0: return 'Continue';
+      case 1: return 'Get started';
+      case 2: return dietary.size > 0 ? `Continue (${dietary.size} selected)` : 'No restrictions — continue';
+      case 3: return allergens.size > 0 ? `Continue (${allergens.size} selected)` : 'No allergies — continue';
+      case 4: return cuisines.size > 0 ? `Continue (${cuisines.size} picked)` : 'Continue';
+      case 5: return loves.size > 0 ? `Continue (${loves.size} picked)` : 'Continue';
+      case 6: return dislikes.size > 0 ? `Continue (${dislikes.size} to avoid)` : 'Continue';
+      case 7: return "Let's eat";
       default: return 'Continue';
     }
   };
@@ -264,10 +166,19 @@ export default function OnboardingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ===== STEP 0 — NAME + HOUSEHOLD ===== */}
+          {/* ===== STEP 0 — BIRTHDAY (age safeguard) ===== */}
           {step === 0 && (
             <View>
               <Text style={styles.brand}>BiteWise</Text>
+              <Text style={styles.h1}>First, your birthday 🎂</Text>
+              <Text style={styles.sub}>One quick check before we set things up.</Text>
+              <BirthdayForm />
+            </View>
+          )}
+
+          {/* ===== STEP 1 — NAME + HOUSEHOLD ===== */}
+          {step === 1 && (
+            <View>
               <Text style={styles.h1}>Let's set you up 👋</Text>
               <Text style={styles.sub}>
                 A minute of questions so every recommendation actually fits you.
@@ -303,8 +214,8 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ===== STEP 1 — DIETARY ===== */}
-          {step === 1 && (
+          {/* ===== STEP 2 — DIETARY ===== */}
+          {step === 2 && (
             <View>
               <Text style={styles.h1}>Any dietary lifestyle?</Text>
               <Text style={styles.sub}>
@@ -335,13 +246,13 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ===== STEP 2 — ALLERGIES ===== */}
-          {step === 2 && (
+          {/* ===== STEP 3 — ALLERGIES ===== */}
+          {step === 3 && (
             <View>
               <Text style={styles.h1}>Allergies or must-avoids? 🚫</Text>
               <Text style={styles.sub}>
                 This one matters most — anything you select is completely
-                excluded from every recommendation, quiz result, and Surprise Me.
+                excluded from every recommendation, quiz result, and pick we make for you.
               </Text>
               <View style={styles.chipGrid}>
                 {ALLERGEN_OPTIONS.map(o => {
@@ -365,8 +276,8 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ===== STEP 3 — CUISINES ===== */}
-          {step === 3 && (
+          {/* ===== STEP 4 — CUISINES ===== */}
+          {step === 4 && (
             <View>
               <Text style={styles.h1}>Cuisines you love 🌍</Text>
               <Text style={styles.sub}>
@@ -395,8 +306,8 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ===== STEP 4 — FOODS YOU ENJOY ===== */}
-          {step === 4 && (
+          {/* ===== STEP 5 — FOODS YOU ENJOY ===== */}
+          {step === 5 && (
             <View>
               <Text style={styles.h1}>What do you enjoy? 😋</Text>
               <Text style={styles.sub}>
@@ -422,8 +333,8 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ===== STEP 5 — FOODS TO SKIP ===== */}
-          {step === 5 && (
+          {/* ===== STEP 6 — FOODS TO SKIP ===== */}
+          {step === 6 && (
             <View>
               <Text style={styles.h1}>Anything you'd rather skip? 🙅</Text>
               <Text style={styles.sub}>
@@ -454,8 +365,8 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ===== STEP 6 — SPICE, SKILL, TIME ===== */}
-          {step === 6 && (
+          {/* ===== STEP 7 — SPICE, SKILL, TIME ===== */}
+          {step === 7 && (
             <View>
               <Text style={styles.h1}>How do you cook? 🍳</Text>
               <Text style={styles.sub}>Last one — this tunes what we suggest.</Text>
@@ -515,9 +426,14 @@ export default function OnboardingScreen() {
           )}
         </ScrollView>
 
-        {/* FOOTER */}
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.primaryBtn} onPress={next} activeOpacity={0.9}>
+        {/* FOOTER (hidden on the birthday step until it's saved: the form has its own button) */}
+        {(step !== 0 || birthDate) && <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.primaryBtn, step === 0 && !birthDate && styles.primaryBtnDisabled]}
+            onPress={next}
+            disabled={step === 0 && !birthDate}
+            activeOpacity={0.9}
+          >
             <Text style={styles.primaryBtnText}>{ctaLabel()}</Text>
           </TouchableOpacity>
           {skippable && (
@@ -525,7 +441,7 @@ export default function OnboardingScreen() {
               <Text style={styles.skipText}>Skip this step</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </View>}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -665,6 +581,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 16,
   },
+  primaryBtnDisabled: { opacity: 0.35 },
   primaryBtnText: { color: COLORS.cardWhite, fontSize: 16, fontWeight: '700' },
   skipBtn: { alignItems: 'center', paddingVertical: 10 },
   skipText: { fontSize: 14, color: COLORS.darkGold, fontWeight: '700' },
