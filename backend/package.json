@@ -1,0 +1,27 @@
+{
+  "name": "bitewise-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Builds the BiteWise recipe database and loads it into Supabase.",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "db:clean": "node scripts/runPython.js database/import_recipes.py --csv data/recipes_data.csv --db database/bitewise.db",
+    "db:test": "node scripts/runPython.js -m unittest discover database/tests",
+    "db:seed": "tsx scripts/seedCuratedRecipes.ts",
+    "db:push": "tsx scripts/pushCleanedRecipes.ts --db database/bitewise.db",
+    "db:tag-curated": "tsx scripts/exportCuratedRecipes.ts database/curated_recipes.json && node scripts/runPython.js database/tag_curated_recipes.py",
+    "db:tag-curated:write": "tsx scripts/exportCuratedRecipes.ts database/curated_recipes.json && node scripts/runPython.js database/tag_curated_recipes.py --write",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.111.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.9.2"
+  }
+}

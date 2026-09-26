@@ -1,0 +1,8 @@
+# Kaggle download (~2 GB) and build outputs — rebuild with `npm run db:clean`
+data/
+database/bitewise.db
+database/unmatched_ingredients.csv
+__pycache__/
+database/curated_recipes.json
+
+supabase/.temp/
