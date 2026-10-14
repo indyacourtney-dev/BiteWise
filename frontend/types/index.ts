@@ -238,6 +238,7 @@ export interface PantryItem {
 // ============================================
 
 export type PlanSlot = 'breakfast' | 'lunch' | 'dinner';
+export type PlanDayStatus = 'cook' | 'leftovers' | 'takeout' | 'no-cook';
 
 export interface PlannedMeal {
   id: string;
@@ -250,6 +251,16 @@ export interface PlannedMeal {
   emoji: string;
   /** Prep + cook minutes, for the plan's day summary. Optional: older plans don't have it. */
   minutes?: number;
+  /** Total batch yield used to scale recipe ingredients. */
+  servings?: number;
+  /** Portions assigned to this specific meal slot. */
+  mealServings?: number;
+  /** Automatically scheduled portion from an earlier meal. */
+  isLeftovers?: boolean;
+  /** Stable date/slot/recipe key for the meal that produced these portions. */
+  leftoverSourceKey?: string;
+  /** Recipe database marked its serving count as estimated. */
+  servingsEstimated?: boolean;
   cooked: boolean;
   addedAt: number;
 }
