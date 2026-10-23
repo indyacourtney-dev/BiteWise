@@ -34,6 +34,7 @@ import type {
   GrocerySource,
   PlanSlot,
   PlannedMeal,
+  PlanDayStatus,
   MealType,
   PantryItem,
   PantryCategoryId,
@@ -49,6 +50,7 @@ import { configured } from '../lib/supabase';
 import { addFavorite, removeFavorite, syncFavorites } from '../lib/favoritesApi';
 import { ensureProfile } from '../lib/communityApi';
 import { getMealTypeForNow } from '../utils/meals';
+import { clearPlanRange, planSlotKey, rolloverLeftovers } from '../utils/weekPlan';
 
 // ============================================
 // DEFAULTS & STORAGE KEYS
@@ -97,6 +99,8 @@ const keysFor = (userId: string) =>
     /** Locked birthday ('YYYY-MM-DD'). The account copy (lib/ageApi.ts) wins. */
     birthDate: `@bitewise/${userId}/birthDate`,
     mealPlan: `@bitewise/${userId}/mealPlan`,
+    mealPlanDays: `@bitewise/${userId}/mealPlanDays`,
+    mealPlanSlots: `@bitewise/${userId}/mealPlanSlots`,
     /** Sync bookkeeping: deletions not yet uploaded, and when we last synced. */
     sync: `@bitewise/${userId}/sync`,
   }) as const;
@@ -136,16 +140,24 @@ interface AppContextValue {
 
   // Plan my week
   mealPlan: PlannedMeal[];
+  mealPlanDays: Record<string, PlanDayStatus>;
+  mealPlanSlots: Record<string, PlanDayStatus>;
   /** Puts a recipe in a day's breakfast / lunch / dinner (replacing what was there). */
   planMeal: (
     date: string,
     slot: PlanSlot,
-    recipe: { id: string; name: string; emoji: string; prepMinutes?: number; cookMinutes?: number },
+    recipe: { id: string; name: string; emoji: string; prepMinutes?: number; cookMinutes?: number; servings?: number; servingsEstimated?: boolean },
+    servings?: number,
   ) => void;
   /** Adds several at once (Fill my week). */
   planMeals: (entries: Omit<PlannedMeal, 'id' | 'addedAt'>[]) => void;
   unplanMeal: (id: string) => void;
+  unplanMeals: (entries: { date: string; slot: PlanSlot; recipeId: string }[]) => void;
+  clearMealPlanRange: (startDate: string, endDate: string) => void;
   toggleMealCooked: (id: string) => void;
+  updateMealServings: (id: string, servings: number) => void;
+  setPlanDayStatus: (date: string, status: PlanDayStatus) => void;
+  setPlanSlotStatus: (date: string, slot: PlanSlot, status: PlanDayStatus) => void;
 
   // Grocery list
   grocery: GroceryItem[];
@@ -220,6 +232,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [recentGameRecipes, setRecentGameRecipes] = useState<string[]>([]);
   const [recipeExposure, setRecipeExposure] = useState<Exposure[]>([]);
   const [mealPlan, setMealPlan] = useState<PlannedMeal[]>([]);
+  const [mealPlanDays, setMealPlanDays] = useState<Record<string, PlanDayStatus>>({});
+  const [mealPlanSlots, setMealPlanSlots] = useState<Record<string, PlanDayStatus>>({});
   const favoritesRef = useRef<SavedRecipe[]>([]);
   const pantryRef = useRef<PantryItem[]>([]);
   const groceryRef = useRef<GroceryItem[]>([]);
@@ -259,6 +273,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRecentGameRecipes([]);
     setRecipeExposure([]);
     setMealPlan([]);
+    setMealPlanDays({});
+    setMealPlanSlots({});
     setBirthDateState(null);
     setBirthDateChecked(false);
     syncMeta.current = { lastSyncAt: null, pantryTombstones: [], groceryTombstones: [] };
@@ -269,6 +285,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const KEYS = keysFor(userId);
     (async () => {
+      const startTime = performance.now();
+
       try {
         const entries = await AsyncStorage.multiGet(Object.values(KEYS));
         const data = Object.fromEntries(entries);
@@ -283,10 +301,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (data[KEYS.exposure]) setRecipeExposure(JSON.parse(data[KEYS.exposure]!));
         if (data[KEYS.birthDate]) setBirthDateState(JSON.parse(data[KEYS.birthDate]!));
         if (data[KEYS.mealPlan]) {
-          // Drop days more than two weeks old so the plan doesn't grow forever.
-          const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+          // Keep six months of history available to the week navigator.
+          const cutoff = new Date(Date.now() - 180 * 86400000).toISOString().slice(0, 10);
           const saved: PlannedMeal[] = JSON.parse(data[KEYS.mealPlan]!);
           setMealPlan(saved.filter(m => m.date >= cutoff));
+        }
+        if (data[KEYS.mealPlanDays]) {
+          const cutoff = new Date(Date.now() - 180 * 86400000).toISOString().slice(0, 10);
+          const saved: Record<string, PlanDayStatus> = JSON.parse(data[KEYS.mealPlanDays]!);
+          setMealPlanDays(Object.fromEntries(Object.entries(saved).filter(([date]) => date >= cutoff)));
+        }
+        if (data[KEYS.mealPlanSlots]) {
+          const cutoff = new Date(Date.now() - 180 * 86400000).toISOString().slice(0, 10);
+          const saved: Record<string, PlanDayStatus> = JSON.parse(data[KEYS.mealPlanSlots]!);
+          setMealPlanSlots(Object.fromEntries(Object.entries(saved).filter(([key]) => key.slice(0, 10) >= cutoff)));
         }
         if (data[KEYS.sync]) syncMeta.current = { ...syncMeta.current, ...JSON.parse(data[KEYS.sync]!) };
         if (data[KEYS.preferences]) {
@@ -302,6 +330,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // Corrupt or missing storage: fall back to defaults rather than crash.
         console.warn('BiteWise: failed to load saved data', e);
       } finally {
+        const endTime = performance.now();
+        console.log(`BiteWise local data load time: ${(endTime - startTime).toFixed(2)} ms`);
         setHydrated(true);
       }
     })();
@@ -329,6 +359,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => persist('recentGame', recentGameRecipes), [recentGameRecipes, persist]);
   useEffect(() => persist('exposure', recipeExposure), [recipeExposure, persist]);
   useEffect(() => persist('mealPlan', mealPlan), [mealPlan, persist]);
+  useEffect(() => persist('mealPlanDays', mealPlanDays), [mealPlanDays, persist]);
+  useEffect(() => persist('mealPlanSlots', mealPlanSlots), [mealPlanSlots, persist]);
   useEffect(() => {
     if (birthDate) persist('birthDate', birthDate);
   }, [birthDate, persist]);
@@ -564,22 +596,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const planMeals = useCallback((entries: Omit<PlannedMeal, 'id' | 'addedAt'>[]) => {
     if (entries.length === 0) return;
     const now = Date.now();
+    const added = entries.map((entry, index) => ({
+      ...entry,
+      servings: entry.servings ?? Math.max(1, preferences.householdSize),
+      mealServings: entry.mealServings ?? Math.min(entry.servings ?? Math.max(1, preferences.householdSize), Math.max(1, preferences.householdSize)),
+      id: `${now}-${index}-${Math.random().toString(36).slice(2, 6)}`,
+      addedAt: now,
+    }));
     setMealPlan(prev => {
-      const taken = new Set(entries.map(e => `${e.date}|${e.slot}`));
-      const kept = prev.filter(m => !taken.has(`${m.date}|${m.slot}`));
-      const added = entries.map((e, i) => ({ ...e, id: `${now}-${i}-${Math.random().toString(36).slice(2, 6)}`, addedAt: now }));
-      return [...kept, ...added];
+      const replacedSlots = new Set(added.map(meal => planSlotKey(meal.date, meal.slot)));
+      const replacedSources = new Set(
+        prev
+          .filter(meal => replacedSlots.has(planSlotKey(meal.date, meal.slot)))
+          .map(meal => `${meal.date}|${meal.slot}|${meal.recipeId}`)
+      );
+      const kept = prev.filter(meal =>
+        !replacedSlots.has(planSlotKey(meal.date, meal.slot)) &&
+        !(meal.leftoverSourceKey && replacedSources.has(meal.leftoverSourceKey))
+      );
+      const working = [...kept, ...added];
+      const leftovers = added.flatMap(meal =>
+        rolloverLeftovers(meal, working, preferences.householdSize, mealPlanDays, mealPlanSlots, now)
+      );
+      return [...working, ...leftovers];
     });
     // Planned = chosen, so Decide for me and next week's plan suggest other things.
     setRecipeExposure(prev => addExposures(prev, entries.map(e => ({ id: e.recipeId, at: now, chosen: true }))));
-  }, []);
+  }, [mealPlanDays, mealPlanSlots, preferences.householdSize]);
 
   const planMeal = useCallback(
     (
       date: string,
       slot: PlanSlot,
-      recipe: { id: string; name: string; emoji: string; prepMinutes?: number; cookMinutes?: number },
-    ) =>
+      recipe: { id: string; name: string; emoji: string; prepMinutes?: number; cookMinutes?: number; servings?: number; servingsEstimated?: boolean },
+      servings?: number,
+    ) => {
+      setMealPlanDays(prev => (prev[date] && prev[date] !== 'cook' ? { ...prev, [date]: 'cook' } : prev));
+      setMealPlanSlots(prev => ({ ...prev, [planSlotKey(date, slot)]: 'cook' }));
       planMeals([
         {
           date,
@@ -588,18 +641,111 @@ export function AppProvider({ children }: { children: ReactNode }) {
           name: recipe.name,
           emoji: recipe.emoji,
           minutes: (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0) || undefined,
+          servings: servings ?? Math.max(recipe.servings ?? preferences.householdSize, preferences.householdSize),
+          mealServings: Math.min(
+            servings ?? Math.max(recipe.servings ?? preferences.householdSize, preferences.householdSize),
+            Math.max(1, preferences.householdSize),
+          ),
+          servingsEstimated: recipe.servingsEstimated,
           cooked: false,
         },
-      ]),
-    [planMeals]
+      ]);
+    },
+    [planMeals, preferences.householdSize]
   );
 
-  const unplanMeal = useCallback((id: string) => setMealPlan(prev => prev.filter(m => m.id !== id)), []);
+  const unplanMeal = useCallback((id: string) => setMealPlan(prev => {
+    const removed = prev.find(meal => meal.id === id);
+    if (!removed) return prev;
+    const sourceKey = `${removed.date}|${removed.slot}|${removed.recipeId}`;
+    return prev.filter(meal => meal.id !== id && !(meal.leftoverSourceKey === sourceKey && !removed.isLeftovers));
+  }), []);
+
+  const unplanMeals = useCallback((entries: { date: string; slot: PlanSlot; recipeId: string }[]) => {
+    const keys = new Set(entries.map(entry => `${entry.date}|${entry.slot}|${entry.recipeId}`));
+    setMealPlan(prev => prev.filter(meal =>
+      !keys.has(`${meal.date}|${meal.slot}|${meal.recipeId}`) &&
+      !(meal.leftoverSourceKey && keys.has(meal.leftoverSourceKey))
+    ));
+  }, []);
+
+  const clearMealPlanRange = useCallback((startDate: string, endDate: string) => {
+    const cleared = clearPlanRange(mealPlan, mealPlanDays, mealPlanSlots, startDate, endDate);
+    setMealPlan(cleared.meals);
+    setMealPlanDays(cleared.dayStatuses);
+    setMealPlanSlots(cleared.slotStatuses);
+  }, [mealPlan, mealPlanDays, mealPlanSlots]);
 
   const toggleMealCooked = useCallback(
     (id: string) => setMealPlan(prev => prev.map(m => (m.id === id ? { ...m, cooked: !m.cooked } : m))),
     []
   );
+
+  const updateMealServings = useCallback((id: string, servings: number) => {
+    const nextServings = Math.max(1, Math.min(20, Math.round(servings)));
+    setMealPlan(prev => {
+      const source = prev.find(meal => meal.id === id);
+      if (!source || source.isLeftovers) return prev;
+      if ((mealPlanDays[source.date] && mealPlanDays[source.date] !== 'cook') ||
+        (mealPlanSlots[planSlotKey(source.date, source.slot)] && mealPlanSlots[planSlotKey(source.date, source.slot)] !== 'cook')) return prev;
+      const sourceKey = `${source.date}|${source.slot}|${source.recipeId}`;
+      const kept = prev.filter(meal => meal.leftoverSourceKey !== sourceKey);
+      const updated = {
+        ...source,
+        servings: nextServings,
+        mealServings: Math.min(nextServings, Math.max(1, preferences.householdSize)),
+      };
+      const working = kept.map(meal => meal.id === id ? updated : meal);
+      return [
+        ...working,
+        ...rolloverLeftovers(updated, working, preferences.householdSize, mealPlanDays, mealPlanSlots),
+      ];
+    });
+  }, [mealPlanDays, mealPlanSlots, preferences.householdSize]);
+
+  const setPlanDayStatus = useCallback((date: string, status: PlanDayStatus) => {
+    const sources = mealPlan.filter(meal => meal.date === date && !meal.isLeftovers);
+    const sourceKeys = new Set(sources.map(meal => `${meal.date}|${meal.slot}|${meal.recipeId}`));
+    const nextDayStatuses = { ...mealPlanDays };
+    if (status === 'cook') delete nextDayStatuses[date];
+    else nextDayStatuses[date] = status;
+    setMealPlan(prev => {
+      const base = prev.filter(meal => !(meal.leftoverSourceKey && sourceKeys.has(meal.leftoverSourceKey)));
+      if (status !== 'cook') return base;
+      return sources.reduce((working, source) => {
+        if (mealPlanSlots[planSlotKey(date, source.slot)] && mealPlanSlots[planSlotKey(date, source.slot)] !== 'cook') return working;
+        return [...working, ...rolloverLeftovers(source, working, preferences.householdSize, nextDayStatuses, mealPlanSlots)];
+      }, base);
+    });
+    setMealPlanDays(prev => {
+      const next = { ...prev };
+      if (status === 'cook') delete next[date];
+      else next[date] = status;
+      return next;
+    });
+  }, [mealPlan, mealPlanSlots, preferences.householdSize]);
+
+  const setPlanSlotStatus = useCallback((date: string, slot: PlanSlot, status: PlanDayStatus) => {
+    const key = planSlotKey(date, slot);
+    const source = mealPlan.find(meal => meal.date === date && meal.slot === slot && !meal.isLeftovers);
+    if (source) {
+      const sourceKey = `${source.date}|${source.slot}|${source.recipeId}`;
+      setMealPlan(prev => {
+        const working = prev.filter(meal => meal.leftoverSourceKey !== sourceKey);
+        if (
+          status !== 'cook' ||
+          (mealPlanDays[date] && mealPlanDays[date] !== 'cook')
+        ) return working;
+        return [...working, ...rolloverLeftovers(source, working, preferences.householdSize, mealPlanDays, { ...mealPlanSlots, [key]: 'cook' })];
+      });
+    }
+    setMealPlanSlots(prev => {
+      const next = { ...prev };
+      if (status === 'cook') delete next[key];
+      else next[key] = status;
+      return next;
+    });
+  }, [mealPlan, mealPlanDays, mealPlanSlots, preferences.householdSize]);
 
   const noteRecipesShown = useCallback((ids: string[], chosen = false) => {
     if (ids.length === 0) return;
@@ -620,7 +766,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const known = findPantryLibraryItem(trimmed);
       const canonical = (known?.name ?? trimmed).toLowerCase();
       const inPantry = pantryRef.current.find(i => i.name.toLowerCase() === canonical);
-      const existing = groceryRef.current.find(g => g.name.toLowerCase() === canonical);
+      const resolvedUnit = opts.unit ?? inPantry?.unit ?? known?.unit ?? 'Items';
+      const existing = groceryRef.current.find(g =>
+        g.name.toLowerCase() === canonical &&
+        (g.unit === resolvedUnit || opts.source !== 'recipe' || g.source !== 'recipe')
+      );
       if (existing) {
         if (existing.checked) {
           setGrocery(prev => prev.map(g => (g.id === existing.id ? { ...g, checked: false, updatedAt: now } : g)));
@@ -632,8 +782,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         id: newId(),
         name: inPantry?.name ?? known?.name ?? trimmed,
         icon: inPantry?.icon ?? known?.icon ?? getIconForItem(trimmed, category),
-        quantity: Math.max(1, opts.quantity ?? inPantry?.stockedQty ?? 1),
-        unit: opts.unit ?? inPantry?.unit ?? known?.unit ?? 'Items',
+        quantity: Number.isFinite(opts.quantity ?? inPantry?.stockedQty ?? 1) && (opts.quantity ?? inPantry?.stockedQty ?? 1) > 0
+          ? (opts.quantity ?? inPantry?.stockedQty ?? 1)
+          : 1,
+        unit: resolvedUnit,
         category,
         aisle: aisleFor(trimmed, category),
         checked: false,
@@ -815,10 +967,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     recipeExposure,
     noteRecipesShown,
     mealPlan,
+    mealPlanDays,
+    mealPlanSlots,
     planMeal,
     planMeals,
     unplanMeal,
+    unplanMeals,
+    clearMealPlanRange,
     toggleMealCooked,
+    updateMealServings,
+    setPlanDayStatus,
+    setPlanSlotStatus,
     grocery,
     addGroceryItem,
     toggleGroceryItem,

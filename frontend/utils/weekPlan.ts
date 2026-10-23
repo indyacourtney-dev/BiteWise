@@ -22,7 +22,7 @@
 
 import { favoriteOverlap, dislikeOverlap } from './matching';
 import { profileOf } from './thisOrThat';
-import type { PantryItem, PlannedMeal, PlanSlot, Recipe, UserPreferences } from '../types';
+import type { PantryCategoryId, PantryItem, PlannedMeal, PlanDayStatus, PlanSlot, Recipe, UserPreferences } from '../types';
 
 export const PLAN_SLOTS: { key: PlanSlot; label: string; emoji: string }[] = [
   { key: 'breakfast', label: 'Breakfast', emoji: '🍳' },
@@ -57,14 +57,14 @@ export interface PlanDay {
   dayNum: number;
 }
 
-export function weekDays(todayIso: string, count = 7): PlanDay[] {
+export function weekDays(startIso: string, count = 7, today = startIso): PlanDay[] {
   return Array.from({ length: count }, (_, i) => {
-    const iso = addDays(todayIso, i);
+    const iso = addDays(startIso, i);
     const d = toDate(iso);
     const weekday = DAY_NAMES[d.getDay()];
     return {
       iso,
-      title: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : weekday,
+      title: iso === today ? 'Today' : iso === addDays(today, 1) ? 'Tomorrow' : weekday,
       date: `${weekday.slice(0, 3)}, ${MONTHS[d.getMonth()]} ${d.getDate()}`,
       short: weekday.slice(0, 3),
       dayNum: d.getDate(),
@@ -98,6 +98,8 @@ export interface FillOptions {
   preferences: UserPreferences;
   favoriteIds?: Set<string>;
   random?: () => number;
+  dayStatuses?: Record<string, PlanDayStatus>;
+  slotStatuses?: Record<string, PlanDayStatus>;
   /** Points to subtract, e.g. for dishes suggested or eaten recently (utils/variety.ts). */
   penalty?: (r: Recipe) => number;
 }
@@ -172,16 +174,41 @@ export function fillWeek(
       if (working.some(p => p.date === date && p.slot === slot)) continue;
       const r = pickForSlot(date, slot, libraries[slot] ?? [], working, known, opts);
       if (!r) continue;
-      const entry = plannedFrom(r, date, slot, now);
+      const batchServings = Math.max(r.servings, opts.preferences.householdSize);
+      const entry = plannedFrom(
+        r,
+        date,
+        slot,
+        now,
+        batchServings,
+        Math.min(batchServings, opts.preferences.householdSize),
+      );
       known.set(r.id, r);
       working.push(entry);
       added.push(entry);
+      const leftovers = rolloverLeftovers(
+        entry,
+        working,
+        opts.preferences.householdSize,
+        opts.dayStatuses,
+        opts.slotStatuses,
+        now,
+      );
+      working.push(...leftovers);
+      added.push(...leftovers);
     }
   }
   return added;
 }
 
-export function plannedFrom(r: Recipe, date: string, slot: PlanSlot, now = Date.now()): PlannedMeal {
+export function plannedFrom(
+  r: Recipe,
+  date: string,
+  slot: PlanSlot,
+  now = Date.now(),
+  servings = r.servings,
+  mealServings = servings,
+): PlannedMeal {
   return {
     id: `${date}-${slot}-${r.id}`,
     date,
@@ -190,16 +217,226 @@ export function plannedFrom(r: Recipe, date: string, slot: PlanSlot, now = Date.
     name: r.name,
     emoji: r.emoji,
     minutes: r.prepMinutes + r.cookMinutes,
+    servings,
+    mealServings,
+    servingsEstimated: r.servingsEstimated,
     cooked: false,
     addedAt: now,
   };
+}
+
+export function planSlotKey(date: string, slot: PlanSlot): string {
+  return `${date}|${slot}`;
+}
+
+export function clearPlanRange(
+  meals: PlannedMeal[],
+  dayStatuses: Record<string, PlanDayStatus>,
+  slotStatuses: Record<string, PlanDayStatus>,
+  startDate: string,
+  endDate: string,
+) {
+  const sourceKeys = new Set(
+    meals
+      .filter(meal => meal.date >= startDate && meal.date <= endDate && !meal.isLeftovers)
+      .map(meal => `${meal.date}|${meal.slot}|${meal.recipeId}`)
+  );
+  return {
+    meals: meals.filter(meal =>
+      (meal.date < startDate || meal.date > endDate) &&
+      !(meal.leftoverSourceKey && sourceKeys.has(meal.leftoverSourceKey))
+    ),
+    dayStatuses: Object.fromEntries(
+      Object.entries(dayStatuses).filter(([date]) => date < startDate || date > endDate)
+    ),
+    slotStatuses: Object.fromEntries(
+      Object.entries(slotStatuses).filter(([key]) => {
+        const date = key.slice(0, 10);
+        return date < startDate || date > endDate;
+      })
+    ),
+  };
+}
+
+/** Carries surplus portions forward only into compatible meal slots. */
+export function rolloverLeftovers(
+  source: PlannedMeal,
+  existing: PlannedMeal[],
+  householdSize: number,
+  dayStatuses: Record<string, PlanDayStatus> = {},
+  slotStatuses: Record<string, PlanDayStatus> = {},
+  now = Date.now(),
+): PlannedMeal[] {
+  if (source.isLeftovers) return [];
+  const sourceKey = `${source.date}|${source.slot}|${source.recipeId}`;
+  const alreadyAllocated = existing
+    .filter(meal => meal.leftoverSourceKey === sourceKey)
+    .reduce((total, meal) => total + (meal.mealServings ?? meal.servings ?? 0), 0);
+  const batchServings = source.servings ?? 0;
+  const eatenAtSource = source.mealServings ?? Math.min(Math.max(1, householdSize), batchServings);
+  let remaining = Math.max(0, batchServings - eatenAtSource - alreadyAllocated);
+  if (!remaining) return [];
+
+  const added: PlannedMeal[] = [];
+  const rolloverSlots: Record<PlanSlot, readonly PlanSlot[]> = {
+    breakfast: ['breakfast'],
+    lunch: ['lunch', 'dinner'],
+    dinner: ['lunch', 'dinner'],
+  };
+  for (let offset = 0; offset <= 14 && remaining > 0; offset++) {
+    const date = addDays(source.date, offset);
+    if (dayStatuses[date] && dayStatuses[date] !== 'cook') continue;
+    const candidates = offset === 0
+      ? source.slot === 'lunch' ? ['dinner'] as const : []
+      : rolloverSlots[source.slot];
+    for (const slot of candidates) {
+      if (remaining <= 0) break;
+      const key = planSlotKey(date, slot);
+      if (slotStatuses[key] && slotStatuses[key] !== 'cook') continue;
+      if ([...existing, ...added].some(meal => meal.date === date && meal.slot === slot)) continue;
+      const servings = Math.min(Math.max(1, householdSize), remaining);
+      added.push({
+        id: `leftover-${source.id}-${date}-${slot}`,
+        date,
+        slot,
+        recipeId: source.recipeId,
+        name: source.name,
+        emoji: source.emoji,
+        minutes: 0,
+        servings,
+        mealServings: servings,
+        servingsEstimated: source.servingsEstimated,
+        cooked: false,
+        isLeftovers: true,
+        leftoverSourceKey: sourceKey,
+        addedAt: now,
+      });
+      remaining -= servings;
+    }
+  }
+  return added;
 }
 
 // ---------- shopping ----------
 
 export interface NeededIngredient {
   name: string;
+  quantity: number;
+  unit: string;
+  category: PantryCategoryId;
   forRecipes: string[];
+}
+
+interface ParsedIngredientAmount {
+  quantity: number;
+  dimension: string;
+  baseUnit: string;
+  baseQuantity: number;
+  displayUnit: string;
+}
+
+const UNIT_ALIASES: Record<string, { dimension: string; baseUnit: string; factor: number; displayUnit: string }> = {
+  tsp: { dimension: 'volume', baseUnit: 'tsp', factor: 1, displayUnit: 'tsp' },
+  teaspoon: { dimension: 'volume', baseUnit: 'tsp', factor: 1, displayUnit: 'tsp' },
+  teaspoons: { dimension: 'volume', baseUnit: 'tsp', factor: 1, displayUnit: 'tsp' },
+  tbsp: { dimension: 'volume', baseUnit: 'tsp', factor: 3, displayUnit: 'tbsp' },
+  tablespoon: { dimension: 'volume', baseUnit: 'tsp', factor: 3, displayUnit: 'tbsp' },
+  tablespoons: { dimension: 'volume', baseUnit: 'tsp', factor: 3, displayUnit: 'tbsp' },
+  cup: { dimension: 'volume', baseUnit: 'tsp', factor: 48, displayUnit: 'cup' },
+  cups: { dimension: 'volume', baseUnit: 'tsp', factor: 48, displayUnit: 'cup' },
+  'fl oz': { dimension: 'volume', baseUnit: 'tsp', factor: 6, displayUnit: 'fl oz' },
+  ml: { dimension: 'volume', baseUnit: 'tsp', factor: 0.202884, displayUnit: 'ml' },
+  l: { dimension: 'volume', baseUnit: 'tsp', factor: 202.884, displayUnit: 'l' },
+  oz: { dimension: 'mass', baseUnit: 'oz', factor: 1, displayUnit: 'oz' },
+  ounce: { dimension: 'mass', baseUnit: 'oz', factor: 1, displayUnit: 'oz' },
+  ounces: { dimension: 'mass', baseUnit: 'oz', factor: 1, displayUnit: 'oz' },
+  lb: { dimension: 'mass', baseUnit: 'oz', factor: 16, displayUnit: 'lb' },
+  lbs: { dimension: 'mass', baseUnit: 'oz', factor: 16, displayUnit: 'lb' },
+  pound: { dimension: 'mass', baseUnit: 'oz', factor: 16, displayUnit: 'lb' },
+  pounds: { dimension: 'mass', baseUnit: 'oz', factor: 16, displayUnit: 'lb' },
+  g: { dimension: 'mass', baseUnit: 'oz', factor: 1 / 28.3495, displayUnit: 'g' },
+  gram: { dimension: 'mass', baseUnit: 'oz', factor: 1 / 28.3495, displayUnit: 'g' },
+  grams: { dimension: 'mass', baseUnit: 'oz', factor: 1 / 28.3495, displayUnit: 'g' },
+  kg: { dimension: 'mass', baseUnit: 'oz', factor: 35.274, displayUnit: 'kg' },
+  each: { dimension: 'count:each', baseUnit: 'each', factor: 1, displayUnit: 'each' },
+  item: { dimension: 'count:each', baseUnit: 'each', factor: 1, displayUnit: 'each' },
+  items: { dimension: 'count:each', baseUnit: 'each', factor: 1, displayUnit: 'each' },
+  piece: { dimension: 'count:piece', baseUnit: 'piece', factor: 1, displayUnit: 'pieces' },
+  pieces: { dimension: 'count:piece', baseUnit: 'piece', factor: 1, displayUnit: 'pieces' },
+  clove: { dimension: 'count:clove', baseUnit: 'clove', factor: 1, displayUnit: 'cloves' },
+  cloves: { dimension: 'count:clove', baseUnit: 'clove', factor: 1, displayUnit: 'cloves' },
+  head: { dimension: 'count:head', baseUnit: 'head', factor: 1, displayUnit: 'heads' },
+  heads: { dimension: 'count:head', baseUnit: 'head', factor: 1, displayUnit: 'heads' },
+  can: { dimension: 'count:can', baseUnit: 'can', factor: 1, displayUnit: 'cans' },
+  cans: { dimension: 'count:can', baseUnit: 'can', factor: 1, displayUnit: 'cans' },
+  slice: { dimension: 'count:slice', baseUnit: 'slice', factor: 1, displayUnit: 'slices' },
+  slices: { dimension: 'count:slice', baseUnit: 'slice', factor: 1, displayUnit: 'slices' },
+  stalk: { dimension: 'count:stalk', baseUnit: 'stalk', factor: 1, displayUnit: 'stalks' },
+  stalks: { dimension: 'count:stalk', baseUnit: 'stalk', factor: 1, displayUnit: 'stalks' },
+  sprig: { dimension: 'count:sprig', baseUnit: 'sprig', factor: 1, displayUnit: 'sprigs' },
+  sprigs: { dimension: 'count:sprig', baseUnit: 'sprig', factor: 1, displayUnit: 'sprigs' },
+  package: { dimension: 'count:package', baseUnit: 'package', factor: 1, displayUnit: 'packages' },
+  packages: { dimension: 'count:package', baseUnit: 'package', factor: 1, displayUnit: 'packages' },
+  pack: { dimension: 'count:package', baseUnit: 'package', factor: 1, displayUnit: 'packages' },
+  packs: { dimension: 'count:package', baseUnit: 'package', factor: 1, displayUnit: 'packages' },
+  bunch: { dimension: 'count:bunch', baseUnit: 'bunch', factor: 1, displayUnit: 'bunches' },
+  bunches: { dimension: 'count:bunch', baseUnit: 'bunch', factor: 1, displayUnit: 'bunches' },
+};
+
+function parseNumber(value: string): number {
+  const parts = value.trim().split(/\s+/);
+  const fraction = (text: string) => {
+    const [numerator, denominator] = text.split('/').map(Number);
+    return denominator ? numerator / denominator : NaN;
+  };
+  if (parts.length === 2) return Number(parts[0]) + fraction(parts[1]);
+  if (parts[0].includes('/')) return fraction(parts[0]);
+  return Number(parts[0]);
+}
+
+/** Parses common recipe quantities; unknown wording returns null instead of guessing. */
+export function parseIngredientAmount(amount: string): ParsedIngredientAmount | null {
+  const match = amount.trim().match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)(?:\s*(.*))$/);
+  if (!match) return null;
+  const quantity = parseNumber(match[1]);
+  if (!Number.isFinite(quantity) || quantity <= 0) return null;
+
+  const rest = match[2].trim().toLowerCase();
+  const unitToken = rest.startsWith('fl oz') ? 'fl oz' : (rest.split(/\s+/)[0] || 'each');
+  const unit = UNIT_ALIASES[unitToken];
+  if (!unit) {
+    return {
+      quantity,
+      dimension: `unit:${unitToken}`,
+      baseUnit: unitToken,
+      baseQuantity: quantity,
+      displayUnit: unitToken,
+    };
+  }
+  return {
+    quantity,
+    dimension: unit.dimension,
+    baseUnit: unit.baseUnit,
+    baseQuantity: quantity * unit.factor,
+    displayUnit: unit.displayUnit,
+  };
+}
+
+function cleanQuantity(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function displayAmount(quantity: number, dimension: string, unit: string): { quantity: number; unit: string } {
+  if (dimension === 'volume') {
+    if (quantity >= 48) return { quantity: cleanQuantity(quantity / 48), unit: 'cups' };
+    if (quantity >= 3) return { quantity: cleanQuantity(quantity / 3), unit: 'tbsp' };
+    return { quantity: cleanQuantity(quantity), unit: 'tsp' };
+  }
+  if (dimension === 'mass') {
+    if (quantity >= 16) return { quantity: cleanQuantity(quantity / 16), unit: 'lbs' };
+    return { quantity: cleanQuantity(quantity), unit: 'oz' };
+  }
+  return { quantity: cleanQuantity(quantity), unit };
 }
 
 /**
@@ -210,21 +447,48 @@ export function ingredientsToBuy(
   planned: PlannedMeal[],
   recipesById: Map<string, Recipe>,
   pantryHas: (name: string) => boolean,
+  dayStatuses: Record<string, PlanDayStatus> = {},
+  slotStatuses: Record<string, PlanDayStatus> = {},
 ): NeededIngredient[] {
-  const byName = new Map<string, NeededIngredient>();
+  const byName = new Map<string, NeededIngredient & { dimension: string; baseQuantity: number; baseUnit: string }>();
   for (const p of planned) {
-    if (p.cooked) continue;
+    if (
+      p.cooked || p.isLeftovers ||
+      (dayStatuses[p.date] && dayStatuses[p.date] !== 'cook') ||
+      (slotStatuses[planSlotKey(p.date, p.slot)] && slotStatuses[planSlotKey(p.date, p.slot)] !== 'cook')
+    ) continue;
     const r = recipesById.get(p.recipeId);
     if (!r) continue;
     for (const ing of r.ingredients) {
       if (ing.optional || pantryHas(ing.name)) continue;
-      const key = ing.name.trim().toLowerCase();
-      const entry = byName.get(key) ?? { name: ing.name.trim(), forRecipes: [] };
+      const parsed = parseIngredientAmount(ing.amount);
+      const servings = p.servings ?? r.servings;
+      const scale = servings > 0 && r.servings > 0 ? servings / r.servings : 1;
+      const quantity = parsed ? parsed.baseQuantity * scale : 1;
+      const dimension = parsed?.dimension ?? 'count:each';
+      const baseUnit = parsed?.baseUnit ?? 'each';
+      const key = `${ing.name.trim().toLowerCase()}|${dimension}`;
+      const entry = byName.get(key) ?? {
+        name: ing.name.trim(),
+        quantity: 0,
+        unit: parsed?.displayUnit ?? 'each',
+        category: ing.category,
+        forRecipes: [],
+        dimension,
+        baseQuantity: 0,
+        baseUnit,
+      };
+      entry.baseQuantity += quantity;
       if (!entry.forRecipes.includes(r.name)) entry.forRecipes.push(r.name);
       byName.set(key, entry);
     }
   }
-  return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
+  return [...byName.values()]
+    .map(({ dimension, baseQuantity, baseUnit, ...entry }) => ({
+      ...entry,
+      ...displayAmount(baseQuantity, dimension, entry.unit),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export type { PantryItem };
