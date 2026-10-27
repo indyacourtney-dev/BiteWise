@@ -2752,10 +2752,10 @@ export const RECIPES: Recipe[] = [
     ],
     instructions: [
       'Halve the potatoes, toss with oil and salt, and roast at 425°F for about 30 minutes until crisp-edged.',
-      'Pat the eggs very dry, season, and sear in a hot oiled pan until deeply golden on each side and cooked through.',
+      'While the potatoes roast, whisk the lemon juice and zest with olive oil, minced garlic, chopped herbs, and salt; set the dressing aside.',
       'Wilt the spinach in the hot pan with a splash of water at the end — it collapses in about a minute.',
-      'Whisk the lemon juice and zest with olive oil, minced garlic, chopped herbs, and salt; spoon it over everything at the end.',
-      'Return everything to the skillet, toss until the sauce coats every piece, and serve straight from the pan over the potatoes.',
+      'Transfer the spinach to a plate. Crack the eggs into a lightly oiled skillet over medium heat and cook until the whites are set and the yolks are done to your liking.',
+      'Serve the eggs with the potatoes and spinach, then spoon the lemon-herb dressing over the top.',
     ],
   },
 
@@ -3200,10 +3200,10 @@ export const RECIPES: Recipe[] = [
     ],
     instructions: [
       'Warm the naan in a hot dry pan or a 400°F oven until soft and lightly blistered.',
-      'Pat the eggs very dry, season, and sear in a hot oiled pan until deeply golden on each side and cooked through.',
-      'Dice the tomato, cucumber, and onion into a rough salad and season with salt just before serving.',
-      'Toss everything with the pesto off the heat, loosening with a splash of reserved cooking water so it clings instead of clumps.',
-      'Assemble: eggs first while it’s hot, then the tomato-cucumber salad, then the sauce — and serve immediately.',
+      'Heat a lightly oiled skillet over medium-high. Add the tomatoes and cook for 2–3 minutes, turning, until blistered; move them to a plate.',
+      'Lower the heat to medium. Crack the eggs into the skillet and cook until the whites are set and the yolks are done to your liking.',
+      'Dice the cucumber and onion, then season them lightly with salt.',
+      'Spread the pesto over the warm flatbread and top with the eggs, blistered tomatoes, cucumber, and onion.',
     ],
   },
 
@@ -3852,10 +3852,10 @@ export const RECIPES: Recipe[] = [
     ],
     instructions: [
       'Halve the potatoes, toss with oil and salt, and roast at 425°F for about 30 minutes until crisp-edged.',
-      'Pat the eggs very dry, season, and sear in a hot oiled pan until deeply golden on each side and cooked through.',
+      'Melt the butter in a small pan over low heat, stir in the hot sauce, and keep it warm.',
       'Wilt the spinach in the hot pan with a splash of water at the end — it collapses in about a minute.',
-      'Melt the butter into the hot sauce and toss the cooked protein in it until every piece is coated.',
-      'Return everything to the skillet, toss until the sauce coats every piece, and serve straight from the pan over the potatoes.',
+      'Crack the eggs into a lightly oiled skillet over medium heat. Cook until the whites are set and the yolks are done to your liking.',
+      'Serve the eggs with the potatoes and spinach, then spoon the warm buffalo sauce over the top.',
     ],
   },
 
@@ -3922,10 +3922,10 @@ export const RECIPES: Recipe[] = [
     ],
     instructions: [
       'Halve the potatoes, toss with oil and salt, and roast at 425°F for about 30 minutes until crisp-edged.',
-      'Pat the eggs very dry, season, and sear in a hot oiled pan until deeply golden on each side and cooked through.',
-      'Snap the woody ends off the asparagus, toss with oil, and roast or char in a hot pan until blistered but snappy.',
       'Finely chop the parsley and garlic and stir with the vinegar, oil, salt, and chili flakes — spoon it over everything hot.',
-      'Plate the eggs with the potatoes and asparagus alongside; finish with the sauce and a final pinch of flaky salt.',
+      'Snap off the woody ends of the asparagus, toss with a little oil, and roast or char in a hot pan until browned but still crisp-tender.',
+      'Crack the eggs into a lightly oiled skillet over medium heat. Cook until the whites are set and the yolks are done to your liking.',
+      'Plate the eggs with the potatoes and asparagus; spoon the chimichurri over the top and finish with flaky salt.',
     ],
   },
 
