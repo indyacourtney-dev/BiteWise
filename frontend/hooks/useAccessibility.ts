@@ -13,12 +13,13 @@
 // (React Native scales text with it automatically); the in-app setting
 // adds to it on the screens you read the most.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Platform, type TextStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 
 import { useApp } from '../context/AppContext';
+import { speakSequentially } from '../utils/speechQueue';
 
 export function useSystemReduceMotion(): boolean {
   const [enabled, setEnabled] = useState(false);
@@ -38,6 +39,7 @@ export function useAccessibility() {
   const { settings } = useApp();
   const systemReduceMotion = useSystemReduceMotion();
   const [speaking, setSpeaking] = useState(false);
+  const cancelSpeech = useRef<(() => void) | null>(null);
 
   const reduceMotion = settings.reduceMotion === 'system' ? systemReduceMotion : settings.reduceMotion === 'on';
 
@@ -63,6 +65,8 @@ export function useAccessibility() {
   );
 
   const stop = useCallback(() => {
+    cancelSpeech.current?.();
+    cancelSpeech.current = null;
     Speech.stop();
     setSpeaking(false);
   }, []);
@@ -70,17 +74,25 @@ export function useAccessibility() {
   /** Read several pieces of text aloud, one after another. */
   const speak = useCallback(
     (parts: string[]) => {
+      cancelSpeech.current?.();
+      cancelSpeech.current = null;
       Speech.stop();
       const queue = parts.map(p => p.trim()).filter(Boolean);
-      if (queue.length === 0) return;
+      if (queue.length === 0) {
+        setSpeaking(false);
+        return;
+      }
       setSpeaking(true);
-      queue.forEach((part, i) =>
-        Speech.speak(part, {
-          rate: settings.speechRate,
-          onDone: i === queue.length - 1 ? () => setSpeaking(false) : undefined,
-          onStopped: () => setSpeaking(false),
-          onError: () => setSpeaking(false),
-        })
+      cancelSpeech.current = speakSequentially(
+        queue,
+        (part, callbacks) => {
+          if (__DEV__) console.debug('[BiteWise Read Aloud] Speaking utterance:', part);
+          Speech.speak(part, { rate: settings.speechRate, ...callbacks });
+        },
+        () => {
+          cancelSpeech.current = null;
+          setSpeaking(false);
+        },
       );
     },
     [settings.speechRate]
@@ -88,6 +100,8 @@ export function useAccessibility() {
 
   // Stop talking when the screen using this goes away.
   useEffect(() => () => {
+    cancelSpeech.current?.();
+    cancelSpeech.current = null;
     Speech.stop();
   }, []);
 
