@@ -4,12 +4,13 @@
 // recipe page all render this, so a recipe looks identical no matter how
 // the user arrived at it. Add a field here once and every screen picks it up.
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import PlateVisualization from './PlateVisualization';
+import RecipeReviews from './RecipeReviews';
 import { COLORS } from '../constants/Colors';
 import { formatTime, getTotalTime, DIFFICULTY_LABELS } from '../constants/recipes';
 import { MEAL_INFO, getMealTypes } from '../utils/meals';
@@ -53,6 +54,8 @@ interface Props {
   suggestion?: string;
   /** Optional line above the hero, e.g. the near-miss notice. */
   note?: string;
+  /** Scroll the containing screen to a y offset within its ScrollView. */
+  onJumpToReviews?: (y: number) => void;
   /**
    * When provided, renders a "See full recipe" button under the plate
    * breakdown that opens this meal on its own screen. Used on the quiz
@@ -68,12 +71,32 @@ export default function RecipeDetail({
   suggestion,
   note,
   onOpenRecipe,
+  onJumpToReviews,
 }: Props) {
   // Safety net for recipes opened directly (a chat card, an old favorite):
   // say clearly if it conflicts with the user's allergies or foods to avoid.
   const { preferences } = useApp();
   const a11y = useAccessibility();
   const [guidedVisible, setGuidedVisible] = useState(false);
+  const [reviewPrompt, setReviewPrompt] = useState(false);
+  const [reviewSummary, setReviewSummary] = useState<{
+    averageRating: number | null;
+    totalReviews: number;
+    loading: boolean;
+  }>({ averageRating: null, totalReviews: 0, loading: true });
+  const detailOffset = useRef(0);
+  const reviewsOffset = useRef<number | null>(null);
+  const handleReviewSummary = useCallback((summary: typeof reviewSummary) => {
+    setReviewSummary(summary);
+  }, []);
+  const handleReviewsLayout = useCallback((y: number) => {
+    reviewsOffset.current = y;
+  }, []);
+  const jumpToReviews = () => {
+    if (reviewsOffset.current !== null) {
+      onJumpToReviews?.(detailOffset.current + reviewsOffset.current);
+    }
+  };
   const guidedSteps = useMemo(() => buildGuidedSteps(recipe.instructions, recipe.ingredients), [recipe.instructions, recipe.ingredients]);
   const readRecipeAloud = () => {
     const utterances = buildRecipeReadAloudParts(recipe);
@@ -96,7 +119,7 @@ export default function RecipeDetail({
   ];
 
   return (
-    <View>
+    <View onLayout={event => { detailOffset.current = event.nativeEvent.layout.y; }}>
       {allergyWarnings.length > 0 ? (
         <View style={styles.warnBox} accessibilityRole="alert">
           <Text style={styles.warnTitle}>⚠️ Not safe for your allergies</Text>
@@ -128,6 +151,41 @@ export default function RecipeDetail({
         <Text style={styles.heroMeals}>
           {getMealTypes(recipe).map(m => `${MEAL_INFO[m].emoji} ${MEAL_INFO[m].label}`).join('   ')}
         </Text>
+        <TouchableOpacity
+          style={styles.reviewSummaryButton}
+          onPress={jumpToReviews}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel={
+            reviewSummary.averageRating === null
+              ? 'Jump to community reviews'
+              : `Average rating ${reviewSummary.averageRating.toFixed(1)} out of 5 from ${reviewSummary.totalReviews} reviews. Jump to community reviews.`
+          }
+        >
+          <View style={styles.reviewSummaryStars}>
+            {[1, 2, 3, 4, 5].map(star => (
+              <FontAwesome
+                key={star}
+                name={
+                  reviewSummary.averageRating !== null
+                    && star <= Math.round(reviewSummary.averageRating)
+                    ? 'star'
+                    : 'star-o'
+                }
+                size={13}
+                color={COLORS.darkGold}
+              />
+            ))}
+          </View>
+          <Text style={styles.reviewSummaryText}>
+            {reviewSummary.loading
+              ? 'Loading rating…'
+              : reviewSummary.averageRating === null
+                ? 'Be the first to rate'
+                : `${reviewSummary.averageRating.toFixed(1)} · ${reviewSummary.totalReviews} ${reviewSummary.totalReviews === 1 ? 'review' : 'reviews'}`}
+          </Text>
+          <FontAwesome name="chevron-down" size={11} color={COLORS.darkNavy} />
+        </TouchableOpacity>
         {recipe.source === 'community' ? (
           <Text style={styles.heroCredit}>
             🏠 Home recipe{recipe.authorName ? ` shared by ${recipe.authorName}` : ''}
@@ -258,6 +316,10 @@ export default function RecipeDetail({
         recipeIngredients={recipe.ingredients}
         steps={guidedSteps}
         onClose={() => setGuidedVisible(false)}
+        onFinish={() => {
+          setGuidedVisible(false);
+          setReviewPrompt(true);
+        }}
       />
 
       {/* DIETARY */}
@@ -306,6 +368,13 @@ export default function RecipeDetail({
           </>
         );
       })()}
+      <RecipeReviews
+        recipeId={recipe.id}
+        prompt={reviewPrompt}
+        onPromptDismiss={() => setReviewPrompt(false)}
+        onSummaryChange={handleReviewSummary}
+        onLayout={handleReviewsLayout}
+      />
     </View>
   );
 }
@@ -316,12 +385,14 @@ function GuidedCookingModal({
   recipeIngredients,
   steps,
   onClose,
+  onFinish,
 }: {
   visible: boolean;
   recipeName: string;
   recipeIngredients: Recipe['ingredients'];
   steps: ReturnType<typeof buildGuidedSteps>;
   onClose: () => void;
+  onFinish: () => void;
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [tipsVisible, setTipsVisible] = useState(false);
@@ -459,7 +530,7 @@ function GuidedCookingModal({
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.guideNextButton}
-                onPress={() => lastStep ? onClose() : setCurrentStep(index => index + 1)}
+                onPress={() => lastStep ? onFinish() : setCurrentStep(index => index + 1)}
                 accessibilityRole="button"
                 accessibilityLabel={lastStep ? 'Finish cooking' : 'Next cooking step'}
               >
@@ -586,6 +657,19 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   matchPillText: { fontSize: 13, fontWeight: '700', color: COLORS.darkGold },
+  reviewSummaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    marginTop: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: COLORS.lightYellow,
+  },
+  reviewSummaryStars: { flexDirection: 'row', gap: 1 },
+  reviewSummaryText: { fontSize: 12, fontWeight: '700', color: COLORS.darkNavy },
 
   statsRow: { flexDirection: 'row', gap: 10 },
   stat: {

@@ -69,6 +69,7 @@ export default function ThisOrThatScreen() {
   const a11y = useAccessibility();
   const insets = useSafeAreaInsets();
   const scrollPad = { paddingBottom: insets.bottom + 32 };
+  const resultScrollRef = useRef<ScrollView>(null);
 
   // The questions are about protein / carbs / veggies, so the game plays
   // for lunch or dinner (dinner when another meal is selected).
@@ -350,7 +351,11 @@ export default function ThisOrThatScreen() {
         }
       />
 
-      <ScrollView contentContainerStyle={[styles.resultPad, scrollPad]} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={resultScrollRef}
+        contentContainerStyle={[styles.resultPad, scrollPad]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.picksRow}>
           <Text style={styles.picksLabel}>
             {rounds.length} round{rounds.length === 1 ? '' : 's'}, you picked
@@ -381,6 +386,7 @@ export default function ThisOrThatScreen() {
 
         <RecipeDetail
           recipe={meal}
+          onJumpToReviews={y => resultScrollRef.current?.scrollTo({ y, animated: true })}
           matchScore={meal.matchScore}
           suggestion={meal.suggestion}
           note={`Has ${meal.matchScore}% of what your picks pointed to, weighted toward protein, carbs and veggies.`}

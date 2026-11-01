@@ -12,7 +12,7 @@
 //   Supabase.
 // - Header: add to my week (app/planWeek.tsx), share-to-chat and heart.
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -35,6 +35,7 @@ export default function RecipeScreen() {
   const { id, match } = useLocalSearchParams<{ id: string; match?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
 
   const local = id ? getRecipeById(id) : undefined;
   const [remote, setRemote] = useState<Recipe | undefined>(undefined);
@@ -121,11 +122,13 @@ export default function RecipeScreen() {
         </View>
       ) : recipe ? (
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
           showsVerticalScrollIndicator={false}
         >
           <RecipeDetail
             recipe={recipe}
+            onJumpToReviews={y => scrollRef.current?.scrollTo({ y, animated: true })}
             matchScore={
               typeof matchScore === 'number' && !Number.isNaN(matchScore)
                 ? matchScore

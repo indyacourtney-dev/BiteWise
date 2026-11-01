@@ -11,12 +11,12 @@
 //   * "Not feeling it" shows the next best pick
 //   * after 3 skips we stop the carousel and offer a final 3 to choose from
 //   * the choice is recorded (history) so next time the ranking learns what
-//     the user picks for each meal and doesn't repeat recent meals
+//     the user picks for each meal; recipe ratings further refine taste matches
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import MealTypePicker from '@/components/MealTypePicker';
@@ -27,8 +27,11 @@ import { formatTime, getTotalTime } from '@/constants/recipes';
 import { useApp } from '@/context/AppContext';
 import { useRecipeLibrary } from '@/hooks/useRecipeLibrary';
 import { useAccessibility } from '@/hooks/useAccessibility';
+import { configured } from '@/lib/supabase';
+import { fetchMyRatingFeedback } from '@/lib/reviewsApi';
 import { CRAVINGS, CRAVINGS_FOR_MEAL, rankForDecision, type Craving, type Decision } from '@/utils/decide';
 import { MEAL_INFO } from '@/utils/meals';
+import type { RecipeRatingFeedback } from '@/types';
 
 const SKIPS_BEFORE_FINAL_THREE = 3;
 
@@ -41,6 +44,33 @@ export default function DecideScreen() {
   } = useApp();
   const { recipes, loading } = useRecipeLibrary(mealType, preferences);
   const a11y = useAccessibility();
+  const [ratingFeedback, setRatingFeedback] = useState<RecipeRatingFeedback[]>([]);
+  const [ratingFeedbackLoading, setRatingFeedbackLoading] = useState(configured);
+  const [ratingFeedbackError, setRatingFeedbackError] = useState<string | null>(null);
+
+  useFocusEffect(useCallback(() => {
+    if (!configured) return;
+    let cancelled = false;
+    setRatingFeedbackLoading(true);
+    setRatingFeedbackError(null);
+    fetchMyRatingFeedback()
+      .then(rows => {
+        if (!cancelled) setRatingFeedback(rows);
+      })
+      .catch(error => {
+        if (!cancelled) {
+          setRatingFeedbackError(
+            error instanceof Error ? error.message : 'Could not load your review preferences.',
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setRatingFeedbackLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []));
 
   const [step, setStep] = useState<'ask' | 'pick'>('ask');
   const [craving, setCraving] = useState<Craving>('anything');
@@ -56,12 +86,21 @@ export default function DecideScreen() {
   const ranked: Decision[] = useMemo(
     () =>
       step === 'pick'
-        ? rankForDecision(recipes, { mealType, craving, preferences, pantry, favorites, history, exposure: exposureAtStart.current })
+        ? rankForDecision(recipes, {
+            mealType,
+            craving,
+            preferences,
+            pantry,
+            favorites,
+            history,
+            ratings: ratingFeedback,
+            exposure: exposureAtStart.current,
+          })
         : [],
     // history/favorites intentionally left out: re-ranking while the user is
     // looking at a pick (e.g. after tapping the heart) would swap the card.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [step, round, recipes, mealType, craving, preferences, pantry]
+    [step, round, recipes, mealType, craving, preferences, pantry, ratingFeedback]
   );
   const remaining = ranked.filter(d => !skipped.includes(d.recipe.id));
   const pick = remaining[0];
@@ -125,6 +164,11 @@ export default function DecideScreen() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
         showsVerticalScrollIndicator={false}
       >
+        {step === 'pick' && ratingFeedbackError ? (
+          <Text style={styles.feedbackError}>
+            Review-based personalization is unavailable right now. {ratingFeedbackError}
+          </Text>
+        ) : null}
         {step === 'ask' ? (
           <>
             <Text style={styles.question}>What are we eating?</Text>
@@ -155,10 +199,14 @@ export default function DecideScreen() {
               We'll use your tastes{pantry.length ? ', your pantry' : ''} and what you've enjoyed before.
             </Text>
           </>
-        ) : loading && recipes.length === 0 ? (
+        ) : ratingFeedbackLoading || (loading && recipes.length === 0) ? (
           <View style={styles.center}>
             <ActivityIndicator color={COLORS.darkNavy} />
-            <Text style={styles.hint}>Finding your {MEAL_INFO[mealType].label.toLowerCase()}…</Text>
+            <Text style={styles.hint}>
+              {ratingFeedbackLoading
+                ? 'Personalizing your picks…'
+                : `Finding your ${MEAL_INFO[mealType].label.toLowerCase()}…`}
+            </Text>
           </View>
         ) : !pick ? (
           <View style={styles.center}>
@@ -253,6 +301,12 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, paddingTop: 8 },
   question: { fontSize: 20, fontWeight: '700', color: COLORS.textDark, marginBottom: 12 },
   hint: { fontSize: 13, color: COLORS.textMuted, lineHeight: 19, textAlign: 'center', marginTop: 10 },
+  feedbackError: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: COLORS.redAccent,
+    marginBottom: 10,
+  },
   cravingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   craving: {
     flexDirection: 'row',

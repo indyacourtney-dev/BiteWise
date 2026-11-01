@@ -97,6 +97,15 @@ export interface Recipe {
   authorName?: string;
 }
 
+export interface RecipeRatingFeedback {
+  recipeId: string;
+  rating: number;
+  tags: string[];
+  dietary: string[];
+  vibe: Vibe;
+  ingredients: string[];
+}
+
 // Recipe with a computed score attached (results screen only)
 export interface ScoredRecipe extends Recipe {
   matchScore: number;
