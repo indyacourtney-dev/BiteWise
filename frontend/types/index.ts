@@ -339,6 +339,8 @@ export interface AppSettings {
    * Voices differ per device, so this is saved on the device, not the account.
    */
   voiceId?: string | null;
+  /** The "how your pantry works" card has been dismissed on this device. */
+  pantryTipSeen?: boolean;
 }
 
 export interface QuizRun {

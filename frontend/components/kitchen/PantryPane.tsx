@@ -4,13 +4,19 @@
 // copy; lib/kitchenSync.ts syncs it). Turning it into meals is Cook with my
 // pantry (app/cookWithPantry.tsx); buying more is the Grocery tab.
 //
-// Layout, top to bottom:
-//   * the kitchen card: Fridge / Freezer / Cupboard / Counter, each a filter,
-//     plus how many items are running low and need using soon
-//   * one box to add OR find items (suggestions include other names, so
-//     "scallions" finds Green Onions)
-//   * quick adds, then your items by section, each with stock, freshness
-//     and a stepper. Tap an item for details (components/PantryItemSheet).
+// The screen is built to be read at a glance and to need as few taps as
+// possible:
+//   * an "at a glance" card in plain words: how many items, how many need
+//     restocking, how many to use soon — each one a tap to see just those
+//   * Search (find what you have) and Add (components/kitchen/AddItemsSheet)
+//     are two different buttons, because they are two different jobs
+//   * "Where" chips filter by fridge / freezer / cupboard / counter
+//   * "Needs attention" first: out, running low, use soon — with the fix
+//     right on the row (add to list, I bought more)
+//   * then everything else by section; every row says its state in a
+//     sentence ("2 eggs left of 12 · running low", "1 bag · use within 2
+//     days") instead of bare numbers and bars (utils/pantryWords.ts)
+//   * tap a row for details (components/PantryItemSheet)
 
 import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
@@ -19,92 +25,102 @@ import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
+import AddItemsSheet from '@/components/kitchen/AddItemsSheet';
 import PantryItemSheet from '@/components/PantryItemSheet';
-import { SectionLabel } from '@/components/ui';
+import { Chip, SectionLabel } from '@/components/ui';
 import { confirmAction } from '@/utils/confirm';
 import { COLORS } from '@/constants/Colors';
 import { useApp } from '@/context/AppContext';
-import { QUICK_ADDS, type PantryStorage } from '@/constants/pantryData';
+import { type PantryStorage } from '@/constants/pantryData';
 import { CATEGORY_LABELS, getCategoryIcon } from '@/constants/Itemicons';
-import { searchLibrary } from '@/utils/librarySearch';
-import {
-  STORAGE_LABELS,
-  freshness,
-  freshnessLabel,
-  stockStatus,
-  storageFor,
-  summarizePantry,
-} from '@/utils/pantryStatus';
+import { useAccessibility } from '@/hooks/useAccessibility';
+import { STORAGE_LABELS, freshness, stockStatus, storageFor, summarizePantry } from '@/utils/pantryStatus';
+import { itemWords, unitOnly } from '@/utils/pantryWords';
 import type { PantryCategoryId, PantryItem } from '@/types';
 
 const SERIF = 'PlayfairDisplay_700Bold';
 const CATEGORY_ORDER: PantryCategoryId[] = ['produce', 'proteins', 'dairy', 'grains', 'pantry', 'other'];
 const STORAGE_ORDER: PantryStorage[] = ['fridge', 'freezer', 'pantry', 'counter'];
 
-type StatusFilter = 'all' | 'soon';
-
-const filteringNow = (q: string, storage: PantryStorage | null, status: StatusFilter) =>
-  !!q.trim() || !!storage || status !== 'all';
+type Focus = 'all' | 'restock' | 'soon';
 
 export default function PantryPane({ header, onSwitch }: { header: React.ReactNode; onSwitch: (tab: 'pantry' | 'grocery') => void }) {
   const tabBarHeight = useBottomTabBarHeight();
   const router = useRouter();
-  const { pantry, grocery, addPantryItem, updatePantryQuantity, removePantryItem, clearPantry, addGroceryItem, addLowStockToGrocery, preferences } =
-    useApp();
+  const a11y = useAccessibility();
+  const { pantry, grocery, updatePantryQuantity, removePantryItem, clearPantry, addGroceryItem, addLowStockToGrocery, settings, updateSettings } = useApp();
 
   const [query, setQuery] = useState('');
-  const [storageFilter, setStorageFilter] = useState<PantryStorage | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [where, setWhere] = useState<PantryStorage | null>(null);
+  const [focus, setFocus] = useState<Focus>('all');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [addQuery, setAddQuery] = useState('');
 
   const summary = useMemo(() => summarizePantry(pantry), [pantry]);
-  const needsBuying = summary.low.length + summary.out.length;
-  const useSoonCount = summary.useSoon.length + summary.expired.length;
-  const suggestions = useMemo(() => searchLibrary(query, 6, preferences.allowAlcohol), [query, preferences.allowAlcohol]);
+  const restockCount = summary.low.length + summary.out.length;
+  const soonCount = summary.useSoon.length + summary.expired.length;
   const onList = useMemo(() => new Set(grocery.filter(g => !g.checked).map(g => g.name.toLowerCase())), [grocery]);
-  const inPantry = useMemo(() => new Map(pantry.map(i => [i.name.toLowerCase(), i])), [pantry]);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return pantry.filter(item => {
-      if (q && !item.name.toLowerCase().includes(q)) return false;
-      if (storageFilter && (item.quantity <= 0 || storageFor(item) !== storageFilter)) return false;
-      if (statusFilter === 'soon') {
-        const f = freshness(item).status;
-        if (f !== 'soon' && f !== 'expired') return false;
-      }
-      return true;
-    });
-  }, [pantry, query, storageFilter, statusFilter]);
+  const q = query.trim().toLowerCase();
+  const filtering = Boolean(q) || Boolean(where) || focus !== 'all';
 
-  // "Running low" is its own group at the top (only when nothing is
-  // filtered), so restocking is the first thing you see.
-  const lowGroup = useMemo(
-    () => (filteringNow(query, storageFilter, statusFilter) ? [] : visible.filter(i => stockStatus(i) !== 'ok').sort((a, b) => a.quantity - b.quantity)),
-    [visible, query, storageFilter, statusFilter]
+  const visible = useMemo(
+    () =>
+      pantry.filter(item => {
+        if (q && !item.name.toLowerCase().includes(q)) return false;
+        if (where && (item.quantity <= 0 || storageFor(item) !== where)) return false;
+        if (focus === 'restock' && stockStatus(item) === 'ok') return false;
+        if (focus === 'soon') {
+          const f = freshness(item).status;
+          if (f !== 'soon' && f !== 'expired') return false;
+        }
+        return true;
+      }),
+    [pantry, q, where, focus],
   );
-  const lowIds = useMemo(() => new Set(lowGroup.map(i => i.id)), [lowGroup]);
+
+  // "Needs attention" sits on top (only in the unfiltered view): out, then
+  // running low, then use soon — the things worth doing something about.
+  const attention = useMemo(() => {
+    if (filtering) return [];
+    const rank = (i: PantryItem) => {
+      const st = stockStatus(i);
+      const fr = freshness(i).status;
+      if (st === 'out') return 0;
+      if (fr === 'expired') return 1;
+      if (st === 'low') return 2;
+      if (fr === 'soon') return 3;
+      return 9;
+    };
+    return visible.filter(i => rank(i) < 9).sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+  }, [visible, filtering]);
+  const attentionIds = useMemo(() => new Set(attention.map(i => i.id)), [attention]);
 
   const grouped = useMemo(() => {
     const map = new Map<PantryCategoryId, PantryItem[]>();
-    visible.filter(item => !lowIds.has(item.id)).forEach(item => {
+    visible.filter(i => !attentionIds.has(i.id)).forEach(item => {
       const key = CATEGORY_ORDER.includes(item.category) ? item.category : 'other';
       map.set(key, [...(map.get(key) ?? []), item]);
     });
     return CATEGORY_ORDER.filter(c => map.has(c)).map(c => ({
       category: c,
-      // Out of stock sinks to the bottom of its section.
-      items: map
-        .get(c)!
-        .sort((a, b) => Number(a.quantity <= 0) - Number(b.quantity <= 0) || a.name.localeCompare(b.name)),
+      items: map.get(c)!.sort((a, b) => Number(a.quantity <= 0) - Number(b.quantity <= 0) || a.name.localeCompare(b.name)),
     }));
-  }, [visible, lowIds]);
+  }, [visible, attentionIds]);
 
-  const add = (name: string, unit?: string) => {
-    if (!name.trim()) return;
-    addPantryItem(name, undefined, unit);
-    setQuery('');
+  const openAdd = (prefill = '') => {
+    setAddQuery(prefill);
+    setAdding(true);
   };
+
+  const toList = (item: PantryItem) =>
+    addGroceryItem(item.name, {
+      source: 'low-stock',
+      quantity: Math.max(1, (item.stockedQty ?? 1) - item.quantity),
+      unit: item.unit,
+      category: item.category,
+    });
 
   const confirmClear = () =>
     confirmAction({
@@ -115,7 +131,14 @@ export default function PantryPane({ header, onSwitch }: { header: React.ReactNo
       onConfirm: clearPantry,
     });
 
-  const filtering = !!storageFilter || statusFilter !== 'all' || !!query.trim();
+  const rowProps = (item: PantryItem) => ({
+    item,
+    onList: onList.has(item.name.toLowerCase()),
+    onOpen: () => setOpenId(item.id),
+    onStep: (d: number) => { a11y.haptic(); updatePantryQuantity(item.id, d); },
+    onRemove: () => removePantryItem(item.id),
+    onAddToList: () => { a11y.haptic('success'); toList(item); },
+  });
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -126,57 +149,46 @@ export default function PantryPane({ header, onSwitch }: { header: React.ReactNo
       >
         {header}
 
-        {/* The kitchen at a glance: each compartment is also a filter */}
-        <View style={styles.kitchen}>
-          <View style={styles.compartments}>
-            {STORAGE_ORDER.map((s, idx) => {
-              const items = summary.byStorage[s];
-              const active = storageFilter === s;
-              return (
-                <TouchableOpacity
-                  key={s}
-                  style={[styles.compartment, idx > 0 && !active && styles.compartmentBorder, active && styles.compartmentActive]}
-                  onPress={() => setStorageFilter(active ? null : s)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={`${STORAGE_LABELS[s].label}, ${items.length} items${active ? ', showing only these' : ''}`}
-                >
-                  <Text style={[styles.compCount, active && styles.compCountActive]}>{items.length}</Text>
-                  <Text style={[styles.compLabel, active && styles.compLabelActive]}>{STORAGE_LABELS[s].label}</Text>
-                  <Text style={styles.compEmoji} numberOfLines={1}>
-                    {items.length ? items.slice(0, 3).map(i => i.icon).join('') : STORAGE_LABELS[s].emoji}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+        {/* AT A GLANCE */}
+        {pantry.length > 0 ? (
+          <View style={styles.glance}>
+            <View style={styles.glanceTop}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.glanceCount}>{summary.total}</Text>
+                <Text style={styles.glanceLabel}>{summary.total === 1 ? 'item' : 'items'} in your kitchen</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.cookBtn}
+                onPress={() => router.push('/cookWithPantry')}
+                accessibilityRole="button"
+                accessibilityLabel="See what you can cook with what you have"
+              >
+                <FontAwesome name="cutlery" size={13} color={COLORS.darkNavy} />
+                <Text style={styles.cookBtnText}>What can I make?</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.glanceRow}>
+              <GlanceStat
+                icon="shopping-cart"
+                count={restockCount}
+                label={restockCount === 0 ? 'Nothing to restock' : restockCount === 1 ? 'needs restocking' : 'need restocking'}
+                tone={restockCount > 0 ? 'gold' : 'quiet'}
+                active={focus === 'restock'}
+                onPress={() => setFocus(focus === 'restock' ? 'all' : 'restock')}
+              />
+              <GlanceStat
+                icon="clock-o"
+                count={soonCount}
+                label={soonCount === 0 ? 'Everything is fresh' : soonCount === 1 ? 'to use soon' : 'to use soon'}
+                tone={soonCount > 0 ? 'red' : 'quiet'}
+                active={focus === 'soon'}
+                onPress={() => setFocus(focus === 'soon' ? 'all' : 'soon')}
+              />
+            </View>
           </View>
+        ) : null}
 
-          <View style={styles.statusRow}>
-            <TouchableOpacity
-              style={[styles.statusBtn, needsBuying > 0 && styles.statusBtnAlert]}
-              onPress={() => onSwitch('grocery')}
-              accessibilityRole="button"
-              accessibilityLabel={`${needsBuying} running low or out. Open grocery list`}
-            >
-              <FontAwesome name="shopping-cart" size={14} color={needsBuying > 0 ? COLORS.darkNavy : COLORS.cardWhite} />
-              <Text style={[styles.statusText, needsBuying > 0 && styles.statusTextAlert]}>
-                {needsBuying === 0 ? 'Nothing running low' : `${needsBuying} running low or out`}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.statusBtn, statusFilter === 'soon' && styles.statusBtnOn]}
-              onPress={() => setStatusFilter(statusFilter === 'soon' ? 'all' : 'soon')}
-              disabled={useSoonCount === 0 && statusFilter !== 'soon'}
-              accessibilityRole="button"
-              accessibilityState={{ selected: statusFilter === 'soon' }}
-            >
-              <FontAwesome name="clock-o" size={14} color={COLORS.cardWhite} />
-              <Text style={styles.statusText}>{useSoonCount === 0 ? 'All fresh' : `${useSoonCount} to use soon`}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Add or find */}
+        {/* SEARCH + ADD: two jobs, two buttons */}
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
             <FontAwesome name="search" size={15} color={COLORS.inactiveGray} />
@@ -184,196 +196,205 @@ export default function PantryPane({ header, onSwitch }: { header: React.ReactNo
               style={styles.input}
               value={query}
               onChangeText={setQuery}
-              placeholder="Add or find an item"
+              placeholder="Search your pantry"
               placeholderTextColor={COLORS.inactiveGray}
               autoCapitalize="words"
-              returnKeyType="done"
-              onSubmitEditing={() => add(query)}
-              accessibilityLabel="Add or find an item"
+              returnKeyType="search"
+              accessibilityLabel="Search your pantry"
             />
             {query ? (
-              <TouchableOpacity onPress={() => setQuery('')} accessibilityLabel="Clear text" hitSlop={10}>
+              <TouchableOpacity onPress={() => setQuery('')} accessibilityLabel="Clear search" hitSlop={10}>
                 <FontAwesome name="times-circle" size={16} color={COLORS.inactiveGray} />
               </TouchableOpacity>
             ) : null}
           </View>
-          <TouchableOpacity
-            style={[styles.addBtn, !query.trim() && styles.addBtnDisabled]}
-            onPress={() => add(query)}
-            disabled={!query.trim()}
-            accessibilityRole="button"
-            accessibilityLabel={query.trim() ? `Add ${query.trim()}` : 'Add item'}
-          >
-            <FontAwesome name="plus" size={16} color={COLORS.cardWhite} />
+          <TouchableOpacity style={styles.addBtn} onPress={() => openAdd()} accessibilityRole="button" accessibilityLabel="Add items to your pantry">
+            <FontAwesome name="plus" size={14} color={COLORS.cardWhite} />
+            <Text style={styles.addBtnText}>Add</Text>
           </TouchableOpacity>
         </View>
 
-        {suggestions.length > 0 && (
-          <View style={styles.suggestBox}>
-            {suggestions.map((s, i) => {
-              const have = inPantry.get(s.name.toLowerCase());
+        {/* WHERE */}
+        {pantry.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.whereRow}>
+            <Chip label={`All · ${summary.total}`} small selected={!where} onPress={() => setWhere(null)} />
+            {STORAGE_ORDER.map(st => {
+              const n = summary.byStorage[st].length;
+              if (n === 0 && where !== st) return null;
               return (
-                <TouchableOpacity
-                  key={s.name}
-                  style={[styles.suggestRow, i === suggestions.length - 1 && styles.lastRow]}
-                  onPress={() => add(s.name, s.unit)}
-                  accessibilityRole="button"
-                  accessibilityLabel={have ? `Add one more ${s.name}` : `Add ${s.name}`}
-                >
-                  <Text style={styles.suggestEmoji}>{s.icon}</Text>
-                  <View style={styles.flex1}>
-                    <Text style={styles.suggestName}>{s.name}</Text>
-                    <Text style={styles.suggestMeta}>
-                      {have ? `You have ${have.quantity} ${have.unit.toLowerCase()}` : s.subcategory}
-                    </Text>
-                  </View>
-                  <FontAwesome name={have ? 'plus-square' : 'plus-circle'} size={18} color={COLORS.darkGold} />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {/* Quick adds */}
-        {!query && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
-            {QUICK_ADDS.map(q => {
-              const have = inPantry.has(q.name.toLowerCase());
-              return (
-                <TouchableOpacity
-                  key={q.id}
-                  style={[styles.chip, have && styles.chipHave]}
-                  onPress={() => addPantryItem(q.name, undefined, q.unit)}
-                  accessibilityRole="button"
-                  accessibilityLabel={have ? `Add one more ${q.name}` : `Add ${q.name}`}
-                >
-                  <Text style={styles.chipEmoji}>{q.icon}</Text>
-                  <Text style={styles.chipText}>{q.name}</Text>
-                </TouchableOpacity>
+                <Chip
+                  key={st}
+                  label={`${STORAGE_LABELS[st].emoji} ${STORAGE_LABELS[st].label} · ${n}`}
+                  small
+                  selected={where === st}
+                  onPress={() => setWhere(where === st ? null : st)}
+                />
               );
             })}
           </ScrollView>
-        )}
+        ) : null}
 
-        {/* Active filters */}
-        {filtering && pantry.length > 0 && (
+        {/* HOW IT WORKS — once, until dismissed */}
+        {pantry.length > 0 && !settings.pantryTipSeen && !filtering ? (
+          <View style={styles.tipCard} accessibilityRole="summary">
+            <View style={styles.tipHead}>
+              <Text style={styles.tipTitle}>How your pantry works</Text>
+              <TouchableOpacity onPress={() => updateSettings({ pantryTipSeen: true })} accessibilityRole="button" accessibilityLabel="Dismiss" hitSlop={10}>
+                <Text style={styles.tipDismiss}>Got it</Text>
+              </TouchableOpacity>
+            </View>
+            <TipLine icon="minus-circle" text="Tap − as you use things up. Every item says what’s left in plain words." />
+            <TipLine icon="arrow-up" text="Running low or going off? It moves to the top, with the fix right there: add to list, or mark it bought." />
+            <TipLine icon="cutlery" text="“What can I make?” turns what you have into tonight’s meal." />
+          </View>
+        ) : null}
+
+        {/* ACTIVE FILTERS */}
+        {filtering && pantry.length > 0 ? (
           <View style={styles.filterBar}>
             <Text style={styles.filterText}>
-              Showing {visible.length} of {pantry.length}
-              {storageFilter ? `, ${STORAGE_LABELS[storageFilter].label.toLowerCase()} only` : ''}
-              {statusFilter === 'soon' ? ', use soon' : ''}
+              {focus === 'restock' ? 'Needs restocking' : focus === 'soon' ? 'Use soon' : 'Showing'}
+              {' '}{visible.length} of {pantry.length}
+              {where ? ` · ${STORAGE_LABELS[where].label.toLowerCase()}` : ''}
+              {q ? ` · “${query.trim()}”` : ''}
             </Text>
-            <TouchableOpacity
-              onPress={() => {
-                setStorageFilter(null);
-                setStatusFilter('all');
-                setQuery('');
-              }}
-              accessibilityRole="button"
-            >
+            <TouchableOpacity onPress={() => { setWhere(null); setFocus('all'); setQuery(''); }} accessibilityRole="button">
               <Text style={styles.filterReset}>Show all</Text>
             </TouchableOpacity>
           </View>
-        )}
+        ) : null}
 
-        {/* Items */}
+        {/* ITEMS */}
         {pantry.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyEmoji}>🧺</Text>
             <Text style={styles.emptyTitle}>Your pantry is empty</Text>
             <Text style={styles.emptyText}>
-              Add what's in your kitchen. BiteWise matches meals to it and tells you when something is running low.
+              Add what's in your kitchen and BiteWise will suggest meals you can make, remind you what's running low, and build your grocery list.
             </Text>
+            <TouchableOpacity style={styles.emptyBtn} onPress={() => openAdd()} accessibilityRole="button">
+              <FontAwesome name="plus" size={13} color={COLORS.cardWhite} />
+              <Text style={styles.emptyBtnText}>Add your first items</Text>
+            </TouchableOpacity>
           </View>
-        ) : grouped.length === 0 ? (
+        ) : visible.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyTitle}>No matching items</Text>
-            <Text style={styles.emptyText}>Tap Show all to see your whole pantry.</Text>
+            <Text style={styles.emptyTitle}>{q ? `No “${query.trim()}” in your pantry` : 'Nothing here'}</Text>
+            <Text style={styles.emptyText}>{q ? 'Want to add it?' : 'Tap Show all to see your whole pantry.'}</Text>
+            {q ? (
+              <TouchableOpacity style={styles.emptyBtn} onPress={() => openAdd(query.trim())} accessibilityRole="button">
+                <FontAwesome name="plus" size={13} color={COLORS.cardWhite} />
+                <Text style={styles.emptyBtnText}>Add “{query.trim()}”</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         ) : (
           <>
-          {lowGroup.length > 0 ? (
-            <View style={styles.group}>
-              <SectionLabel
-                tone="gold"
-                style={{ marginBottom: 8 }}
-                right={
-                  <TouchableOpacity
-                    onPress={() => addLowStockToGrocery()}
-                    accessibilityRole="button"
-                    accessibilityLabel="Add everything running low to the grocery list"
-                    style={styles.lowAllBtn}
-                  >
-                    <Text style={styles.lowAllText}>Add all to grocery</Text>
-                  </TouchableOpacity>
-                }
-              >
-                Running low · {lowGroup.length}
-              </SectionLabel>
-              <View style={[styles.groupCard, styles.groupCardLow]}>
-                {lowGroup.map((item, i) => (
-                  <ItemRow
-                    key={item.id}
-                    item={item}
-                    last={i === lowGroup.length - 1}
-                    onList={onList.has(item.name.toLowerCase())}
-                    onOpen={() => setOpenId(item.id)}
-                    onStep={d => updatePantryQuantity(item.id, d)}
-                    onRemove={() => removePantryItem(item.id)}
-                    onAddToList={() =>
-                      addGroceryItem(item.name, {
-                        source: 'low-stock',
-                        quantity: Math.max(1, (item.stockedQty ?? 1) - item.quantity),
-                        unit: item.unit,
-                        category: item.category,
-                      })
-                    }
-                  />
-                ))}
+            {attention.length > 0 ? (
+              <View style={styles.group}>
+                <SectionLabel
+                  tone="gold"
+                  style={{ marginBottom: 8 }}
+                  right={
+                    restockCount > 0 ? (
+                      <TouchableOpacity
+                        onPress={() => { a11y.haptic('success'); addLowStockToGrocery(); }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Add everything running low or out to the grocery list"
+                        style={styles.lowAllBtn}
+                      >
+                        <FontAwesome name="cart-plus" size={12} color={COLORS.darkNavy} />
+                        <Text style={styles.lowAllText}>Add {restockCount} to list</Text>
+                      </TouchableOpacity>
+                    ) : undefined
+                  }
+                >
+                  Needs attention · {attention.length}
+                </SectionLabel>
+                <View style={[styles.groupCard, styles.groupCardLow]}>
+                  {attention.map((item, i) => (
+                    <ItemRow key={item.id} {...rowProps(item)} last={i === attention.length - 1} />
+                  ))}
+                </View>
               </View>
-            </View>
-          ) : null}
-          {grouped.map(group => (
-            <View key={group.category} style={styles.group}>
-              <View style={styles.groupHeader}>
-                <Text style={styles.groupEmoji}>{getCategoryIcon(group.category)}</Text>
-                <Text style={styles.groupTitle}>{CATEGORY_LABELS[group.category]}</Text>
-                <Text style={styles.groupCount}>{group.items.length}</Text>
+            ) : null}
+
+            {grouped.map(group => (
+              <View key={group.category} style={styles.group}>
+                <View style={styles.groupHeader}>
+                  <Text style={styles.groupEmoji}>{getCategoryIcon(group.category)}</Text>
+                  <Text style={styles.groupTitle}>{CATEGORY_LABELS[group.category]}</Text>
+                  <Text style={styles.groupCount}>{group.items.length}</Text>
+                </View>
+                <View style={styles.groupCard}>
+                  {group.items.map((item, i) => (
+                    <ItemRow key={item.id} {...rowProps(item)} last={i === group.items.length - 1} />
+                  ))}
+                </View>
               </View>
-              <View style={styles.groupCard}>
-                {group.items.map((item, i) => (
-                  <ItemRow
-                    key={item.id}
-                    item={item}
-                    last={i === group.items.length - 1}
-                    onList={onList.has(item.name.toLowerCase())}
-                    onOpen={() => setOpenId(item.id)}
-                    onStep={d => updatePantryQuantity(item.id, d)}
-                    onRemove={() => removePantryItem(item.id)}
-                    onAddToList={() =>
-                      addGroceryItem(item.name, {
-                        source: 'low-stock',
-                        quantity: Math.max(1, (item.stockedQty ?? 1) - item.quantity),
-                        unit: item.unit,
-                        category: item.category,
-                      })
-                    }
-                  />
-                ))}
+            ))}
+
+            {!filtering ? (
+              <View style={styles.footerRow}>
+                <TouchableOpacity onPress={() => onSwitch('grocery')} accessibilityRole="button" style={styles.footerLink}>
+                  <FontAwesome name="shopping-basket" size={13} color={COLORS.darkNavy} />
+                  <Text style={styles.footerLinkText}>Open grocery list</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={confirmClear} accessibilityRole="button" accessibilityLabel="Clear pantry" style={styles.footerLink}>
+                  <Text style={styles.clearText}>Clear my pantry</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-          ))}
-          {pantry.length > 0 ? (
-            <TouchableOpacity onPress={confirmClear} style={styles.clearAll} accessibilityRole="button" accessibilityLabel="Clear pantry">
-              <Text style={styles.clearText}>Clear my pantry</Text>
-            </TouchableOpacity>
-          ) : null}
+            ) : null}
           </>
         )}
       </ScrollView>
 
       <PantryItemSheet itemId={openId} onClose={() => setOpenId(null)} />
+      <AddItemsSheet visible={adding} initialQuery={addQuery} onClose={() => { setAdding(false); setQuery(''); }} />
     </SafeAreaView>
+  );
+}
+
+function TipLine({ icon, text }: { icon: 'minus-circle' | 'arrow-up' | 'cutlery'; text: string }) {
+  return (
+    <View style={styles.tipLine}>
+      <View style={styles.tipIcon}><FontAwesome name={icon} size={12} color={COLORS.darkNavy} /></View>
+      <Text style={styles.tipText}>{text}</Text>
+    </View>
+  );
+}
+
+// =====================================================
+// AT-A-GLANCE STAT
+// =====================================================
+
+function GlanceStat({ icon, count, label, tone, active, onPress }: {
+  icon: 'shopping-cart' | 'clock-o';
+  count: number;
+  label: string;
+  tone: 'gold' | 'red' | 'quiet';
+  active: boolean;
+  onPress: () => void;
+}) {
+  const disabled = count === 0;
+  const bg = active ? COLORS.cardWhite : tone === 'gold' ? COLORS.goldYellow : tone === 'red' ? COLORS.redSoft : 'rgba(255,255,255,0.1)';
+  const fg = active || tone !== 'quiet' ? COLORS.darkNavy : COLORS.cardWhite;
+  return (
+    <TouchableOpacity
+      style={[styles.stat, { backgroundColor: bg }]}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active, disabled }}
+      accessibilityLabel={count === 0 ? label : `${count} ${label}. ${active ? 'Showing only these' : 'Show only these'}`}
+    >
+      <FontAwesome name={icon} size={14} color={fg} />
+      <Text style={[styles.statText, { color: fg }]} numberOfLines={2}>
+        {count > 0 ? <Text style={styles.statNum}>{count} </Text> : null}
+        {label}
+      </Text>
+      {!disabled ? <FontAwesome name={active ? 'times' : 'chevron-right'} size={11} color={fg} /> : null}
+    </TouchableOpacity>
   );
 }
 
@@ -382,13 +403,7 @@ export default function PantryPane({ header, onSwitch }: { header: React.ReactNo
 // =====================================================
 
 function ItemRow({
-  item,
-  last,
-  onList,
-  onOpen,
-  onStep,
-  onRemove,
-  onAddToList,
+  item, last, onList, onOpen, onStep, onRemove, onAddToList,
 }: {
   item: PantryItem;
   last: boolean;
@@ -398,57 +413,29 @@ function ItemRow({
   onRemove: () => void;
   onAddToList: () => void;
 }) {
-  const stock = stockStatus(item);
-  const fresh = freshness(item);
-  const freshText = freshnessLabel(fresh);
-  const out = stock === 'out';
-  const freshColor =
-    fresh.status === 'expired' ? COLORS.redAccent : fresh.status === 'soon' ? COLORS.darkGold : COLORS.textMuted;
-  const spoken = [
-    item.name,
-    out ? 'out of stock' : `${item.quantity} ${item.unit}`,
-    stock === 'low' ? 'running low' : '',
-    !out && freshText ? freshText : '',
-  ]
-    .filter(Boolean)
-    .join(', ');
+  const w = itemWords(item);
+  const out = w.tone === 'out';
+  const lineColor =
+    w.tone === 'out' || w.tone === 'expired' ? COLORS.redText
+      : w.tone === 'low' || w.tone === 'soon' ? COLORS.textGold
+      : COLORS.textMuted;
+  const spoken = `${item.name}. ${w.line}${!out && w.freshText && w.tone === 'ok' ? `. ${w.freshText}` : ''}`;
 
   return (
     <View style={[styles.row, !last && styles.rowBorder]}>
       <TouchableOpacity style={styles.rowMain} onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${spoken}. Open details`}>
-        <View style={[styles.iconTile, stock === 'low' && styles.iconTileLow, out && styles.iconTileOut]}>
+        <View style={[styles.iconTile, (w.tone === 'low' || w.tone === 'soon') && styles.iconTileWarn, (w.tone === 'expired') && styles.iconTileBad, out && styles.iconTileOut]}>
           <Text style={[styles.itemEmoji, out && styles.faded]}>{item.icon}</Text>
         </View>
         <View style={styles.flex1}>
-          <Text style={[styles.itemName, out && styles.fadedText]} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <View style={styles.metaRow}>
-            {out ? (
-              <Text style={styles.outText}>Out</Text>
-            ) : (
-              <Text style={styles.itemMeta}>
-                {item.quantity} {item.unit.toLowerCase()}
-              </Text>
-            )}
-            {stock === 'low' ? <Text style={styles.lowPill}>Running low</Text> : null}
-            {!out && freshText && fresh.status !== 'fresh' ? (
-              <Text style={[styles.freshText, { color: freshColor }]}>{freshText}</Text>
+          <Text style={[styles.itemName, out && styles.fadedText]} numberOfLines={1}>{item.name}</Text>
+          <Text style={[styles.itemLine, { color: lineColor }]} numberOfLines={2}>
+            {w.line}
+            {out ? <Text style={styles.itemHint}> · tap + when you buy more</Text> : null}
+            {!out && w.tone === 'ok' && w.freshText && w.fresh.daysLeft !== null && w.fresh.daysLeft <= 14 ? (
+              <Text style={styles.itemHint}> · {w.freshText.toLowerCase()}</Text>
             ) : null}
-          </View>
-          {!out && fresh.status !== 'unknown' ? (
-            <View style={styles.freshTrack}>
-              <View
-                style={[
-                  styles.freshFill,
-                  {
-                    width: `${Math.max(4, fresh.fraction * 100)}%`,
-                    backgroundColor: fresh.status === 'fresh' ? COLORS.inactiveGray : freshColor,
-                  },
-                ]}
-              />
-            </View>
-          ) : null}
+          </Text>
         </View>
       </TouchableOpacity>
 
@@ -461,7 +448,8 @@ function ItemRow({
             accessibilityRole="button"
             accessibilityLabel={onList ? `${item.name} is on your grocery list` : `Add ${item.name} to grocery list`}
           >
-            <FontAwesome name={onList ? 'check' : 'cart-plus'} size={14} color={COLORS.darkNavy} />
+            <FontAwesome name={onList ? 'check' : 'cart-plus'} size={13} color={COLORS.darkNavy} />
+            <Text style={styles.listBtnText}>{onList ? 'Listed' : 'List'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.stepBtn} onPress={() => onStep(1)} accessibilityRole="button" accessibilityLabel={`I have ${item.name} again`}>
             <FontAwesome name="plus" size={13} color={COLORS.darkNavy} />
@@ -471,14 +459,25 @@ function ItemRow({
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.stepper}>
-          <TouchableOpacity style={styles.stepBtn} onPress={() => onStep(-1)} accessibilityRole="button" accessibilityLabel={`One less ${item.name}`}>
-            <FontAwesome name="minus" size={12} color={COLORS.darkNavy} />
-          </TouchableOpacity>
-          <Text style={styles.qty}>{item.quantity}</Text>
-          <TouchableOpacity style={styles.stepBtn} onPress={() => onStep(1)} accessibilityRole="button" accessibilityLabel={`One more ${item.name}`}>
-            <FontAwesome name="plus" size={12} color={COLORS.darkNavy} />
-          </TouchableOpacity>
+        <View style={styles.rightSide}>
+          {w.tone === 'low' && !onList ? (
+            <TouchableOpacity style={styles.listMini} onPress={onAddToList} accessibilityRole="button" accessibilityLabel={`Add ${item.name} to grocery list`}>
+              <FontAwesome name="cart-plus" size={12} color={COLORS.darkNavy} />
+            </TouchableOpacity>
+          ) : w.tone === 'low' && onList ? (
+            <View style={[styles.listMini, styles.listMiniDone]} accessibilityLabel="On your grocery list">
+              <FontAwesome name="check" size={11} color={COLORS.green} />
+            </View>
+          ) : null}
+          <View style={styles.stepper}>
+            <TouchableOpacity style={styles.stepBtn} onPress={() => onStep(-1)} accessibilityRole="button" accessibilityLabel={`One less ${item.name}`}>
+              <FontAwesome name="minus" size={12} color={COLORS.darkNavy} />
+            </TouchableOpacity>
+            <Text style={styles.qty} numberOfLines={1}>{unitOnly(item)}</Text>
+            <TouchableOpacity style={styles.stepBtn} onPress={() => onStep(1)} accessibilityRole="button" accessibilityLabel={`One more ${item.name}`}>
+              <FontAwesome name="plus" size={12} color={COLORS.darkNavy} />
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
@@ -490,202 +489,98 @@ function ItemRow({
 // =====================================================
 
 const styles = StyleSheet.create({
-  lowAllBtn: { height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: COLORS.lightYellow, alignItems: 'center', justifyContent: 'center' },
-  lowAllText: { fontSize: 12, fontWeight: '700', color: COLORS.darkNavy },
-  groupCardLow: { borderColor: COLORS.yellowBorder },
-  clearAll: { alignItems: 'center', paddingVertical: 14, marginTop: 8 },
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   scroll: { paddingHorizontal: 20, paddingTop: 8 },
   flex1: { flex: 1 },
-  lastRow: { borderBottomWidth: 0 },
 
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  h1: { fontFamily: SERIF, fontSize: 32, color: COLORS.darkNavy },
-  sub: { fontSize: 14, color: COLORS.textMuted, marginTop: 2 },
-  clearBtn: { paddingVertical: 8, paddingHorizontal: 4 },
-  clearText: { fontSize: 14, fontWeight: '700', color: COLORS.redAccent },
+  // At a glance
+  glance: { backgroundColor: COLORS.darkNavy, borderRadius: 24, padding: 16, marginTop: 16 },
+  glanceTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  glanceCount: { fontFamily: SERIF, fontSize: 36, color: COLORS.cardWhite, lineHeight: 40 },
+  glanceLabel: { fontSize: 13, fontWeight: '600', color: COLORS.navyMuted, marginTop: -2 },
+  cookBtn: { height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: COLORS.goldYellow, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cookBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.darkNavy },
+  glanceRow: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  stat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 11, paddingHorizontal: 12, borderRadius: 16, minHeight: 48 },
+  statText: { flex: 1, fontSize: 13, fontWeight: '600', lineHeight: 17 },
+  statNum: { fontWeight: '800', fontSize: 15 },
 
-  // Kitchen card
-  kitchen: { backgroundColor: COLORS.darkNavy, borderRadius: 24, padding: 8, marginTop: 16 },
-  compartments: { flexDirection: 'row' },
-  compartment: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 18 },
-  compartmentBorder: { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.12)' },
-  compartmentActive: { backgroundColor: COLORS.goldYellow },
-  compCount: { fontFamily: SERIF, fontSize: 26, color: COLORS.cardWhite },
-  compCountActive: { color: COLORS.darkNavy },
-  compLabel: { fontSize: 12, fontWeight: '700', color: COLORS.blueSoft, marginTop: 1 },
-  compLabelActive: { color: COLORS.darkNavy },
-  compEmoji: { fontSize: 14, marginTop: 6, minHeight: 18 },
-  statusRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  statusBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 11,
-    paddingHorizontal: 8,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  statusBtnAlert: { backgroundColor: COLORS.goldYellow },
-  statusBtnOn: { backgroundColor: 'rgba(255,255,255,0.24)' },
-  statusText: { fontSize: 13, fontWeight: '700', color: COLORS.cardWhite, flexShrink: 1 },
-  statusTextAlert: { color: COLORS.darkNavy },
-
-  cookBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: COLORS.lightYellow,
-    borderWidth: 1,
-    borderColor: '#EDE28A',
-    borderRadius: 18,
-    padding: 14,
-    marginTop: 12,
-  },
-  cookEmoji: { fontSize: 26 },
-  cookTitle: { fontSize: 15, fontWeight: '800', color: COLORS.darkNavy },
-  cookSub: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
-
-  // Add / find
-  searchRow: { flexDirection: 'row', gap: 10, alignItems: 'center', marginTop: 20 },
+  // Search + add
+  searchRow: { flexDirection: 'row', gap: 10, alignItems: 'center', marginTop: 16 },
   searchBox: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: COLORS.cardWhite,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-    borderRadius: 16,
-    paddingHorizontal: 14,
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: COLORS.cardWhite, borderWidth: 1, borderColor: COLORS.borderLight, borderRadius: 16, paddingHorizontal: 14,
   },
   input: { flex: 1, paddingVertical: 14, fontSize: 15, color: COLORS.darkNavy },
-  addBtn: { width: 50, height: 50, borderRadius: 16, backgroundColor: COLORS.darkNavy, alignItems: 'center', justifyContent: 'center' },
-  addBtnDisabled: { opacity: 0.35 },
-  suggestBox: {
-    backgroundColor: COLORS.cardWhite,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-    borderRadius: 16,
-    marginTop: 8,
-    overflow: 'hidden',
-  },
-  suggestRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.borderLight,
-  },
-  suggestEmoji: { fontSize: 22 },
-  suggestName: { fontSize: 15, fontWeight: '600', color: COLORS.darkNavy },
-  suggestMeta: { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
+  addBtn: { height: 50, paddingHorizontal: 18, borderRadius: 16, backgroundColor: COLORS.darkNavy, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  addBtnText: { color: COLORS.cardWhite, fontWeight: '800', fontSize: 15 },
 
-  quickRow: { gap: 8, paddingVertical: 12, paddingRight: 20 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    backgroundColor: COLORS.cardWhite,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 13,
-  },
-  chipHave: { backgroundColor: COLORS.lightBlueBg },
-  chipEmoji: { fontSize: 15 },
-  chipText: { fontSize: 14, fontWeight: '600', color: COLORS.darkNavy },
+  whereRow: { gap: 8, paddingTop: 12, paddingRight: 20 },
+
+  tipCard: { marginTop: 14, backgroundColor: COLORS.lightBlueBg, borderRadius: 18, padding: 14, gap: 10 },
+  tipHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tipTitle: { fontSize: 14, fontWeight: '800', color: COLORS.darkNavy },
+  tipDismiss: { fontSize: 13, fontWeight: '800', color: COLORS.darkNavy, textDecorationLine: 'underline' },
+  tipLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  tipIcon: { width: 24, height: 24, borderRadius: 8, backgroundColor: COLORS.cardWhite, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  tipText: { flex: 1, fontSize: 13, lineHeight: 18, color: COLORS.textDark },
 
   filterBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: COLORS.lightBlueBg,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12,
+    paddingVertical: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: COLORS.lightBlueBg, gap: 10,
   },
   filterText: { flex: 1, fontSize: 13, fontWeight: '600', color: COLORS.darkNavy },
   filterReset: { fontSize: 13, fontWeight: '800', color: COLORS.darkNavy, textDecorationLine: 'underline' },
 
   emptyBox: {
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-    padding: 28,
-    marginTop: 20,
+    alignItems: 'center', gap: 8, backgroundColor: COLORS.cardWhite, borderRadius: 20, borderWidth: 1, borderColor: COLORS.borderLight,
+    padding: 28, marginTop: 20,
   },
   emptyEmoji: { fontSize: 40 },
-  emptyTitle: { fontFamily: SERIF, fontSize: 20, color: COLORS.darkNavy },
+  emptyTitle: { fontFamily: SERIF, fontSize: 20, color: COLORS.darkNavy, textAlign: 'center' },
   emptyText: { fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 },
+  emptyBtn: { marginTop: 8, height: 46, paddingHorizontal: 20, borderRadius: 14, backgroundColor: COLORS.darkNavy, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  emptyBtnText: { color: COLORS.cardWhite, fontWeight: '800', fontSize: 14 },
 
   // Groups
   group: { marginTop: 18 },
   groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8, paddingHorizontal: 2 },
   groupEmoji: { fontSize: 16 },
   groupTitle: { flex: 1, fontSize: 16, fontWeight: '800', color: COLORS.darkNavy },
-  groupCount: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: COLORS.darkNavy,
-    backgroundColor: COLORS.blueSoft,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
+  groupCount: { fontSize: 12, fontWeight: '800', color: COLORS.darkNavy, backgroundColor: COLORS.blueSoft, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
   groupCard: { backgroundColor: COLORS.cardWhite, borderRadius: 20, borderWidth: 1, borderColor: COLORS.borderLight },
+  groupCardLow: { borderColor: COLORS.yellowBorder },
+  lowAllBtn: { height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: COLORS.lightYellow, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  lowAllText: { fontSize: 12, fontWeight: '700', color: COLORS.darkNavy },
 
   // Rows
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 11, paddingLeft: 11, paddingRight: 10 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.background },
   rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconTile: { width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' },
-  iconTileLow: { backgroundColor: COLORS.lightYellow },
+  iconTileWarn: { backgroundColor: COLORS.lightYellow },
+  iconTileBad: { backgroundColor: COLORS.redSoft },
   iconTileOut: { borderWidth: 1, borderStyle: 'dashed', borderColor: COLORS.inactiveGray },
   itemEmoji: { fontSize: 23 },
   faded: { opacity: 0.45 },
   fadedText: { color: COLORS.textMuted },
   itemName: { fontSize: 15, fontWeight: '700', color: COLORS.darkNavy },
-  metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 2 },
-  itemMeta: { fontSize: 12, color: COLORS.textMuted },
-  outText: { fontSize: 12, fontWeight: '800', color: COLORS.redAccent },
-  lowPill: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: COLORS.darkGold,
-    backgroundColor: COLORS.lightYellow,
-    paddingHorizontal: 7,
-    paddingVertical: 1,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  freshText: { fontSize: 12, fontWeight: '700' },
-  freshTrack: { height: 3, borderRadius: 2, backgroundColor: COLORS.background, marginTop: 7, overflow: 'hidden', maxWidth: 160 },
-  freshFill: { height: 3, borderRadius: 2 },
+  itemLine: { fontSize: 12.5, fontWeight: '600', marginTop: 2, lineHeight: 17 },
+  itemHint: { fontWeight: '400', color: COLORS.textMuted },
 
+  rightSide: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: COLORS.background, borderRadius: 12, padding: 3 },
-  stepBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: COLORS.cardWhite,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-  },
-  qty: { minWidth: 28, textAlign: 'center', fontSize: 15, fontWeight: '800', color: COLORS.darkNavy },
+  stepBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: COLORS.cardWhite, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.borderLight },
+  qty: { minWidth: 30, maxWidth: 74, paddingHorizontal: 4, textAlign: 'center', fontSize: 13, fontWeight: '800', color: COLORS.darkNavy },
+  listMini: { width: 32, height: 32, borderRadius: 10, backgroundColor: COLORS.goldYellow, alignItems: 'center', justifyContent: 'center' },
+  listMiniDone: { backgroundColor: COLORS.greenSoft },
   outActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  listBtn: { height: 32, paddingHorizontal: 10, borderRadius: 10, backgroundColor: COLORS.goldYellow, alignItems: 'center', justifyContent: 'center' },
-  listBtnDone: { backgroundColor: COLORS.lightYellow },
+  listBtn: { height: 32, paddingHorizontal: 10, borderRadius: 10, backgroundColor: COLORS.goldYellow, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  listBtnDone: { backgroundColor: COLORS.greenSoft },
+  listBtnText: { fontSize: 12, fontWeight: '800', color: COLORS.darkNavy },
+
+  footerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, paddingHorizontal: 4 },
+  footerLink: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 },
+  footerLinkText: { fontSize: 14, fontWeight: '700', color: COLORS.darkNavy },
+  clearText: { fontSize: 14, fontWeight: '700', color: COLORS.redAccent },
 });
