@@ -121,8 +121,16 @@ export default function RecipeScreen() {
 
           {/* Fixed action bar */}
           <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-            <PrimaryButton label="Start cooking" icon="play" onPress={() => setCookSignal(n => n + 1)} style={{ flex: 1 }} />
-            <IconButton icon="calendar-plus-o" label="Add to my week" onPress={() => setPlanning(true)} style={styles.barIcon} />
+            <PrimaryButton
+              label={recipe.kind === 'drink' ? 'Make it' : 'Start cooking'}
+              icon="play"
+              onPress={() => setCookSignal(n => n + 1)}
+              style={{ flex: 1 }}
+            />
+            {/* Drinks are never part of the week plan. */}
+            {recipe.kind !== 'drink' ? (
+              <IconButton icon="calendar-plus-o" label="Add to my week" onPress={() => setPlanning(true)} style={styles.barIcon} />
+            ) : null}
           </View>
         </>
       ) : (

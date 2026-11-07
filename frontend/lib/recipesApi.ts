@@ -32,6 +32,11 @@ export interface CandidateFilters {
   /** Prep + cook time limit in minutes. */
   maxTotalMinutes?: number | null;
   source?: Recipe['source'];
+  /**
+   * Food is the default everywhere a meal is being chosen; the Drinks
+   * section asks for 'drink'. 'any' is for search by name.
+   */
+  kind?: 'food' | 'drink' | 'any';
   limit?: number;
   /**
    * true: start at a random offset so repeated calls return different
@@ -56,6 +61,8 @@ function applyFilters<Q extends { [k: string]: any }>(query: Q, f: CandidateFilt
   }
   if (verifiedOnly) q = q.eq('allergens_verified', true);
   if (f.source) q = q.eq('source', f.source);
+  const kind = f.kind ?? 'food';
+  if (kind !== 'any') q = q.eq('kind', kind);
   // Total time is two columns; cook time alone is a safe pre-filter, the
   // exact prep + cook check happens in the app (utils/decide.ts).
   if (f.maxTotalMinutes) q = q.lte('cook_minutes', f.maxTotalMinutes);

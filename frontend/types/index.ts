@@ -86,6 +86,12 @@ export interface Recipe {
   allergensVerified?: boolean;
   /** Set by the database (recipes.contains_alcohol). Hidden from under-21s. */
   containsAlcohol?: boolean;
+  /**
+   * 'drink' = cocktails, mocktails, smoothies, coffee… shown only in the
+   * Drinks section; meal picks and the week plan use food only.
+   * Missing = food.
+   */
+  kind?: 'food' | 'drink';
   /** true = the source didn't say how many it serves; nutrition is per ~500 kcal portion. */
   servingsEstimated?: boolean;
   source?: 'bitewise' | 'kaggle' | 'community';
@@ -208,6 +214,11 @@ export interface UserPreferences {
    * Missing = false, so alcohol stays hidden until the age is known.
    */
   allowAlcohol?: boolean;
+  /**
+   * When the person first opened the Cocktails section and accepted the
+   * responsible-drinking note (ms). Asked once; synced with the account.
+   */
+  cocktailsConfirmedAt?: number;
 }
 
 // ============================================

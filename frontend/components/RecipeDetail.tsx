@@ -164,6 +164,7 @@ export default function RecipeDetail({
   // Pantry check per ingredient.
   const coverage = useMemo(() => getPantryCoverage(recipe, pantry), [recipe, pantry]);
   const factor = recipe.servings > 0 ? servings / recipe.servings : 1;
+  const isDrink = recipe.kind === 'drink';
   const onList = useMemo(() => new Set(grocery.map(g => g.name.toLowerCase())), [grocery]);
   const missingRequired = recipe.ingredients.filter(i => !i.optional && !pantryHas(pantry, i.name));
   const missingNotListed = missingRequired.filter(i => !onList.has(i.name.toLowerCase()));
@@ -216,7 +217,9 @@ export default function RecipeDetail({
       <View style={styles.titleBlock}>
         <Display size={24}>{recipe.name}</Display>
         <Text style={styles.heroMeals}>
-          {getMealTypes(recipe).map(m => MEAL_INFO[m].label).join(' · ')}
+          {isDrink
+            ? (recipe.containsAlcohol ? 'Cocktail' : 'Drink')
+            : getMealTypes(recipe).map(m => MEAL_INFO[m].label).join(' · ')}
           {recipe.source === 'community' ? ` · Home recipe${recipe.authorName ? ` by ${recipe.authorName}` : ''}` : ''}
         </Text>
         <View style={styles.titleRow}>
@@ -272,14 +275,14 @@ export default function RecipeDetail({
               style={styles.stepBtn}
               onPress={() => setServings(s => Math.max(1, s - 1))}
               accessibilityRole="button"
-              accessibilityLabel="Fewer servings"
+              accessibilityLabel={isDrink ? 'Fewer glasses' : 'Fewer servings'}
             ><Text style={styles.stepBtnText}>−</Text></TouchableOpacity>
-            <Text style={styles.stepValue}>{servings} {servings === 1 ? 'serving' : 'servings'}</Text>
+            <Text style={styles.stepValue}>{servings} {isDrink ? (servings === 1 ? 'glass' : 'glasses') : (servings === 1 ? 'serving' : 'servings')}</Text>
             <TouchableOpacity
               style={styles.stepBtn}
               onPress={() => setServings(s => Math.min(24, s + 1))}
               accessibilityRole="button"
-              accessibilityLabel="More servings"
+              accessibilityLabel={isDrink ? 'More glasses' : 'More servings'}
             ><Text style={styles.stepBtnText}>+</Text></TouchableOpacity>
           </View>
         </View>
@@ -354,7 +357,7 @@ export default function RecipeDetail({
       </Card>
       {!hideInlineCookButton ? (
         <PrimaryButton
-          label="Start guided cooking"
+          label={isDrink ? 'Make it step by step' : 'Start guided cooking'}
           icon="play"
           onPress={() => setGuidedVisible(true)}
           style={{ marginTop: 12 }}
@@ -364,16 +367,35 @@ export default function RecipeDetail({
         <SecondaryButton label="Open the full recipe page" icon="book" onPress={onOpenRecipe} style={{ marginTop: 10 }} />
       ) : null}
 
-      {/* PLATE BALANCE + MACROS */}
-      <Text style={styles.sectionTitle}>Plate balance</Text>
-      {recipe.nutrition.calories > 0 ? (
-        <PlateVisualization plate={recipe.plate} nutrition={recipe.nutrition} />
+      {/* PLATE BALANCE + MACROS (drinks: a per-glass line instead — a drink isn't a plate) */}
+      {isDrink ? (
+        <>
+          <Text style={styles.sectionTitle}>Per glass</Text>
+          <Card style={styles.blockPad}>
+            {recipe.nutrition.calories > 0 ? (
+              <Text style={styles.allergenLine}>
+                About {Math.round(recipe.nutrition.calories)} calories · {Math.round(recipe.nutrition.carbs)} g carbs
+                {recipe.nutrition.protein > 0 ? ` · ${Math.round(recipe.nutrition.protein)} g protein` : ''}
+                . Drinks stay out of your meal picks and week plan.
+              </Text>
+            ) : (
+              <Text style={styles.allergenLine}>Nutrition isn't calculated for this drink yet.</Text>
+            )}
+          </Card>
+        </>
       ) : (
-        <Card style={styles.blockPad}>
-          <Text style={styles.allergenLine}>Nutrition isn't calculated for home recipes shared by the community yet.</Text>
-        </Card>
+        <>
+          <Text style={styles.sectionTitle}>Plate balance</Text>
+          {recipe.nutrition.calories > 0 ? (
+            <PlateVisualization plate={recipe.plate} nutrition={recipe.nutrition} />
+          ) : (
+            <Card style={styles.blockPad}>
+              <Text style={styles.allergenLine}>Nutrition isn't calculated for home recipes shared by the community yet.</Text>
+            </Card>
+          )}
+        </>
       )}
-      {suggestion ? (
+      {suggestion && !isDrink ? (
         <View style={styles.tipBox}>
           <FontAwesome name="lightbulb-o" size={14} color={COLORS.textGold} />
           <Text style={styles.tipText}>{suggestion}</Text>

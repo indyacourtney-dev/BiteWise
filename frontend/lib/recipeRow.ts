@@ -44,6 +44,8 @@ export interface RecipeRow {
   allergens_verified: boolean;
   /** Maintained by a database trigger (age safeguard). Missing until that migration runs. */
   contains_alcohol?: boolean;
+  /** 'food' | 'drink' (drinks migration). Missing = food. */
+  kind?: 'food' | 'drink';
   // Set by the cleaning pipeline (imported) or a database trigger (curated).
   all_ingredients_known?: boolean;
   nutrition_coverage?: number | null;
@@ -90,6 +92,7 @@ export function rowToRecipe(row: RecipeRow): Recipe {
     mayContain: (row.may_contain ?? []) as Allergen[],
     allergensVerified: row.allergens_verified,
     ...(row.contains_alcohol ? { containsAlcohol: true } : {}),
+    ...(row.kind === 'drink' ? { kind: 'drink' as const } : {}),
     servingsEstimated: row.servings_estimated ?? false,
     mealTypes: row.meal_types?.length ? row.meal_types : undefined,
     source: row.source,

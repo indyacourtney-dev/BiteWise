@@ -15,6 +15,7 @@
 // doesn't earn that point.
 
 import type { Recipe } from '../types';
+import { CURATED_DRINKS } from './drinks';
 
 export const RECIPES: Recipe[] = [
   // =========================================================
@@ -4600,8 +4601,9 @@ export const RECIPES: Recipe[] = [
 // HELPERS
 // ============================================
 
+/** A curated recipe or drink by id (RECIPES stays food-only; drinks live in constants/drinks.ts). */
 export function getRecipeById(id: string): Recipe | undefined {
-  return RECIPES.find(r => r.id === id);
+  return RECIPES.find(r => r.id === id) ?? CURATED_DRINKS.find(r => r.id === id);
 }
 
 export function getTotalTime(recipe: Recipe): number {

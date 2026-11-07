@@ -177,20 +177,104 @@ function normalize(s: string): string {
   return s.toLowerCase().trim();
 }
 
-/** Loose match so "Chicken Breast" in the pantry satisfies "chicken" in a recipe. */
+// Words that don't identify an ingredient ("fresh lime juice" → lime, juice).
+const INGREDIENT_NOISE = new Set([
+  'fresh', 'freshly', 'large', 'small', 'medium', 'ripe', 'chilled', 'cold', 'hot', 'warm', 'frozen',
+  'chopped', 'diced', 'sliced', 'minced', 'grated', 'shredded', 'crushed', 'ground', 'coarsely', 'finely',
+  'thinly', 'cubed', 'hulled', 'peeled', 'cooked', 'raw', 'dried', 'dry', 'whole', 'boneless', 'skinless',
+  'of', 'or', 'and', 'the', 'a', 'to', 'taste', 'for', 'your', 'choice', 'plus', 'more', 'extra', 'about',
+  'optional', 'divided', 'at', 'room', 'temperature', 'softened', 'melted', 'packed', 'lightly', 'beaten',
+]);
+
+/** "tomatoes" → "tomato", "berries" → "berry", "cloves" → "clove", "leaves" → "leaf". */
+export function singular(word: string): string {
+  if (word.length <= 3) return word;
+  if (word.endsWith('ies')) return word.slice(0, -3) + 'y';
+  if (word.endsWith('ves')) return word.slice(0, -3) + 'f';
+  if (word.endsWith('oes')) return word.slice(0, -2);
+  if (word.endsWith('ses') || word.endsWith('xes') || word.endsWith('ches') || word.endsWith('shes')) return word.slice(0, -2);
+  if (word.endsWith('ss')) return word;
+  if (word.endsWith('s')) return word.slice(0, -1);
+  return word;
+}
+
+/** The identifying words of an ingredient or pantry item, singular, lowercase. */
+export function ingredientWords(name: string): string[] {
+  const out: string[] = [];
+  for (const raw of normalize(name).replace(/\(.*?\)/g, ' ').split(/[^a-z]+/)) {
+    if (!raw || INGREDIENT_NOISE.has(raw)) continue;
+    const w = singular(raw);
+    if (!out.includes(w)) out.push(w);
+  }
+  return out;
+}
+
+/**
+ * Does one thing in the pantry cover one ingredient? Whole words only, so
+ * "Chicken Breast" covers "chicken", "Eggs" covers "egg", "Olive Oil"
+ * covers "extra-virgin olive oil" — but "Ice" doesn't cover "juice" or
+ * "rice", and "Black Beans" doesn't cover "green beans".
+ */
+export function itemCoversIngredient(itemName: string, ingredientName: string): boolean {
+  const have = ingredientWords(itemName);
+  const need = ingredientWords(ingredientName);
+  if (have.length === 0 || need.length === 0) {
+    const a = normalize(itemName);
+    const b = normalize(ingredientName);
+    return a.length > 0 && b.length > 0 && (a === b);
+  }
+  const haveSet = new Set(have);
+  const needSet = new Set(need);
+  // Every word of the shorter name appears in the longer one…
+  const needInHave = need.every(w => haveSet.has(w));
+  const haveInNeed = have.every(w => needSet.has(w));
+  if (!needInHave && !haveInNeed) return false;
+  // …unless the longer name is really a different product: "garlic" isn't
+  // "garlic powder", "rice" isn't "rice vinegar", "chicken" isn't "chicken stock".
+  const longer = need.length >= have.length ? need : have;
+  const shorter = longer === need ? have : need;
+  const head = longer[longer.length - 1];
+  if (longer.length > shorter.length && PRODUCT_WORDS.has(head) && !shorter.includes(head)) return false;
+  return true;
+}
+
+/** Last words that turn an ingredient into a different product (see itemCoversIngredient). */
+const PRODUCT_WORDS = new Set([
+  'vinegar', 'oil', 'sauce', 'paste', 'powder', 'flour', 'syrup', 'extract', 'stock', 'broth',
+  'butter', 'milk', 'cream', 'wine', 'liqueur', 'chip', 'noodle', 'seasoning', 'mix', 'starch',
+  'bread', 'crumb', 'jam', 'jelly', 'soda', 'beer', 'ale', 'yogurt', 'cheese', 'salt', 'sugar', 'water',
+  'tea', 'coffee', 'soup', 'dressing', 'spread', 'drink',
+]);
+
+/** Loose-but-careful match so "Chicken Breast" in the pantry satisfies "chicken" in a recipe. */
 export function pantryHas(pantry: PantryItem[], ingredientName: string): boolean {
-  const needle = normalize(ingredientName);
-  return pantry.some(item => {
-    if (item.quantity <= 0) return false;
-    const have = normalize(item.name);
-    return have.includes(needle) || needle.includes(have);
-  });
+  return pantry.some(item => item.quantity > 0 && itemCoversIngredient(item.name, ingredientName));
 }
 
 export interface PantryCoverage {
   have: string[];
   missing: string[];
   percent: number;
+}
+
+// Things every kitchen has that nobody lists in a pantry.
+const ALWAYS_ON_HAND = new Set(['water', 'ice', 'tap water']);
+
+export function isAlwaysOnHand(ingredientName: string): boolean {
+  const words = ingredientWords(ingredientName);
+  return words.length > 0 && words.every(w => ALWAYS_ON_HAND.has(w));
+}
+
+/**
+ * An ingredient name as a person would say it: "cucumber, thinly sliced"
+ * → "cucumber", "seedless watermelon, cubed" → "watermelon".
+ */
+export function displayIngredientName(name: string): string {
+  const base = name.replace(/\(.*?\)/g, ' ').split(',')[0];
+  const kept = base
+    .split(/\s+/)
+    .filter(w => w && !INGREDIENT_NOISE.has(w.toLowerCase().replace(/[^a-z]/g, '')) && !/^(seedless|boneless|skinless)$/i.test(w));
+  return (kept.length ? kept.join(' ') : base).trim().toLowerCase();
 }
 
 /** Which required ingredients the user has vs. is missing. */
@@ -203,7 +287,7 @@ export function getPantryCoverage(
   const missing: string[] = [];
 
   required.forEach(ing => {
-    if (pantryHas(pantry, ing.name)) have.push(ing.name);
+    if (isAlwaysOnHand(ing.name) || pantryHas(pantry, ing.name)) have.push(ing.name);
     else missing.push(ing.name);
   });
 

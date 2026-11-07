@@ -92,6 +92,7 @@ function RootLayoutNav() {
               <Stack.Screen name="planWeek" />
               <Stack.Screen name="recipe/[id]" />
               <Stack.Screen name="decide" />
+              <Stack.Screen name="drinks" />
               <Stack.Screen name="profile" />
               <Stack.Screen name="settings/account" />
               <Stack.Screen name="settings/preferences" />

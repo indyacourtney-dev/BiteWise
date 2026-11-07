@@ -219,3 +219,57 @@ describe('passesDietaryFilter', () => {
     expect(result).toBe(false);
   });
 });
+describe('pantryHas — whole words, not substrings', () => {
+  const { pantryHas, itemCoversIngredient } = require('../utils/matching');
+  const item = (name: string, quantity = 1) => ({ id: name, name, quantity, unit: 'Items', category: 'other', icon: '•', addedAt: 0 });
+
+  it('matches across plurals, extra words and modifiers', () => {
+    expect(itemCoversIngredient('Chicken Breast', 'chicken')).toBe(true);
+    expect(itemCoversIngredient('Eggs', 'large egg')).toBe(true);
+    expect(itemCoversIngredient('Olive Oil', 'extra virgin olive oil')).toBe(true);
+    expect(itemCoversIngredient('Tomato', 'tomatoes, diced')).toBe(true);
+    expect(itemCoversIngredient('Lemon', 'fresh lemon juice')).toBe(true);
+    expect(itemCoversIngredient('Garlic', 'garlic cloves')).toBe(true);
+    expect(itemCoversIngredient('Milk', 'milk of your choice')).toBe(true);
+  });
+
+  it('does not match inside other words or different products', () => {
+    expect(itemCoversIngredient('Ice', 'fresh lime juice')).toBe(false);
+    expect(itemCoversIngredient('Ice', 'rice')).toBe(false);
+    expect(itemCoversIngredient('Ice', 'milk of your choice')).toBe(false);
+    expect(itemCoversIngredient('Black Beans', 'green beans')).toBe(false);
+    expect(itemCoversIngredient('Garlic', 'garlic powder')).toBe(false);
+    expect(itemCoversIngredient('Rice', 'rice vinegar')).toBe(false);
+    expect(itemCoversIngredient('Chicken', 'chicken stock')).toBe(false);
+    expect(itemCoversIngredient('Coconut', 'coconut milk')).toBe(false);
+  });
+
+  it('ignores items that are out (quantity 0)', () => {
+    expect(pantryHas([item('Eggs', 0)], 'egg')).toBe(false);
+    expect(pantryHas([item('Eggs', 2)], 'egg')).toBe(true);
+  });
+});
+
+describe('pantryHas — a more specific pantry item is not a plainer ingredient', () => {
+  const { itemCoversIngredient } = require('../utils/matching');
+  it('ginger ale is not ginger; peanut butter is not peanuts', () => {
+    expect(itemCoversIngredient('Ginger Ale', 'ground ginger')).toBe(false);
+    expect(itemCoversIngredient('Ginger', 'ground ginger')).toBe(true);
+    expect(itemCoversIngredient('Coconut Milk', 'coconut')).toBe(false);
+  });
+});
+
+describe('pantry coverage — staples and display names', () => {
+  const { displayIngredientName, isAlwaysOnHand } = require('../utils/matching');
+  it('water and ice are always on hand; ice cream is not', () => {
+    expect(isAlwaysOnHand('cold water')).toBe(true);
+    expect(isAlwaysOnHand('ice')).toBe(true);
+    expect(isAlwaysOnHand('vanilla ice cream')).toBe(false);
+  });
+  it('shows ingredients the way a person says them', () => {
+    expect(displayIngredientName('cucumber, thinly sliced')).toBe('cucumber');
+    expect(displayIngredientName('seedless watermelon, cubed')).toBe('watermelon');
+    expect(displayIngredientName('fresh lime juice')).toBe('lime juice');
+    expect(displayIngredientName('Greek yogurt')).toBe('greek yogurt');
+  });
+});
