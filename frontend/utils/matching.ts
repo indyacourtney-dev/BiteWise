@@ -125,6 +125,25 @@ export function isPlateBalanced(plate: PlateComposition): boolean {
 }
 
 /**
+ * How close a plate is to the Healthy Eating Plate, 0..1 (1 = inside every
+ * target band). Each of produce / protein / carbs loses points in
+ * proportion to how far outside its band it sits, so "almost balanced"
+ * ranks well above "all carbs" instead of both scoring zero. Used to rank
+ * picks (utils/decide.ts) and fill the week (utils/weekPlan.ts): an
+ * overall balanced meal is worth more to someone than the quickest one.
+ */
+export function plateBalanceScore(plate: PlateComposition): number {
+  const miss = (value: number, band: { min: number; max: number }) =>
+    value < band.min ? band.min - value : value > band.max ? value - band.max : 0;
+  // Percentage points outside the bands; 25 points off in total = 0.
+  const off =
+    miss(plate.produce, PLATE_TARGETS.produce) +
+    miss(plate.protein, PLATE_TARGETS.protein) +
+    miss(plate.carbs, PLATE_TARGETS.carbs);
+  return Math.max(0, Math.min(1, 1 - off / 25));
+}
+
+/**
  * A specific, actionable tip instead of a generic "add more veggies"
  * on every unbalanced plate.
  */

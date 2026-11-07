@@ -26,6 +26,7 @@ import { useAccessibility } from '@/hooks/useAccessibility';
 import { useDecision } from '@/hooks/useDecision';
 import { CRAVINGS, CRAVINGS_FOR_MEAL, type Craving, type Decision } from '@/utils/decide';
 import { MEAL_INFO, MEAL_TYPES } from '@/utils/meals';
+import { getPlateSuggestion } from '@/utils/matching';
 
 const SKIPS_BEFORE_FINAL_THREE = 3;
 
@@ -144,6 +145,13 @@ export default function DecideScreen() {
                 </View>
               ) : null}
 
+              {mealType !== 'dessert' && pick.recipe.nutrition.calories > 0 && getPlateSuggestion(pick.recipe.plate) ? (
+                <View style={s.balanceTip}>
+                  <FontAwesome name="lightbulb-o" size={14} color={COLORS.textGold} />
+                  <Text style={s.balanceTipText}>Round it out: {getPlateSuggestion(pick.recipe.plate)}</Text>
+                </View>
+              ) : null}
+
               {pick.pantryPercent !== null && pantry.length > 0 ? (
                 <View style={{ gap: 6 }}>
                   <View style={s.barLabelRow}>
@@ -193,6 +201,8 @@ const s = StyleSheet.create({
   barTrack: { height: 8, borderRadius: 4, backgroundColor: COLORS.lightBlueBg, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 4, backgroundColor: COLORS.green },
   actions: { padding: 18, paddingTop: 14, gap: 10 },
+  balanceTip: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: COLORS.lightYellow, borderRadius: 12, padding: 10 },
+  balanceTipText: { flex: 1, fontSize: 12, lineHeight: 17, color: COLORS.textDark },
 
   center: { alignItems: 'center', justifyContent: 'center', gap: 8 },
   hint: { fontSize: 13, color: COLORS.textMuted, lineHeight: 19, textAlign: 'center' },

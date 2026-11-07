@@ -30,6 +30,7 @@ import Avatar from '@/components/Avatar';
 import { Card, Chip, Display, Pill, PrimaryButton, RecipeTile, SecondaryButton, ui } from '@/components/ui';
 import { MEAL_INFO, MEAL_TYPES, QUIZ_MEAL_TYPES } from '@/utils/meals';
 import { stockStatus } from '@/utils/pantryStatus';
+import { getPlateSuggestion } from '@/utils/matching';
 import type { MealType } from '@/types';
 
 function greetingFor(now = new Date()): string {
@@ -176,6 +177,12 @@ export default function Home() {
                     ))}
                   </View>
                 ) : null}
+                {mealType !== 'dessert' && pick.recipe.nutrition.calories > 0 && getPlateSuggestion(pick.recipe.plate) ? (
+                  <View style={s.balanceTip}>
+                    <FontAwesome name="lightbulb-o" size={14} color={COLORS.textGold} />
+                    <Text style={s.balanceTipText}>Round it out: {getPlateSuggestion(pick.recipe.plate)}</Text>
+                  </View>
+                ) : null}
                 <View style={s.actions}>
                   <PrimaryButton label="Cook this" icon="arrow-right" onPress={cook} style={{ flex: 1, minHeight: 48 }} />
                   <SecondaryButton label="Swap" icon="random" onPress={decision.skip} style={{ minHeight: 48 }} />
@@ -307,6 +314,8 @@ const s = StyleSheet.create({
   reasonRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   reasonText: { flex: 1, fontSize: 14, color: COLORS.textDark },
   actions: { flexDirection: 'row', gap: 10, marginTop: 2 },
+  balanceTip: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: COLORS.lightYellow, borderRadius: 12, padding: 10 },
+  balanceTipText: { flex: 1, fontSize: 12, lineHeight: 17, color: COLORS.textDark },
   hint: { fontSize: 13, color: COLORS.textMuted, lineHeight: 19, textAlign: 'center' },
 
   waysRow: { flexDirection: 'row', gap: 10, marginTop: 14 },

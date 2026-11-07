@@ -20,7 +20,7 @@
 // out (offline, with only the curated recipes), repeats are allowed again,
 // but never the dish from the day before.
 
-import { favoriteOverlap, dislikeOverlap } from './matching';
+import { favoriteOverlap, dislikeOverlap, plateBalanceScore } from './matching';
 import { profileOf } from './thisOrThat';
 import type { PantryCategoryId, PantryItem, PlannedMeal, PlanDayStatus, PlanSlot, Recipe, UserPreferences } from '../types';
 
@@ -140,6 +140,9 @@ export function pickForSlot(
     let score = rand();
     if (opts.favoriteIds?.has(r.id)) score += 1.5;
     score += 0.4 * favoriteOverlap(r, loves) - 0.6 * dislikeOverlap(r, dislikes);
+    // A week of balanced plates beats a week of quick ones (desserts and
+    // nutrition-less home recipes are neutral).
+    if (slot !== 'breakfast' && r.nutrition.calories > 0) score += 2 * plateBalanceScore(r.plate);
     if (pr && pr === yesterdayProtein) score -= 3;
     if (pr && (proteinCount.get(pr) ?? 0) >= 2) score -= 2;
     if (type !== 'other') score -= 1.2 * (typeCount.get(type) ?? 0);

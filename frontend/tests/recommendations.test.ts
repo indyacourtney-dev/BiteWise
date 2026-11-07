@@ -215,3 +215,25 @@ describe('rankForDecision uses the taste signals', () => {
     expect(poolFilters('dinner', prefs).taste).toBeNull();
   });
 });
+
+describe('balance over speed', () => {
+  it('plateBalanceScore is 1 inside the bands and falls off gradually', () => {
+    const { plateBalanceScore } = require('../utils/matching');
+    expect(plateBalanceScore({ produce: 50, protein: 25, carbs: 25, healthyFats: 8 })).toBe(1);
+    const nearly = plateBalanceScore({ produce: 40, protein: 25, carbs: 35, healthyFats: 8 });
+    const carbHeavy = plateBalanceScore({ produce: 10, protein: 15, carbs: 75, healthyFats: 5 });
+    expect(nearly).toBeGreaterThan(0.5);
+    expect(nearly).toBeLessThan(1);
+    expect(carbHeavy).toBe(0);
+  });
+
+  it('a balanced 40-minute dinner beats a quick carb-heavy one', () => {
+    const balanced = recipe({ id: 'balanced', prepMinutes: 10, cookMinutes: 30, plate: { produce: 50, protein: 25, carbs: 25, healthyFats: 8 } });
+    const quick = recipe({ id: 'quick', prepMinutes: 5, cookMinutes: 10, plate: { produce: 10, protein: 15, carbs: 75, healthyFats: 5 } });
+    const ranked = rankForDecision([quick, balanced], {
+      mealType: 'dinner', craving: 'anything', pantry: [], favorites: [], history: [], variety: false, preferences: prefs,
+    });
+    expect(ranked[0].recipe.id).toBe('balanced');
+    expect(ranked[0].reasons).toContain('A balanced plate');
+  });
+});

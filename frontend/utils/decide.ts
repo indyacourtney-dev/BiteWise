@@ -20,7 +20,7 @@
 // always the top score, and each next pick avoids the kind of dish and
 // protein you just skipped. tests/decide.sim.ts measures the effect.
 
-import { favoriteOverlap, dislikeOverlap, getPantryCoverage, isPlateBalanced } from './matching';
+import { favoriteOverlap, dislikeOverlap, getPantryCoverage, isPlateBalanced, plateBalanceScore } from './matching';
 import { getTotalTime } from '../constants/recipes';
 import { lovedFoodsIn } from './customFoods';
 import { CUISINE_LABELS, cuisineMatches } from './cuisine';
@@ -178,6 +178,8 @@ export const DISLIKE_PENALTY = 10;          // per skipped chip it hits, always
 export const DISLIKE_SHOWN_PENALTY = 18;    // more, each time it's been shown before
 export const DISLIKE_MAX_SHOWINGS = 2;      // after this many showings it's out of the way
 export const DISLIKE_BACKOFF_PENALTY = 60;
+/** Points for a fully balanced plate (scaled by plateBalanceScore). */
+export const BALANCE_WEIGHT = 16;
 
 export function dislikePenalty(dislikes: number, timesShown: number, everChosen: boolean): number {
   if (dislikes <= 0) return 0;
@@ -274,10 +276,12 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
         else if (cov.have.length > 0) reasons.push({ weight: 1, text: `You have ${cov.have.length} of ${need} ingredients` });
       }
 
-      // Time
+      // Time. A small nudge only: when the user asked for "quick" the
+      // craving filter already did the work, and a balanced plate (below)
+      // is worth more to them than the fastest option.
       if (total <= 30) {
-        score += ctx.mealType === 'breakfast' || ctx.mealType === 'lunch' ? 8 : 4;
-        reasons.push({ weight: 5, text: `Ready in ${total} minutes` });
+        score += ctx.mealType === 'breakfast' || ctx.mealType === 'lunch' ? 6 : 2;
+        reasons.push({ weight: 4, text: `Ready in ${total} minutes` });
       } else {
         reasons.push({ weight: 0.5, text: `About ${total} minutes start to finish` });
       }
@@ -318,10 +322,14 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
         reasons.push({ weight: 3, text: `A home recipe from ${recipe.authorName}` });
       }
 
-      // Balanced plate (meals only, not dessert)
-      if (ctx.mealType !== 'dessert' && recipe.nutrition.calories > 0 && isPlateBalanced(recipe.plate)) {
-        score += 4;
-        reasons.push({ weight: 4, text: 'A balanced plate' });
+      // Balanced plate (meals only, not dessert). Graded, and weighted above
+      // speed: an overall balanced meal serves someone better than the
+      // quickest one. Nutrition-less community recipes neither gain nor lose.
+      if (ctx.mealType !== 'dessert' && recipe.nutrition.calories > 0) {
+        const balance = plateBalanceScore(recipe.plate);
+        score += BALANCE_WEIGHT * balance;
+        if (isPlateBalanced(recipe.plate)) reasons.push({ weight: 7, text: 'A balanced plate' });
+        else if (balance >= 0.7) reasons.push({ weight: 3, text: 'Close to a balanced plate' });
       }
       if (!recipe.source || recipe.source === 'bitewise') score += 3;   // hand-checked recipes
 
