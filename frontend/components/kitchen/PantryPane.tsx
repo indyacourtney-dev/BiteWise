@@ -1,4 +1,4 @@
-// app/(tabs)/pantry.tsx — "My Pantry"
+// components/kitchen/PantryPane.tsx — the Pantry half of the Kitchen tab
 //
 // What's in your kitchen, saved to your account (AppContext keeps a local
 // copy; lib/kitchenSync.ts syncs it). Turning it into meals is Cook with my
@@ -13,13 +13,15 @@
 //     and a stepper. Tap an item for details (components/PantryItemSheet).
 
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import PantryItemSheet from '@/components/PantryItemSheet';
+import { SectionLabel } from '@/components/ui';
+import { confirmAction } from '@/utils/confirm';
 import { COLORS } from '@/constants/Colors';
 import { useApp } from '@/context/AppContext';
 import { QUICK_ADDS, type PantryStorage } from '@/constants/pantryData';
@@ -41,10 +43,13 @@ const STORAGE_ORDER: PantryStorage[] = ['fridge', 'freezer', 'pantry', 'counter'
 
 type StatusFilter = 'all' | 'soon';
 
-export default function PantryScreen() {
+const filteringNow = (q: string, storage: PantryStorage | null, status: StatusFilter) =>
+  !!q.trim() || !!storage || status !== 'all';
+
+export default function PantryPane({ header, onSwitch }: { header: React.ReactNode; onSwitch: (tab: 'pantry' | 'grocery') => void }) {
   const tabBarHeight = useBottomTabBarHeight();
   const router = useRouter();
-  const { pantry, grocery, addPantryItem, updatePantryQuantity, removePantryItem, clearPantry, addGroceryItem, preferences } =
+  const { pantry, grocery, addPantryItem, updatePantryQuantity, removePantryItem, clearPantry, addGroceryItem, addLowStockToGrocery, preferences } =
     useApp();
 
   const [query, setQuery] = useState('');
@@ -72,9 +77,17 @@ export default function PantryScreen() {
     });
   }, [pantry, query, storageFilter, statusFilter]);
 
+  // "Running low" is its own group at the top (only when nothing is
+  // filtered), so restocking is the first thing you see.
+  const lowGroup = useMemo(
+    () => (filteringNow(query, storageFilter, statusFilter) ? [] : visible.filter(i => stockStatus(i) !== 'ok').sort((a, b) => a.quantity - b.quantity)),
+    [visible, query, storageFilter, statusFilter]
+  );
+  const lowIds = useMemo(() => new Set(lowGroup.map(i => i.id)), [lowGroup]);
+
   const grouped = useMemo(() => {
     const map = new Map<PantryCategoryId, PantryItem[]>();
-    visible.forEach(item => {
+    visible.filter(item => !lowIds.has(item.id)).forEach(item => {
       const key = CATEGORY_ORDER.includes(item.category) ? item.category : 'other';
       map.set(key, [...(map.get(key) ?? []), item]);
     });
@@ -85,7 +98,7 @@ export default function PantryScreen() {
         .get(c)!
         .sort((a, b) => Number(a.quantity <= 0) - Number(b.quantity <= 0) || a.name.localeCompare(b.name)),
     }));
-  }, [visible]);
+  }, [visible, lowIds]);
 
   const add = (name: string, unit?: string) => {
     if (!name.trim()) return;
@@ -94,10 +107,13 @@ export default function PantryScreen() {
   };
 
   const confirmClear = () =>
-    Alert.alert('Clear your pantry?', 'This removes every item, on all your devices.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear all', style: 'destructive', onPress: clearPantry },
-    ]);
+    confirmAction({
+      title: 'Clear your pantry?',
+      message: 'This removes every item, on all your devices.',
+      confirmLabel: 'Clear all',
+      destructive: true,
+      onConfirm: clearPantry,
+    });
 
   const filtering = !!storageFilter || statusFilter !== 'all' || !!query.trim();
 
@@ -108,22 +124,7 @@ export default function PantryScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Title */}
-        <View style={styles.headerRow}>
-          <View style={styles.flex1}>
-            <Text style={styles.h1} accessibilityRole="header">My Pantry</Text>
-            <Text style={styles.sub}>
-              {summary.total === 0
-                ? 'What do you have at home?'
-                : `${summary.total} item${summary.total === 1 ? '' : 's'} in your kitchen`}
-            </Text>
-          </View>
-          {pantry.length > 0 && (
-            <TouchableOpacity onPress={confirmClear} style={styles.clearBtn} accessibilityRole="button" accessibilityLabel="Clear pantry">
-              <Text style={styles.clearText}>Clear</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        {header}
 
         {/* The kitchen at a glance: each compartment is also a filter */}
         <View style={styles.kitchen}>
@@ -153,7 +154,7 @@ export default function PantryScreen() {
           <View style={styles.statusRow}>
             <TouchableOpacity
               style={[styles.statusBtn, needsBuying > 0 && styles.statusBtnAlert]}
-              onPress={() => router.push('/grocery')}
+              onPress={() => onSwitch('grocery')}
               accessibilityRole="button"
               accessibilityLabel={`${needsBuying} running low or out. Open grocery list`}
             >
@@ -174,22 +175,6 @@ export default function PantryScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* Cook with pantry */}
-        <TouchableOpacity style={styles.cookBanner} activeOpacity={0.9} onPress={() => router.push('/cookWithPantry')}>
-          <Text style={styles.cookEmoji}>👩‍🍳</Text>
-          <View style={styles.flex1}>
-            <Text style={styles.cookTitle}>Cook with my pantry</Text>
-            <Text style={styles.cookSub}>
-              {summary.useSoon.length > 0
-                ? `Use up your ${summary.useSoon[0].name.toLowerCase()} while it's fresh`
-                : summary.total > 0
-                  ? 'Meals you can make with what you have'
-                  : 'Add a few items, then see what you can make'}
-            </Text>
-          </View>
-          <FontAwesome name="chevron-right" size={14} color={COLORS.darkNavy} />
-        </TouchableOpacity>
 
         {/* Add or find */}
         <View style={styles.searchRow}>
@@ -306,7 +291,49 @@ export default function PantryScreen() {
             <Text style={styles.emptyText}>Tap Show all to see your whole pantry.</Text>
           </View>
         ) : (
-          grouped.map(group => (
+          <>
+          {lowGroup.length > 0 ? (
+            <View style={styles.group}>
+              <SectionLabel
+                tone="gold"
+                style={{ marginBottom: 8 }}
+                right={
+                  <TouchableOpacity
+                    onPress={() => addLowStockToGrocery()}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add everything running low to the grocery list"
+                    style={styles.lowAllBtn}
+                  >
+                    <Text style={styles.lowAllText}>Add all to grocery</Text>
+                  </TouchableOpacity>
+                }
+              >
+                Running low · {lowGroup.length}
+              </SectionLabel>
+              <View style={[styles.groupCard, styles.groupCardLow]}>
+                {lowGroup.map((item, i) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    last={i === lowGroup.length - 1}
+                    onList={onList.has(item.name.toLowerCase())}
+                    onOpen={() => setOpenId(item.id)}
+                    onStep={d => updatePantryQuantity(item.id, d)}
+                    onRemove={() => removePantryItem(item.id)}
+                    onAddToList={() =>
+                      addGroceryItem(item.name, {
+                        source: 'low-stock',
+                        quantity: Math.max(1, (item.stockedQty ?? 1) - item.quantity),
+                        unit: item.unit,
+                        category: item.category,
+                      })
+                    }
+                  />
+                ))}
+              </View>
+            </View>
+          ) : null}
+          {grouped.map(group => (
             <View key={group.category} style={styles.group}>
               <View style={styles.groupHeader}>
                 <Text style={styles.groupEmoji}>{getCategoryIcon(group.category)}</Text>
@@ -335,7 +362,13 @@ export default function PantryScreen() {
                 ))}
               </View>
             </View>
-          ))
+          ))}
+          {pantry.length > 0 ? (
+            <TouchableOpacity onPress={confirmClear} style={styles.clearAll} accessibilityRole="button" accessibilityLabel="Clear pantry">
+              <Text style={styles.clearText}>Clear my pantry</Text>
+            </TouchableOpacity>
+          ) : null}
+          </>
         )}
       </ScrollView>
 
@@ -457,6 +490,10 @@ function ItemRow({
 // =====================================================
 
 const styles = StyleSheet.create({
+  lowAllBtn: { height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: COLORS.lightYellow, alignItems: 'center', justifyContent: 'center' },
+  lowAllText: { fontSize: 12, fontWeight: '700', color: COLORS.darkNavy },
+  groupCardLow: { borderColor: COLORS.yellowBorder },
+  clearAll: { alignItems: 'center', paddingVertical: 14, marginTop: 8 },
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   scroll: { paddingHorizontal: 20, paddingTop: 8 },
   flex1: { flex: 1 },

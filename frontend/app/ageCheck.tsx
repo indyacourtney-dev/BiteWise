@@ -24,7 +24,7 @@ export default function AgeCheckScreen() {
           <Text style={styles.h1} accessibilityRole="header">
             One quick thing
           </Text>
-          <Text style={styles.sub}>We added an age check. Tell us your birthday once and you're all set.</Text>
+          <Text style={styles.sub}>One quick thing we didn't ask before: your birthday. Tell us once and you're all set.</Text>
           <BirthdayForm />
           {birthDate ? (
             <TouchableOpacity style={styles.primaryBtn} onPress={() => router.replace('/')} accessibilityRole="button">

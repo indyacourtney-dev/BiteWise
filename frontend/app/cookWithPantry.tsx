@@ -138,7 +138,7 @@ export default function CookWithPantryScreen() {
             <TouchableOpacity
               style={styles.primaryBtn}
               activeOpacity={0.9}
-              onPress={() => router.push('/pantry')}
+              onPress={() => router.push('/kitchen?tab=pantry')}
             >
               <Text style={styles.primaryBtnText}>Stock My Pantry</Text>
             </TouchableOpacity>

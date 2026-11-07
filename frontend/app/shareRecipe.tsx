@@ -63,7 +63,7 @@ export default function ShareRecipeScreen() {
         .map(r => ({ name: r.name.trim(), amount: r.amount.trim(), category: 'other' }));
       // Age safeguard: under-21s can't post recipes made with alcohol.
       if (!preferences.allowAlcohol && recipeHasAlcohol({ name, tags: [], ingredients, instructions: steps })) {
-        setError("Recipes made with alcohol can only be shared by people 21 or older. Remove the alcohol to share this one.");
+        setError("Recipes made with alcohol can't be shared from your account. Try it without the alcohol.");
         return;
       }
       const recipe = await shareHomeRecipe(

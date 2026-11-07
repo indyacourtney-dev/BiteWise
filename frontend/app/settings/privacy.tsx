@@ -50,9 +50,9 @@ export default function PrivacyScreen() {
           <View style={s.padded}>
             <Text style={s.message}>
               <Text style={{ fontWeight: '700', color: COLORS.textDark }}>On your account (Supabase): </Text>
-              your email and password (encrypted), birthday (only you can see it; it decides whether
-              recipes made with alcohol are shown), display name, profile photo, favorites, pantry, grocery
-              list, chat messages and any recipes you share. Your pantry and list are also kept on this phone
+              your email and password (encrypted), birthday (only you can see it; it's used to tailor what's
+              shown), display name, profile photo, favorites, pantry, grocery list, week plan, preferences,
+              chat messages and any recipes you share. Your pantry and list are also kept on this phone
               so they work offline.
             </Text>
             <Text style={s.message}>

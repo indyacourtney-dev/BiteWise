@@ -219,15 +219,14 @@ export default function Home() {
           onPress={() => router.push('/drinks')}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel="Drinks: mocktails, smoothies, and cocktails for 21 and over"
+          accessibilityLabel={preferences.allowAlcohol ? 'Drinks: mocktails, smoothies and cocktails' : 'Drinks: mocktails, smoothies and more'}
         >
           <View style={s.drinksRow}>
             <FontAwesome name="glass" size={20} color={COLORS.goldYellow} />
             <View style={{ flex: 1 }}>
               <Text style={s.drinksTitle}>Drinks</Text>
-              <Text style={s.drinksSub}>Mocktails, smoothies — and cocktails for 21+</Text>
+              <Text style={s.drinksSub}>{preferences.allowAlcohol ? 'Mocktails, smoothies and cocktails' : 'Mocktails, smoothies and more'}</Text>
             </View>
-            <Pill label="21+" tone="yellow" />
             <FontAwesome name="chevron-right" size={13} color={COLORS.navyMuted} />
           </View>
         </TouchableOpacity>

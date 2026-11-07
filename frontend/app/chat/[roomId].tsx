@@ -200,7 +200,7 @@ export default function ChatRoomScreen() {
                         {!preferences.allowAlcohol && nameMentionsAlcohol(item.recipe.name) ? (
                           <>
                             <Text style={styles.recipeEmoji}>🔞</Text>
-                            <Text style={styles.recipeName} numberOfLines={2}>A recipe for 21+</Text>
+                            <Text style={styles.recipeName} numberOfLines={2}>A recipe that isn't available on your account</Text>
                           </>
                         ) : (
                           <>

@@ -272,6 +272,8 @@ export interface PlannedMeal {
   servingsEstimated?: boolean;
   cooked: boolean;
   addedAt: number;
+  /** Last change (ms), used to sync between devices (lib/planSync.ts). */
+  updatedAt?: number;
 }
 
 // ============================================

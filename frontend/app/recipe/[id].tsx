@@ -27,7 +27,6 @@ import { configured } from '@/lib/supabase';
 import { fetchRecipeById } from '@/lib/recipesApi';
 import { useApp } from '@/context/AppContext';
 import { ageAllowsRecipe } from '@/utils/matching';
-import { LEGAL_DRINKING_AGE } from '@/utils/age';
 import type { Recipe } from '@/types';
 
 export default function RecipeScreen() {
@@ -95,9 +94,9 @@ export default function RecipeScreen() {
         </View>
       ) : blocked ? (
         <View style={styles.notFound}>
-          <Text style={styles.notFoundEmoji}>🔞</Text>
-          <Display size={22}>This recipe is for {LEGAL_DRINKING_AGE}+</Display>
-          <Text style={styles.notFoundSub}>It's made with alcohol, so it isn't available on your account.</Text>
+          <Text style={styles.notFoundEmoji}>🍽️</Text>
+          <Display size={22}>Not available on your account</Display>
+          <Text style={styles.notFoundSub}>This recipe can't be shown here. There are thousands of others to choose from.</Text>
           <PrimaryButton label="Go back" onPress={goBack} style={{ marginTop: 8, paddingHorizontal: 28 }} />
         </View>
       ) : recipe ? (

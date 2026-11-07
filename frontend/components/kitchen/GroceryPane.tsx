@@ -1,4 +1,4 @@
-// app/(tabs)/grocery.tsx — the grocery list.
+// components/kitchen/GroceryPane.tsx — the Grocery half of the Kitchen tab.
 //
 //   * "Running low at home": pantry items at or below their running-low
 //     level, or out, that aren't on the list yet. One tap adds one, or all.
@@ -11,7 +11,8 @@
 // pantry item's details. Everything syncs with the account (lib/kitchenSync.ts).
 
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Share, Alert } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Share } from 'react-native';
+import { confirmAction } from '@/utils/confirm';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -25,7 +26,7 @@ import type { GroceryItem, PantryItem } from '@/types';
 
 const SERIF = 'PlayfairDisplay_700Bold';
 
-export default function GroceryScreen() {
+export default function GroceryPane({ header }: { header: React.ReactNode; onSwitch?: (tab: 'pantry' | 'grocery') => void }) {
   const tabBarHeight = useBottomTabBarHeight();
   const a11y = useAccessibility();
   const {
@@ -107,21 +108,19 @@ export default function GroceryScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Title */}
-        <View style={styles.headerRow}>
-          <View style={styles.flex1}>
-            <Text style={styles.h1} accessibilityRole="header">Grocery List</Text>
-            <Text style={styles.sub}>
-              {grocery.length === 0
-                ? 'Nothing to buy yet'
-                : toBuy.length === 0
-                  ? 'Everything is in your cart'
-                  : `${toBuy.length} to buy${inCart.length ? `, ${inCart.length} in your cart` : ''}`}
-            </Text>
-          </View>
+        {header}
+        <View style={styles.subRow}>
+          <Text style={styles.sub}>
+            {grocery.length === 0
+              ? 'Nothing to buy yet'
+              : toBuy.length === 0
+                ? 'Everything is in your cart'
+                : `${toBuy.length} to buy${inCart.length ? `, ${inCart.length} in your cart` : ''}`}
+          </Text>
           {toBuy.length > 0 && (
-            <TouchableOpacity style={styles.iconBtn} onPress={share} accessibilityRole="button" accessibilityLabel="Share list">
-              <FontAwesome name="share-square-o" size={17} color={COLORS.darkNavy} />
+            <TouchableOpacity style={styles.shareBtn} onPress={share} accessibilityRole="button" accessibilityLabel="Share list">
+              <FontAwesome name="share-square-o" size={14} color={COLORS.darkNavy} />
+              <Text style={styles.shareText}>Share list</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -280,10 +279,13 @@ export default function GroceryScreen() {
               <Text style={styles.cartTitle}>In your cart</Text>
               <TouchableOpacity
                 onPress={() =>
-                  Alert.alert('Remove checked items?', "They'll leave the list without going into your pantry.", [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Remove', style: 'destructive', onPress: clearCheckedGrocery },
-                  ])
+                  confirmAction({
+                    title: 'Remove checked items?',
+                    message: "They'll leave the list without going into your pantry.",
+                    confirmLabel: 'Remove',
+                    destructive: true,
+                    onConfirm: clearCheckedGrocery,
+                  })
                 }
                 accessibilityRole="button"
               >
@@ -378,6 +380,9 @@ function GroceryRow({
 }
 
 const styles = StyleSheet.create({
+  subRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 12 },
+  shareBtn: { height: 34, paddingHorizontal: 12, borderRadius: 17, borderWidth: 1, borderColor: COLORS.borderLight, backgroundColor: COLORS.cardWhite, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  shareText: { fontSize: 12, fontWeight: '700', color: COLORS.darkNavy },
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   scroll: { paddingHorizontal: 20, paddingTop: 8 },
   flex1: { flex: 1 },
