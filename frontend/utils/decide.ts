@@ -13,6 +13,7 @@
 //                and not repeating the last few picks
 //   community    how many BiteWise cooks saved it
 //   favorites    their own hearts
+//   ratings      traits in recipes they rated highly or poorly
 //
 // VARIETY (utils/variety.ts): recipes it showed you recently lose points
 // (fading over a few days), the order is a weighted draw rather than
@@ -23,7 +24,15 @@ import { favoriteOverlap, dislikeOverlap, getPantryCoverage, isPlateBalanced } f
 import { getTotalTime } from '../constants/recipes';
 import { lovedFoodsIn } from './customFoods';
 import { drawOrder, recencyPenalty, type Exposure } from './variety';
-import type { MealType, PantryItem, QuizRun, Recipe, SavedRecipe, UserPreferences } from '../types';
+import type {
+  MealType,
+  PantryItem,
+  QuizRun,
+  Recipe,
+  RecipeRatingFeedback,
+  SavedRecipe,
+  UserPreferences,
+} from '../types';
 
 // ============================================
 // CRAVINGS — the single question we ask
@@ -99,6 +108,8 @@ export interface DecideContext {
   exclude?: string[];
   /** Recipes shown or chosen before, newest first (AppContext.recipeExposure). */
   exposure?: Exposure[];
+  /** Star ratings with the recipe traits that were rated. */
+  ratings?: RecipeRatingFeedback[];
   now?: number;
   random?: () => number;
   /** false = the old ranking (top score, tiny shuffle). Only for comparisons. */
@@ -110,6 +121,48 @@ export interface Decision {
   score: number;
   reasons: string[];
   pantryPercent: number | null;
+}
+
+type TasteProfile = {
+  tags: string[];
+  dietary: string[];
+  vibe: string;
+  ingredients: { name: string }[];
+};
+
+function tasteFeatures(recipe: TasteProfile): string[] {
+  return [...new Set([
+    ...recipe.tags.map(tag => `tag:${tag.toLowerCase().trim()}`),
+    ...recipe.dietary.map(tag => `diet:${tag.toLowerCase().trim()}`),
+    `vibe:${recipe.vibe}`,
+    ...recipe.ingredients
+      .map(ingredient => ingredient.name.toLowerCase().trim().replace(/\s+/g, ' '))
+      .filter(Boolean)
+      .map(name => `ingredient:${name}`),
+  ])];
+}
+
+export function ratingPreferenceScore(recipe: Recipe, ratings: RecipeRatingFeedback[]): number {
+  const featurePreferences = new Map<string, number>();
+  for (const review of ratings) {
+    const sentiment = (review.rating - 3) / 2;
+    if (sentiment === 0) continue;
+    const features = tasteFeatures({
+      tags: review.tags,
+      dietary: review.dietary,
+      vibe: review.vibe,
+      ingredients: review.ingredients.map(name => ({ name })),
+    });
+    for (const feature of features) {
+      featurePreferences.set(feature, (featurePreferences.get(feature) ?? 0) + sentiment);
+    }
+  }
+
+  const feedback = tasteFeatures(recipe).reduce(
+    (score, feature) => score + (featurePreferences.get(feature) ?? 0),
+    0,
+  );
+  return Math.max(-15, Math.min(15, feedback * 6));
 }
 
 const MIN_POOL_AFTER_CRAVING = 3;
@@ -148,6 +201,13 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
       const dislikes = dislikeOverlap(recipe, prefs.dislikedTags);
       score += loves * 8 - dislikes * 12;
       if (loves >= 2) reasons.push({ weight: 7, text: 'Lines up with the foods you said you love' });
+      const ratingScore = ratingPreferenceScore(recipe, ctx.ratings ?? []);
+      score += ratingScore;
+      if (ratingScore >= 3) {
+        reasons.push({ weight: 9, text: 'Similar to recipes you rated highly' });
+      } else if (ratingScore <= -3) {
+        reasons.push({ weight: 9, text: 'Adjusted for recipes you rated lower' });
+      }
       const cuisineHit = cuisines.find(c => recipe.tags.some(t => t.toLowerCase() === c));
       if (cuisineHit) {
         score += 6;
