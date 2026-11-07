@@ -25,6 +25,22 @@ export const COLORS = {
   inactiveGray: '#8298AE',    // blue-gray inactive (was #85929E)
 
   redAccent: '#E74C3C',
+
+  // ---- Redesign additions (Nov 2026) ----
+  // Text-safe versions of the brand accents. darkGold (#B49221) is 3.1:1 on
+  // white, which fails for small text; textGold passes 4.5:1 on white and on
+  // lightYellow. redAccent is for fills; redText for words.
+  textGold: '#8A6E12',
+  redText: '#C0392B',
+  redSoft: '#FDECEA',
+  green: '#1E7B4F',           // "you have it", "ready", positive status
+  greenSoft: '#E3F2EA',
+  navyMuted: '#B9C7D6',       // secondary text / inactive icons on navy
+  // Warm, flat tiles for recipe art when there's no photo (never gradients).
+  tileSand: '#F2E3D3',
+  tileClay: '#E6D5C3',
+  tileSage: '#DCE8D5',
+  yellowBorder: '#EDE28A',
 };
 
 export default {

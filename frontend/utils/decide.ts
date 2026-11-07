@@ -270,12 +270,27 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
         const need = cov.have.length + cov.missing.length;
         if (cov.missing.length === 0) reasons.push({ weight: 10, text: 'You have everything for it already' });
         else if (cov.percent >= 60) reasons.push({ weight: 8, text: `You already have ${cov.have.length} of ${need} ingredients` });
+        // Weaker, but still true: shows only when nothing stronger fills the card.
+        else if (cov.have.length > 0) reasons.push({ weight: 1, text: `You have ${cov.have.length} of ${need} ingredients` });
       }
 
       // Time
       if (total <= 30) {
         score += ctx.mealType === 'breakfast' || ctx.mealType === 'lunch' ? 8 : 4;
         reasons.push({ weight: 5, text: `Ready in ${total} minutes` });
+      } else {
+        reasons.push({ weight: 0.5, text: `About ${total} minutes start to finish` });
+      }
+
+      // Always-true reassurance for people with restrictions (the hard
+      // filters already ran, so these hold for every candidate). Low weight:
+      // anything specific to this recipe outranks them.
+      if (prefs.avoidAllergens.length > 0 || (prefs.customAllergies ?? []).length > 0) {
+        reasons.push({ weight: 1.5, text: 'Safe for your allergies' });
+      }
+      if (prefs.dietary.length > 0) {
+        const diet = prefs.dietary[0].replace(/-/g, ' ');
+        reasons.push({ weight: 1.2, text: prefs.dietary.length > 1 ? `Fits ${diet} and your other diets` : `Fits ${diet}` });
       }
       if (prefs.preferredDifficulty && recipe.difficulty === prefs.preferredDifficulty) score += 5;
 

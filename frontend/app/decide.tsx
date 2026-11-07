@@ -1,358 +1,199 @@
-// app/decide.tsx — "Decide for me"
+// app/decide.tsx — "Pick for me"
 //
-// The fastest path from "I don't know what to eat" to cooking:
-//   1. What are we eating?        (breakfast / brunch / lunch / dinner / dessert,
-//                                  pre-selected from the clock)
-//   2. What are you in the mood for? (one tap; "Anything" is the default)
-//   3. ONE pick, with the reasons we chose it, and a big "Let's make this".
+// The fastest path from "I don't know what to eat" to cooking: one card at
+// a time, with the reasons it was chosen and how much of it you already
+// have. The craving chips stay on screen so you can change your mind
+// without starting over; "Not tonight" moves to the next best; after three
+// skips we lay out the best three left so the carousel can't go on forever.
 //
-// Indecision guard-rails:
-//   * one recipe at a time, never a wall of options
-//   * "Not feeling it" shows the next best pick
-//   * after 3 skips we stop the carousel and offer a final 3 to choose from
-//   * the choice is recorded (history) so next time the ranking learns what
-//     the user picks for each meal; recipe ratings further refine taste matches
+// Ranking, skipping and history live in hooks/useDecision.ts (shared with
+// Home's pick). Foods you said you'd rather skip are suggested less, not
+// never — see utils/decide.ts.
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-import MealTypePicker from '@/components/MealTypePicker';
-import FavoriteButton from '@/components/FavoriteButton';
 import RecipeListCard from '@/components/RecipeListCard';
+import { Card, Chip, Display, IconButton, Pill, PrimaryButton, RecipeTile, ScreenHeader, SecondaryButton, SectionLabel, ui } from '@/components/ui';
 import { COLORS } from '@/constants/Colors';
-import { formatTime, getTotalTime } from '@/constants/recipes';
+import { DIFFICULTY_LABELS, formatTime, getTotalTime } from '@/constants/recipes';
+import { getRecipeImage, hasRecipePhoto } from '@/constants/recipeImages';
 import { useApp } from '@/context/AppContext';
-import { useRecipeLibrary } from '@/hooks/useRecipeLibrary';
 import { useAccessibility } from '@/hooks/useAccessibility';
-import { configured } from '@/lib/supabase';
-import { fetchMyRatingFeedback } from '@/lib/reviewsApi';
-import { CRAVINGS, CRAVINGS_FOR_MEAL, rankForDecision, type Craving, type Decision } from '@/utils/decide';
-import { MEAL_INFO } from '@/utils/meals';
-import type { RecipeRatingFeedback } from '@/types';
+import { useDecision } from '@/hooks/useDecision';
+import { CRAVINGS, CRAVINGS_FOR_MEAL, type Craving, type Decision } from '@/utils/decide';
+import { MEAL_INFO, MEAL_TYPES } from '@/utils/meals';
 
 const SKIPS_BEFORE_FINAL_THREE = 3;
 
 export default function DecideScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const {
-    mealType, setMealType, preferences, pantry, favorites, history, recordQuizRun,
-    recipeExposure, noteRecipesShown,
-  } = useApp();
-  const { recipes, loading } = useRecipeLibrary(mealType, preferences);
   const a11y = useAccessibility();
-  const [ratingFeedback, setRatingFeedback] = useState<RecipeRatingFeedback[]>([]);
-  const [ratingFeedbackLoading, setRatingFeedbackLoading] = useState(configured);
-  const [ratingFeedbackError, setRatingFeedbackError] = useState<string | null>(null);
-
-  useFocusEffect(useCallback(() => {
-    if (!configured) return;
-    let cancelled = false;
-    setRatingFeedbackLoading(true);
-    setRatingFeedbackError(null);
-    fetchMyRatingFeedback()
-      .then(rows => {
-        if (!cancelled) setRatingFeedback(rows);
-      })
-      .catch(error => {
-        if (!cancelled) {
-          setRatingFeedbackError(
-            error instanceof Error ? error.message : 'Could not load your review preferences.',
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setRatingFeedbackLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []));
-
-  const [step, setStep] = useState<'ask' | 'pick'>('ask');
+  const { mealType, setMealType, preferences, pantry, toggleFavorite, isFavorite } = useApp();
   const [craving, setCraving] = useState<Craving>('anything');
-  const [skipped, setSkipped] = useState<string[]>([]);
-  const [finalThree, setFinalThree] = useState(false);
-  // New draw each time a round starts (see utils/variety.ts).
-  const [round, setRound] = useState(0);
-  // Snapshot of what was suggested before, taken when a round starts, so
-  // noting "shown" below doesn't reshuffle the card you're looking at.
-  const exposureAtStart = useRef(recipeExposure);
+  const [showMeals, setShowMeals] = useState(false);
 
-  // Rank once per question set; skipping walks down this list.
-  const ranked: Decision[] = useMemo(
-    () =>
-      step === 'pick'
-        ? rankForDecision(recipes, {
-            mealType,
-            craving,
-            preferences,
-            pantry,
-            favorites,
-            history,
-            ratings: ratingFeedback,
-            exposure: exposureAtStart.current,
-          })
-        : [],
-    // history/favorites intentionally left out: re-ranking while the user is
-    // looking at a pick (e.g. after tapping the heart) would swap the card.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [step, round, recipes, mealType, craving, preferences, pantry, ratingFeedback]
-  );
-  const remaining = ranked.filter(d => !skipped.includes(d.recipe.id));
-  const pick = remaining[0];
-
+  const d = useDecision({ mealType, craving });
+  const pick = d.pick;
+  const finalThree = d.skipped.length >= SKIPS_BEFORE_FINAL_THREE;
   const cravings = CRAVINGS_FOR_MEAL[mealType];
 
-  // Remember every pick we show, so the next session suggests something else.
-  const shownIds = finalThree ? remaining.slice(0, 3).map(d => d.recipe.id).join(',') : pick?.recipe.id ?? '';
-  useEffect(() => {
-    if (step === 'pick' && shownIds) noteRecipesShown(shownIds.split(','));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, shownIds]);
-
-  const start = (c: Craving = craving) => {
-    exposureAtStart.current = recipeExposure;
-    setRound(r => r + 1);
-    setCraving(c);
-    setSkipped([]);
-    setFinalThree(false);
-    setStep('pick');
-  };
-
-  const skip = () => {
-    if (!pick) return;
-    const next = [...skipped, pick.recipe.id];
-    setSkipped(next);
-    if (next.length >= SKIPS_BEFORE_FINAL_THREE) setFinalThree(true);
-  };
-
-  const lockIn = (d: Decision) => {
+  const lockIn = (dec: Decision) => {
     a11y.haptic('success');
-    noteRecipesShown([d.recipe.id], true);
-    recordQuizRun({
-      mode: 'decide',
-      mealType,
-      chosenRecipeId: d.recipe.id,
-      vibe: null,
-      tags: d.recipe.tags,
-      topRecipeIds: remaining.slice(0, 3).map(x => x.recipe.id),
-    });
-    router.push(`/recipe/${d.recipe.id}`);
+    const recipe = d.lockIn(dec);
+    if (recipe) router.push(`/recipe/${recipe.id}`);
   };
+
+  const dietPill = pick?.recipe.dietary.find(t => ['vegan', 'vegetarian', 'pescatarian', 'gluten-free', 'dairy-free'].includes(t));
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.iconBtn}
-          onPress={() => (step === 'pick' ? setStep('ask') : router.back())}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={step === 'pick' ? 'Change answers' : 'Go back'}
-        >
-          <FontAwesome name="chevron-left" size={16} color={COLORS.darkNavy} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Decide for me</Text>
-        <View style={styles.iconBtn} />
-      </View>
+    <SafeAreaView style={ui.screen} edges={['top']}>
+      <ScreenHeader
+        kicker="Pick for me"
+        title={`${MEAL_INFO[mealType].label} · ${preferences.householdSize === 1 ? 'just you' : `${preferences.householdSize} people`}`}
+        right={<IconButton icon="sliders" label="Change meal" tone="plain" onPress={() => setShowMeals(v => !v)} />}
+      />
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[ui.pad, { paddingBottom: insets.bottom + 24, flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
       >
-        {step === 'pick' && ratingFeedbackError ? (
-          <Text style={styles.feedbackError}>
-            Review-based personalization is unavailable right now. {ratingFeedbackError}
-          </Text>
+        {showMeals ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
+            {MEAL_TYPES.map(m => (
+              <Chip key={m} label={MEAL_INFO[m].label} small selected={m === mealType} onPress={() => { setMealType(m); setCraving('anything'); }} />
+            ))}
+          </ScrollView>
         ) : null}
-        {step === 'ask' ? (
-          <>
-            <Text style={styles.question}>What are we eating?</Text>
-            <MealTypePicker value={mealType} onChange={setMealType} />
 
-            <Text style={[styles.question, { marginTop: 28 }]}>{MEAL_INFO[mealType].prompt}</Text>
-            <View style={styles.cravingGrid}>
-              {cravings.map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[styles.craving, craving === c && styles.cravingActive]}
-                  onPress={() => setCraving(c)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.cravingEmoji}>{CRAVINGS[c].emoji}</Text>
-                  <Text style={[styles.cravingLabel, craving === c && styles.cravingLabelActive]}>
-                    {CRAVINGS[c].label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+        <Text style={s.question}>What are you in the mood for?</Text>
+        <View style={s.cravingWrap}>
+          {cravings.map(c => (
+            <Chip key={c} label={CRAVINGS[c].label.replace(' — just pick', '')} small selected={craving === c} onPress={() => setCraving(c)} />
+          ))}
+        </View>
+
+        {d.error ? <Text style={s.error}>Some personalization is unavailable right now. {d.error}</Text> : null}
+
+        {d.loading && !pick ? (
+          <Card style={s.card}>
+            <RecipeTile height={210} />
+            <View style={[s.center, { paddingVertical: 36 }]}>
+              <ActivityIndicator color={COLORS.darkNavy} />
+              <Text style={s.hint}>Finding your {MEAL_INFO[mealType].label.toLowerCase()}…</Text>
             </View>
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => start()} activeOpacity={0.9}>
-              <Text style={styles.primaryBtnText}>Pick my {MEAL_INFO[mealType].label.toLowerCase()}</Text>
-              <FontAwesome name="magic" size={16} color={COLORS.darkNavy} />
-            </TouchableOpacity>
-            <Text style={styles.hint}>
-              We'll use your tastes{pantry.length ? ', your pantry' : ''} and what you've enjoyed before.
-            </Text>
-          </>
-        ) : ratingFeedbackLoading || (loading && recipes.length === 0) ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={COLORS.darkNavy} />
-            <Text style={styles.hint}>
-              {ratingFeedbackLoading
-                ? 'Personalizing your picks…'
-                : `Finding your ${MEAL_INFO[mealType].label.toLowerCase()}…`}
-            </Text>
-          </View>
+          </Card>
         ) : !pick ? (
-          <View style={styles.center}>
-            <Text style={styles.bigEmoji}>🤷</Text>
-            <Text style={styles.emptyTitle}>Nothing fits every rule</Text>
-            <Text style={styles.hint}>
-              Your allergies and diets rule out everything we have for {MEAL_INFO[mealType].label.toLowerCase()} right now.
-              Try another meal, or check your settings.
+          <Card style={[s.card, { padding: 22, gap: 10 }]}>
+            <Display size={20}>{d.remaining.length === 0 && d.skipped.length > 0 ? 'That’s everything for now' : 'Nothing fits every rule'}</Display>
+            <Text style={s.hint}>
+              {d.skipped.length > 0
+                ? 'You’ve seen every match for this craving. Start again, or try another mood.'
+                : `Your allergies and diets rule out everything we have for ${MEAL_INFO[mealType].label.toLowerCase()} right now.`}
             </Text>
-            <TouchableOpacity style={styles.secondaryBtn} onPress={() => setStep('ask')}>
-              <Text style={styles.secondaryBtnText}>Change answers</Text>
-            </TouchableOpacity>
-          </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <SecondaryButton label="Start again" onPress={d.restart} style={{ flex: 1 }} />
+              <SecondaryButton label="Preferences" onPress={() => router.push('/settings/preferences')} style={{ flex: 1 }} />
+            </View>
+          </Card>
         ) : finalThree ? (
-          <>
-            <Text style={styles.question}>Let's settle it — pick one of these three</Text>
-            <Text style={styles.hint}>These are the best matches left. Tap one to cook it.</Text>
+          <View style={{ marginTop: 16 }}>
+            <Display size={22}>Let’s settle it</Display>
+            <Text style={[s.hint, { textAlign: 'left', marginTop: 6 }]}>These are the best matches left. Tap one to cook it.</Text>
             <View style={{ marginTop: 14 }}>
-              {remaining.slice(0, 3).map(d => (
-                <RecipeListCard
-                  key={d.recipe.id}
-                  recipe={d.recipe}
-                  note={d.reasons[0]}
-                  onPress={() => lockIn(d)}
-                />
+              {d.remaining.slice(0, 3).map(dec => (
+                <RecipeListCard key={dec.recipe.id} recipe={dec.recipe} note={dec.reasons[0]} onPress={() => lockIn(dec)} />
               ))}
             </View>
-          </>
+            <SecondaryButton label="Show me more instead" onPress={d.restart} style={{ marginTop: 6 }} />
+          </View>
         ) : (
-          <>
-            <Text style={styles.kicker}>
-              {MEAL_INFO[mealType].emoji} Your {MEAL_INFO[mealType].label.toLowerCase()} is…
-            </Text>
-            <View style={styles.pickCard}>
-              <View style={styles.pickTop}>
-                <Text style={styles.pickEmoji}>{pick.recipe.emoji}</Text>
-                <FavoriteButton recipeId={pick.recipe.id} size={22} />
+          <Card style={s.card}>
+            <View>
+              {hasRecipePhoto(pick.recipe) ? (
+                <Image source={getRecipeImage(pick.recipe)} style={s.image} accessibilityIgnoresInvertColors />
+              ) : (
+                <RecipeTile height={210} emoji={pick.recipe.emoji} tone="clay" />
+              )}
+              <View style={s.tagRight}>
+                <Pill label={`Pick ${d.skipped.length + 1} of ${d.skipped.length + d.remaining.length}`} tone="yellow" />
               </View>
-              <Text style={[styles.pickName, a11y.text(24, '700')]}>{pick.recipe.name}</Text>
-              <Text style={styles.pickMeta}>
-                {formatTime(getTotalTime(pick.recipe))}
-                {pick.recipe.nutrition.calories > 0 ? ` · ${pick.recipe.nutrition.calories} cal` : ''}
-                {` · ${pick.recipe.difficulty}`}
-              </Text>
+              <View style={s.tagsBottom}>
+                <Pill label={formatTime(getTotalTime(pick.recipe))} tone="blue" style={s.lightPill} />
+                <Pill label={DIFFICULTY_LABELS[pick.recipe.difficulty]} tone="blue" style={s.lightPill} />
+                {dietPill ? <Pill label={dietPill} tone="blue" style={s.lightPill} /> : null}
+              </View>
+            </View>
+
+            <View style={s.body}>
+              <Display size={24}>{pick.recipe.name}</Display>
 
               {pick.reasons.length > 0 ? (
-                <View style={styles.reasons}>
-                  <Text style={styles.reasonsTitle}>Why this one</Text>
+                <View style={{ gap: 8 }}>
+                  <SectionLabel tone="gold">Why this one</SectionLabel>
                   {pick.reasons.map(r => (
-                    <View key={r} style={styles.reasonRow}>
-                      <FontAwesome name="check" size={13} color={COLORS.darkGold} />
-                      <Text style={[styles.reasonText, a11y.text(15)]}>{r}</Text>
+                    <View key={r} style={s.reasonRow}>
+                      <FontAwesome name="check-circle-o" size={17} color={COLORS.green} style={{ marginTop: 1 }} />
+                      <Text style={[s.reasonText, a11y.text(14)]}>{r}</Text>
                     </View>
                   ))}
                 </View>
               ) : null}
+
+              {pick.pantryPercent !== null && pantry.length > 0 ? (
+                <View style={{ gap: 6 }}>
+                  <View style={s.barLabelRow}>
+                    <Text style={s.barLabel}>Pantry</Text>
+                    <Text style={s.barLabel}>{pick.pantryPercent}% of what it needs</Text>
+                  </View>
+                  <View style={s.barTrack}><View style={[s.barFill, { width: `${pick.pantryPercent}%` }]} /></View>
+                </View>
+              ) : null}
             </View>
 
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => lockIn(pick)} activeOpacity={0.9}>
-              <Text style={styles.primaryBtnText}>Let's make this</Text>
-              <FontAwesome name="arrow-right" size={16} color={COLORS.darkNavy} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryBtn} onPress={skip} activeOpacity={0.8}>
-              <Text style={styles.secondaryBtnText}>
-                Not feeling it ({SKIPS_BEFORE_FINAL_THREE - skipped.length} left)
-              </Text>
-            </TouchableOpacity>
-          </>
+            <View style={s.actions}>
+              <PrimaryButton label="Let’s make this" icon="arrow-right" onPress={() => lockIn(pick)} />
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <SecondaryButton label="Not tonight" icon="random" onPress={d.skip} style={{ flex: 1 }} />
+                <SecondaryButton
+                  label={isFavorite(pick.recipe.id) ? 'Saved' : 'Save for later'}
+                  icon={isFavorite(pick.recipe.id) ? 'heart' : 'heart-o'}
+                  onPress={() => { a11y.haptic(); toggleFavorite(pick.recipe.id); }}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </View>
+          </Card>
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.darkNavy },
-  scroll: { paddingHorizontal: 20, paddingTop: 8 },
-  question: { fontSize: 20, fontWeight: '700', color: COLORS.textDark, marginBottom: 12 },
-  hint: { fontSize: 13, color: COLORS.textMuted, lineHeight: 19, textAlign: 'center', marginTop: 10 },
-  feedbackError: {
-    fontSize: 12,
-    lineHeight: 18,
-    color: COLORS.redAccent,
-    marginBottom: 10,
-  },
-  cravingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  craving: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: COLORS.cardWhite,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-  },
-  cravingActive: { backgroundColor: COLORS.lightYellow, borderColor: COLORS.darkGold },
-  cravingEmoji: { fontSize: 18 },
-  cravingLabel: { fontSize: 14, fontWeight: '600', color: COLORS.darkNavy },
-  cravingLabelActive: { color: COLORS.textDark },
-  primaryBtn: {
-    marginTop: 28,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: COLORS.goldYellow,
-    borderRadius: 16,
-    paddingVertical: 16,
-  },
-  primaryBtnText: { fontSize: 17, fontWeight: '700', color: COLORS.darkNavy },
-  secondaryBtn: { alignItems: 'center', paddingVertical: 14, marginTop: 6 },
-  secondaryBtnText: { fontSize: 15, fontWeight: '600', color: COLORS.textMuted },
-  center: { alignItems: 'center', justifyContent: 'center', paddingTop: 60, gap: 8 },
-  bigEmoji: { fontSize: 52 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: COLORS.darkNavy },
-  kicker: { fontSize: 15, fontWeight: '600', color: COLORS.textMuted, marginBottom: 10 },
-  pickCard: {
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-    padding: 22,
-  },
-  pickTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  pickEmoji: { fontSize: 64 },
-  pickName: { fontSize: 24, fontWeight: '700', color: COLORS.textDark, marginTop: 8 },
-  pickMeta: { fontSize: 14, color: COLORS.textMuted, marginTop: 6 },
-  reasons: { marginTop: 18, gap: 8 },
-  reasonsTitle: { fontSize: 13, fontWeight: '700', color: COLORS.darkGold, textTransform: 'uppercase', letterSpacing: 0.6 },
-  reasonRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  reasonText: { flex: 1, fontSize: 15, color: COLORS.textDark },
+const s = StyleSheet.create({
+  chipRow: { gap: 8, paddingTop: 6, paddingBottom: 10 },
+  question: { fontSize: 13, fontWeight: '600', color: COLORS.textMuted, marginTop: 8, marginBottom: 8 },
+  cravingWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  error: { fontSize: 12, lineHeight: 17, color: COLORS.redText, marginTop: 10 },
+
+  card: { marginTop: 16, borderRadius: 24 },
+  image: { width: '100%', height: 210, backgroundColor: COLORS.tileClay },
+  tagRight: { position: 'absolute', top: 12, right: 12 },
+  tagsBottom: { position: 'absolute', left: 12, bottom: 12, flexDirection: 'row', gap: 6 },
+  lightPill: { backgroundColor: 'rgba(255,255,255,0.94)' },
+  body: { padding: 18, paddingBottom: 4, gap: 14 },
+  reasonRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
+  reasonText: { flex: 1, fontSize: 14, lineHeight: 20, color: COLORS.textDark },
+  barLabelRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  barLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textMuted },
+  barTrack: { height: 8, borderRadius: 4, backgroundColor: COLORS.lightBlueBg, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: 4, backgroundColor: COLORS.green },
+  actions: { padding: 18, paddingTop: 14, gap: 10 },
+
+  center: { alignItems: 'center', justifyContent: 'center', gap: 8 },
+  hint: { fontSize: 13, color: COLORS.textMuted, lineHeight: 19, textAlign: 'center' },
 });
