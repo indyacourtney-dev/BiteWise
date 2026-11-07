@@ -20,6 +20,7 @@ import * as Speech from 'expo-speech';
 
 import { useApp } from '../context/AppContext';
 import { speakSequentially } from '../utils/speechQueue';
+import { loadVoices, usableVoiceId } from '../utils/voices';
 
 export function useSystemReduceMotion(): boolean {
   const [enabled, setEnabled] = useState(false);
@@ -71,9 +72,15 @@ export function useAccessibility() {
     setSpeaking(false);
   }, []);
 
+  // Know which voices exist so a voice saved on another device (or removed
+  // from this one) is skipped instead of making the phone go silent.
+  useEffect(() => {
+    if (settings.voiceId) loadVoices().catch(() => {});
+  }, [settings.voiceId]);
+
   /** Read several pieces of text aloud, one after another. */
   const speak = useCallback(
-    (parts: string[]) => {
+    (parts: string[], options: { voiceId?: string | null } = {}) => {
       cancelSpeech.current?.();
       cancelSpeech.current = null;
       Speech.stop();
@@ -82,12 +89,14 @@ export function useAccessibility() {
         setSpeaking(false);
         return;
       }
+      // options.voiceId lets the settings screen preview a voice before saving it.
+      const voice = usableVoiceId(options.voiceId !== undefined ? options.voiceId : settings.voiceId);
       setSpeaking(true);
       cancelSpeech.current = speakSequentially(
         queue,
         (part, callbacks) => {
           if (__DEV__) console.debug('[BiteWise Read Aloud] Speaking utterance:', part);
-          Speech.speak(part, { rate: settings.speechRate, ...callbacks });
+          Speech.speak(part, { rate: settings.speechRate, ...(voice ? { voice } : {}), ...callbacks });
         },
         () => {
           cancelSpeech.current = null;
@@ -95,7 +104,7 @@ export function useAccessibility() {
         },
       );
     },
-    [settings.speechRate]
+    [settings.speechRate, settings.voiceId]
   );
 
   // Stop talking when the screen using this goes away.

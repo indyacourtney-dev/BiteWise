@@ -29,7 +29,9 @@
 
 import { findCustomConflicts } from './customFoods';
 import { recipeHasAlcohol } from './alcohol';
+import { TASTE_OPTIONS } from '../constants/preferenceOptions';
 import type {
+  Allergen,
   Recipe,
   ScoredRecipe,
   PlateComposition,
@@ -208,6 +210,24 @@ export function ageAllowsRecipe(recipe: Recipe, prefs: Pick<UserPreferences, 'al
   return prefs.allowAlcohol === true || !recipeHasAlcohol(recipe);
 }
 
+/**
+ * Allergens the user picked, plus the ones they imply. The recipe database
+ * tags clams, mussels, squid etc. as 'mollusc' separately from 'shellfish',
+ * so without this a "Shellfish" allergy let 400+ mollusc recipes through.
+ * Wheat is already tagged 'gluten' by the pipeline; it's listed here so a
+ * hand-entered recipe tagged only 'wheat' is caught too.
+ */
+const IMPLIED_ALLERGENS: Partial<Record<Allergen, Allergen[]>> = {
+  shellfish: ['mollusc'],
+  gluten: ['wheat'],
+};
+
+export function expandAllergens(avoid: Allergen[]): Allergen[] {
+  const out = new Set<Allergen>(avoid);
+  for (const a of avoid) IMPLIED_ALLERGENS[a]?.forEach(x => out.add(x));
+  return Array.from(out);
+}
+
 export function passesDietaryFilter(
   recipe: Recipe,
   prefs: UserPreferences
@@ -215,7 +235,8 @@ export function passesDietaryFilter(
   // Age safeguard: recipes made with alcohol only for people 21+ (utils/alcohol.ts).
   if (!ageAllowsRecipe(recipe, prefs)) return false;
 
-  const hasAllergen = recipe.allergens.some(a => prefs.avoidAllergens.includes(a));
+  const avoid = expandAllergens(prefs.avoidAllergens);
+  const hasAllergen = recipe.allergens.some(a => avoid.includes(a));
   if (hasAllergen) return false;
 
   // Recipes from the database can also list hidden allergens ("bread may
@@ -223,9 +244,9 @@ export function passesDietaryFilter(
   // ingredient have allergensVerified === false. For anyone with an
   // allergy, both mean "don't show it".
   const customAllergies = prefs.customAllergies ?? [];
-  if (prefs.avoidAllergens.length > 0 || customAllergies.length > 0) {
+  if (avoid.length > 0 || customAllergies.length > 0) {
     if (recipe.allergensVerified === false) return false;
-    if (recipe.mayContain?.some(a => prefs.avoidAllergens.includes(a))) return false;
+    if (recipe.mayContain?.some(a => avoid.includes(a))) return false;
   }
 
   // Allergies and foods-to-avoid the user typed in Profile.
@@ -261,27 +282,57 @@ export interface ScoreOptions {
 }
 
 /**
- * How many of the user's onboarding taste tags a recipe carries.
- * Used ONLY as a tie-breaker between equal match scores — the quiz
- * answers always outrank standing preferences, because "what I feel
- * like tonight" should beat "what I generally like."
+ * How many of the user's taste choices a recipe hits.
+ *
+ * Counted per CHOICE, not per tag. Each onboarding chip saves several tags
+ * ("Chicken" → chicken + poultry; "Plant-based" → beans, tofu, plant-based,
+ * vegetarian) and the recipe database always applies those tags together,
+ * so counting tags made every chip worth 2–4 points instead of 1 and made
+ * the weights in Decide for me mean something different from what was
+ * written. A chip counts once if any of its tags is on the recipe. Tags
+ * that don't belong to any chip (older saves, hand-typed) still count
+ * one each.
+ *
+ * The recipe's `vibe` (spicy / sweet / savory) counts as a tag: "Spicy food"
+ * and "Sweet & glazed" chips map to tags only a dozen database recipes
+ * carry, while the vibe field is set on every one of them.
  */
-export function favoriteOverlap(recipe: Recipe, favoriteTags: string[]): number {
-  if (favoriteTags.length === 0) return 0;
-  const favs = new Set(favoriteTags.map(t => t.toLowerCase()));
-  return recipe.tags.filter(t => favs.has(t.toLowerCase())).length;
+export function tasteOverlap(recipe: Recipe, userTags: string[]): number {
+  if (userTags.length === 0) return 0;
+  const user = new Set(userTags.map(t => t.toLowerCase()));
+  const onRecipe = new Set([...recipe.tags, recipe.vibe].map(t => t.toLowerCase()));
+  let hits = 0;
+  const covered = new Set<string>();
+  for (const opt of TASTE_OPTIONS) {
+    const tags = opt.tags.map(t => t.toLowerCase());
+    // A chip was chosen when all of its tags were saved (same rule as
+    // tasteIdsForTags in constants/preferenceOptions.ts).
+    if (!tags.every(t => user.has(t))) continue;
+    tags.forEach(t => covered.add(t));
+    if (tags.some(t => onRecipe.has(t))) hits++;
+  }
+  for (const t of user) if (!covered.has(t) && onRecipe.has(t)) hits++;
+  return hits;
 }
 
 /**
- * How many "rather skip" tags a recipe carries. Mirrors favoriteOverlap
- * on the other side of the scale: a SOFT penalty in tie-breaks, never a
- * hard filter (that's what allergens are for). tasteBias below combines
- * both so one preference signal decides ties.
+ * How many of the user's "foods you enjoy" choices a recipe hits.
+ * A soft signal: breaks ties and nudges Decide for me / Plan my week.
+ * The quiz answers always outrank standing preferences, because "what I
+ * feel like tonight" should beat "what I generally like."
+ */
+export function favoriteOverlap(recipe: Recipe, favoriteTags: string[]): number {
+  return tasteOverlap(recipe, favoriteTags);
+}
+
+/**
+ * How many "rather skip" choices a recipe hits. Mirrors favoriteOverlap
+ * on the other side of the scale: a SOFT penalty, never a hard filter
+ * (that's what allergens and "foods to avoid" are for). tasteBias below
+ * combines both so one preference signal decides ties.
  */
 export function dislikeOverlap(recipe: Recipe, dislikedTags: string[]): number {
-  if (dislikedTags.length === 0) return 0;
-  const bad = new Set(dislikedTags.map(t => t.toLowerCase()));
-  return recipe.tags.filter(t => bad.has(t.toLowerCase())).length;
+  return tasteOverlap(recipe, dislikedTags);
 }
 
 /** Net taste signal: loves push a recipe up ties, dislikes push it down. */

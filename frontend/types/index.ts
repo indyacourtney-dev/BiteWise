@@ -320,6 +320,12 @@ export interface AppSettings {
   haptics: boolean;
   /** Speed for "Read aloud" on recipes. 1 = normal. */
   speechRate: 0.75 | 1 | 1.25;
+  /**
+   * Which voice reads recipes aloud: an identifier from
+   * expo-speech getAvailableVoicesAsync(). null = the device's default.
+   * Voices differ per device, so this is saved on the device, not the account.
+   */
+  voiceId?: string | null;
 }
 
 export interface QuizRun {

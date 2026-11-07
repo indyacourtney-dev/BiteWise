@@ -46,6 +46,12 @@ import { getIconForItem, guessCategory } from '../constants/Itemicons';
 import { findPantryLibraryItem } from '../constants/pantryData';
 import { aisleFor, stockStatus } from '../utils/pantryStatus';
 import { changedRows, mergeRows, pullKitchen, pushKitchen, syncAvailable } from '../lib/kitchenSync';
+import {
+  preferencesSyncAvailable,
+  pullPreferences,
+  pushPreferences,
+  reconcilePreferences,
+} from '../lib/preferencesSync';
 import { configured } from '../lib/supabase';
 import { addFavorite, removeFavorite, syncFavorites } from '../lib/favoritesApi';
 import { ensureProfile } from '../lib/communityApi';
@@ -78,6 +84,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reduceMotion: 'system',
   haptics: true,
   speechRate: 1,
+  voiceId: null,
 };
 
 // Storage keys are scoped PER ACCOUNT. Before this, keys were device-wide,
@@ -90,6 +97,8 @@ const keysFor = (userId: string) =>
     favorites: `@bitewise/${userId}/favorites`,
     history: `@bitewise/${userId}/history`,
     onboarded: `@bitewise/${userId}/onboarded`,
+    /** When onboarding finished + when preferences last changed (ms), for cross-device sync. */
+    prefsMeta: `@bitewise/${userId}/prefsMeta`,
     settings: `@bitewise/${userId}/settings`,
     grocery: `@bitewise/${userId}/grocery`,
     /** Recipes shown in recent This or That games, so the next game shows different ones. */
@@ -115,6 +124,13 @@ interface AppContextValue {
 
   // Onboarding
   hasOnboarded: boolean;
+  /**
+   * True once we've asked the account whether onboarding was finished on
+   * another device (or couldn't). The gate waits for this before sending a
+   * fresh install through setup, so a user who set up on the web isn't
+   * asked again on their phone.
+   */
+  preferencesChecked: boolean;
   completeOnboarding: () => void;
   /** Dev/testing helper: wipes the flag so setup runs again. */
   resetOnboarding: () => void;
@@ -219,7 +235,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const [hydrated, setHydrated] = useState(false);
-  const [hasOnboarded, setHasOnboarded] = useState(false);
+  // Onboarding is a timestamp (not a flag) so two devices can tell whose
+  // copy is newer. null = not finished.
+  const [onboardedAt, setOnboardedAt] = useState<number | null>(null);
+  const [prefsUpdatedAt, setPrefsUpdatedAt] = useState(0);
+  const [preferencesChecked, setPreferencesChecked] = useState(false);
+  const hasOnboarded = onboardedAt !== null;
   const [pantry, setPantry] = useState<PantryItem[]>([]);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [birthDate, setBirthDateState] = useState<string | null>(null);
@@ -253,6 +274,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const syncedPantry = useRef(new Map<string, number>());
   const syncedGrocery = useRef(new Map<string, number>());
   const [syncTick, setSyncTick] = useState(0); // bumps when tombstones change
+  /** updatedAt of the preferences copy the account has (lib/preferencesSync.ts). */
+  const prefsSyncedAt = useRef(0);
   useEffect(() => {
     favoritesRef.current = favorites;
   }, [favorites]);
@@ -267,7 +290,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPreferences(DEFAULT_PREFERENCES);
     setFavorites([]);
     setHistory([]);
-    setHasOnboarded(false);
+    setOnboardedAt(null);
+    setPrefsUpdatedAt(0);
+    setPreferencesChecked(false);
+    prefsSyncedAt.current = 0;
     setSettings(DEFAULT_SETTINGS);
     setGrocery([]);
     setRecentGameRecipes([]);
@@ -324,7 +350,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         if (data[KEYS.favorites]) setFavorites(JSON.parse(data[KEYS.favorites]!));
         if (data[KEYS.history]) setHistory(JSON.parse(data[KEYS.history]!));
-        if (data[KEYS.onboarded]) setHasOnboarded(JSON.parse(data[KEYS.onboarded]!) === true);
+        // Onboarding: newer installs save when it finished; older ones only
+        // saved a true/false flag. A legacy "true" counts as finished at an
+        // unknown time (0), so an account copy with a real timestamp wins.
+        const legacyOnboarded = data[KEYS.onboarded] ? JSON.parse(data[KEYS.onboarded]!) === true : false;
+        const meta: { updatedAt?: number; onboardedAt?: number | null } = data[KEYS.prefsMeta]
+          ? JSON.parse(data[KEYS.prefsMeta]!)
+          : {};
+        if (meta.onboardedAt !== undefined) setOnboardedAt(meta.onboardedAt);
+        else if (legacyOnboarded) setOnboardedAt(0);
+        setPrefsUpdatedAt(meta.updatedAt ?? 0);
         if (data[KEYS.settings]) setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(data[KEYS.settings]!) });
       } catch (e) {
         // Corrupt or missing storage: fall back to defaults rather than crash.
@@ -353,7 +388,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => persist('preferences', preferences), [preferences, persist]);
   useEffect(() => persist('favorites', favorites), [favorites, persist]);
   useEffect(() => persist('history', history), [history, persist]);
+  // The boolean is still written so an older build of the app reads it.
   useEffect(() => persist('onboarded', hasOnboarded), [hasOnboarded, persist]);
+  useEffect(() => persist('prefsMeta', { updatedAt: prefsUpdatedAt, onboardedAt }), [prefsUpdatedAt, onboardedAt, persist]);
   useEffect(() => persist('settings', settings), [settings, persist]);
   useEffect(() => persist('grocery', grocery), [grocery, persist]);
   useEffect(() => persist('recentGame', recentGameRecipes), [recentGameRecipes, persist]);
@@ -473,8 +510,92 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ---------- Onboarding ----------
 
-  const completeOnboarding = useCallback(() => setHasOnboarded(true), []);
-  const resetOnboarding = useCallback(() => setHasOnboarded(false), []);
+  const completeOnboarding = useCallback(() => {
+    const now = Date.now();
+    setOnboardedAt(now);
+    setPrefsUpdatedAt(now);
+  }, []);
+  const resetOnboarding = useCallback(() => {
+    setOnboardedAt(null);
+    setPrefsUpdatedAt(Date.now());
+  }, []);
+
+  // ---------- Preferences & onboarding sync (Supabase) ----------
+  // Once per sign-in, after local data is loaded: compare this device's
+  // copy with the account's. The newer one wins (lib/preferencesSync.ts).
+  // Changes made here are uploaded about a second after the last edit.
+
+  const preferencesRef = useRef<UserPreferences>(DEFAULT_PREFERENCES);
+  useEffect(() => {
+    preferencesRef.current = preferences;
+  }, [preferences]);
+  const onboardedAtRef = useRef<number | null>(null);
+  useEffect(() => {
+    onboardedAtRef.current = onboardedAt;
+  }, [onboardedAt]);
+  const prefsUpdatedAtRef = useRef(0);
+  useEffect(() => {
+    prefsUpdatedAtRef.current = prefsUpdatedAt;
+  }, [prefsUpdatedAt]);
+
+  useEffect(() => {
+    if (!hydrated || !userId) return;
+    if (!preferencesSyncAvailable()) {
+      setPreferencesChecked(true);
+      return;
+    }
+    let cancelled = false;
+    // Never hold the gate for long: offline, go with what this device knows.
+    const giveUp = setTimeout(() => {
+      if (!cancelled) setPreferencesChecked(true);
+    }, 6000);
+    (async () => {
+      try {
+        const remote = await pullPreferences();
+        if (cancelled) return;
+        const local = {
+          updatedAt: prefsUpdatedAtRef.current,
+          onboardedAt: onboardedAtRef.current,
+          hasChanges: JSON.stringify(preferencesRef.current) !== JSON.stringify(DEFAULT_PREFERENCES),
+        };
+        const action = reconcilePreferences(local, remote);
+        if (action === 'adopt' && remote) {
+          setPreferences({ ...DEFAULT_PREFERENCES, ...remote.preferences });
+          setOnboardedAt(remote.onboardedAt);
+          setPrefsUpdatedAt(remote.updatedAt);
+          prefsSyncedAt.current = remote.updatedAt;
+        } else if (action === 'push') {
+          prefsSyncedAt.current = remote?.updatedAt ?? 0;
+          // An older install that finished onboarding before timestamps
+          // existed has updatedAt 0: stamp it now so the push effect below
+          // sees this device as newer and uploads it.
+          if (prefsUpdatedAtRef.current <= prefsSyncedAt.current) setPrefsUpdatedAt(Date.now());
+        } else if (remote) {
+          prefsSyncedAt.current = remote.updatedAt;
+        }
+      } catch (e) {
+        console.warn('BiteWise: preferences sync (download) failed', e);
+      } finally {
+        clearTimeout(giveUp);
+        if (!cancelled) setPreferencesChecked(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      clearTimeout(giveUp);
+    };
+  }, [hydrated, userId]);
+
+  useEffect(() => {
+    if (!hydrated || !userId || !preferencesChecked || !preferencesSyncAvailable()) return;
+    if (prefsUpdatedAt <= prefsSyncedAt.current) return; // nothing newer here
+    const timer = setTimeout(async () => {
+      const stamp = prefsUpdatedAtRef.current;
+      const ok = await pushPreferences(preferencesRef.current, onboardedAtRef.current, stamp);
+      if (ok) prefsSyncedAt.current = Math.max(prefsSyncedAt.current, stamp);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [preferences, onboardedAt, prefsUpdatedAt, preferencesChecked, hydrated, userId]);
 
   // ---------- Pantry ----------
 
@@ -854,6 +975,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // allowAlcohol comes from the birthday only; it can't be switched on here.
     const { allowAlcohol: _ignored, ...rest } = patch;
     setPreferences(prev => ({ ...prev, ...rest }));
+    setPrefsUpdatedAt(Date.now()); // so the account copy knows this device is newer
   }, []);
 
   // ---------- Age safeguard ----------
@@ -954,6 +1076,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value: AppContextValue = {
     hydrated,
     hasOnboarded,
+    preferencesChecked,
     completeOnboarding,
     resetOnboarding,
     pantry,

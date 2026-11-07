@@ -5,7 +5,7 @@
 // the user arrived at it. Add a field here once and every screen picks it up.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { Modal, Platform, ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
@@ -86,6 +86,7 @@ export default function RecipeDetail({
   }>({ averageRating: null, totalReviews: 0, loading: true });
   const detailOffset = useRef(0);
   const reviewsOffset = useRef<number | null>(null);
+  const reviewsNode = useRef<View>(null);
   const handleReviewSummary = useCallback((summary: typeof reviewSummary) => {
     setReviewSummary(summary);
   }, []);
@@ -93,6 +94,16 @@ export default function RecipeDetail({
     reviewsOffset.current = y;
   }, []);
   const jumpToReviews = () => {
+    // Web: the page (not the ScrollView node) is often what scrolls, and
+    // onLayout there only fires on size changes, so measured offsets go
+    // stale. Ask the browser to bring the section into view instead.
+    if (Platform.OS === 'web') {
+      const node = reviewsNode.current as unknown as { scrollIntoView?: (o: ScrollIntoViewOptions) => void } | null;
+      if (node && typeof node.scrollIntoView === 'function') {
+        node.scrollIntoView({ behavior: a11y.reduceMotion ? 'auto' : 'smooth', block: 'start' });
+        return;
+      }
+    }
     if (reviewsOffset.current !== null) {
       onJumpToReviews?.(detailOffset.current + reviewsOffset.current);
     }
@@ -374,6 +385,7 @@ export default function RecipeDetail({
         onPromptDismiss={() => setReviewPrompt(false)}
         onSummaryChange={handleReviewSummary}
         onLayout={handleReviewsLayout}
+        innerRef={reviewsNode}
       />
     </View>
   );

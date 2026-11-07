@@ -110,7 +110,7 @@ function RootLayoutNav() {
 
 function AuthAndOnboardingGate({ children }: { children: React.ReactNode }) {
   const { user, initializing } = useAuth();
-  const { hydrated, hasOnboarded, birthDate, birthDateChecked } = useApp();
+  const { hydrated, hasOnboarded, preferencesChecked, birthDate, birthDateChecked } = useApp();
   const segments = useSegments();
   const router = useRouter();
 
@@ -131,6 +131,10 @@ function AuthAndOnboardingGate({ children }: { children: React.ReactNode }) {
       if (!hydrated) return; // account data still loading from storage
 
       if (!hasOnboarded && !inOnboarding) {
+        // This device hasn't seen onboarding — but the account may have
+        // finished it elsewhere (web, another phone). Wait for that check
+        // before asking again; it gives up after a few seconds offline.
+        if (!preferencesChecked) return;
         router.replace('/onboarding');
       } else if (hasOnboarded && birthDateChecked && !birthDate && !inAgeCheck) {
         // Age safeguard: accounts from before it existed give their birthday once.
@@ -141,7 +145,7 @@ function AuthAndOnboardingGate({ children }: { children: React.ReactNode }) {
     }, 0);
 
     return () => clearTimeout(t);
-  }, [initializing, user, hydrated, hasOnboarded, birthDate, birthDateChecked, segments, router]);
+  }, [initializing, user, hydrated, hasOnboarded, preferencesChecked, birthDate, birthDateChecked, segments, router]);
 
   return <>{children}</>;
 }

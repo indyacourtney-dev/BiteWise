@@ -23,6 +23,7 @@
 import { favoriteOverlap, dislikeOverlap, getPantryCoverage, isPlateBalanced } from './matching';
 import { getTotalTime } from '../constants/recipes';
 import { lovedFoodsIn } from './customFoods';
+import { CUISINE_LABELS, cuisineMatches } from './cuisine';
 import { drawOrder, recencyPenalty, type Exposure } from './variety';
 import type {
   MealType,
@@ -179,7 +180,6 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
 
   const prefs = ctx.preferences;
   const favIds = new Set(ctx.favorites.map(f => f.recipeId));
-  const cuisines = prefs.cuisines.map(c => c.toLowerCase());
 
   // What they chose for this meal before: tag counts = learned taste.
   const pastRuns = ctx.history.filter(h => h.mealType === ctx.mealType && h.chosenRecipeId);
@@ -208,10 +208,12 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
       } else if (ratingScore <= -3) {
         reasons.push({ weight: 9, text: 'Adjusted for recipes you rated lower' });
       }
-      const cuisineHit = cuisines.find(c => recipe.tags.some(t => t.toLowerCase() === c));
+      // Cuisines: the database has no cuisine tags, so they're read off the
+      // name and ingredients (utils/cuisine.ts).
+      const cuisineHit = cuisineMatches(recipe, prefs.cuisines)[0];
       if (cuisineHit) {
         score += 6;
-        reasons.push({ weight: 6, text: `${cuisineHit[0].toUpperCase()}${cuisineHit.slice(1)}, one of your favorite cuisines` });
+        reasons.push({ weight: 6, text: `${CUISINE_LABELS[cuisineHit]}, one of your favorite cuisines` });
       }
       // Foods they told us they love (Profile)
       const loved = lovedFoodsIn(recipe, prefs);
