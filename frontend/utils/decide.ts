@@ -168,6 +168,26 @@ export function ratingPreferenceScore(recipe: Recipe, ratings: RecipeRatingFeedb
 
 const MIN_POOL_AFTER_CRAVING = 3;
 
+// "Foods you'd rather skip" from onboarding are a preference, not a rule:
+// a dish that hits one is suggested LESS, not never. It can come up once
+// or twice; after that it stays out of the way. Cooking it anyway is taken
+// as "actually, that's fine" and lifts the extra penalty. Allergies, diets
+// and the "never suggest" list in Profile are the hard filters, applied
+// before this ranking ever runs (utils/matching.ts passesDietaryFilter).
+export const DISLIKE_PENALTY = 10;          // per skipped chip it hits, always
+export const DISLIKE_SHOWN_PENALTY = 18;    // more, each time it's been shown before
+export const DISLIKE_MAX_SHOWINGS = 2;      // after this many showings it's out of the way
+export const DISLIKE_BACKOFF_PENALTY = 60;
+
+export function dislikePenalty(dislikes: number, timesShown: number, everChosen: boolean): number {
+  if (dislikes <= 0) return 0;
+  let p = DISLIKE_PENALTY * dislikes;
+  if (everChosen) return p; // they made it anyway: just the mild nudge
+  p += DISLIKE_SHOWN_PENALTY * Math.min(timesShown, DISLIKE_MAX_SHOWINGS);
+  if (timesShown >= DISLIKE_MAX_SHOWINGS) p += DISLIKE_BACKOFF_PENALTY;
+  return p;
+}
+
 export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] {
   const exclude = new Set(ctx.exclude ?? []);
   let candidates = pool.filter(r => !exclude.has(r.id));
@@ -188,6 +208,15 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
   const recentPicks = new Set(ctx.history.slice(0, 5).map(h => h.chosenRecipeId).filter(Boolean) as string[]);
   const everPicked = new Set(ctx.history.map(h => h.chosenRecipeId).filter(Boolean) as string[]);
 
+  // How often each recipe has been put in front of the user before, and
+  // whether they ever went with it (for the "rather skip" back-off).
+  const shownCount = new Map<string, number>();
+  const chosenBefore = new Set<string>();
+  for (const e of ctx.exposure ?? []) {
+    shownCount.set(e.id, (shownCount.get(e.id) ?? 0) + 1);
+    if (e.chosen) chosenBefore.add(e.id);
+  }
+
   const scored = candidates
     .map(recipe => {
       let score = 0;
@@ -199,7 +228,12 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
       // Taste profile from onboarding
       const loves = favoriteOverlap(recipe, prefs.favoriteTags);
       const dislikes = dislikeOverlap(recipe, prefs.dislikedTags);
-      score += loves * 8 - dislikes * 12;
+      score += loves * 8;
+      score -= dislikePenalty(
+        dislikes,
+        shownCount.get(recipe.id) ?? 0,
+        chosenBefore.has(recipe.id) || everPicked.has(recipe.id),
+      );
       if (loves >= 2) reasons.push({ weight: 7, text: 'Lines up with the foods you said you love' });
       const ratingScore = ratingPreferenceScore(recipe, ctx.ratings ?? []);
       score += ratingScore;

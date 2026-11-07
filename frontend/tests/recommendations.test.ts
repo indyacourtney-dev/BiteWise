@@ -12,7 +12,7 @@ import { RECIPES } from '../constants/recipes';
 import { tagsForTasteIds } from '../constants/preferenceOptions';
 import { poolFilters } from '../hooks/useRecipeLibrary';
 import { cuisineMatches, inferCuisines, normalizeCuisine, resetCuisineCache } from '../utils/cuisine';
-import { rankForDecision } from '../utils/decide';
+import { DISLIKE_PENALTY, dislikePenalty, rankForDecision } from '../utils/decide';
 import { dislikeOverlap, expandAllergens, favoriteOverlap, passesDietaryFilter, tasteOverlap } from '../utils/matching';
 import type { Recipe, UserPreferences } from '../types';
 
@@ -159,6 +159,53 @@ describe('rankForDecision uses the taste signals', () => {
       preferences: { ...prefs, favoriteTags: tagsForTasteIds(['spicy']), spiceTolerance: 'hot' },
     });
     expect(ranked[0].recipe.id).toBe('hot');
+  });
+
+  it('a "rather skip" food is suggested less, not never — and backs off after two showings', () => {
+    const loves = tagsForTasteIds(['chicken']);
+    const skips = tagsForTasteIds(['cheesy']);
+    const cheesyChicken = recipe({ id: 'cheesy', tags: ['chicken', 'poultry', 'cheesy'] });
+    const plainChicken = recipe({ id: 'plain', tags: ['chicken', 'poultry'] });
+    const preferences = { ...prefs, favoriteTags: loves, dislikedTags: skips };
+
+    // Never shown: still in the running (ranked, just below the plain one).
+    const fresh = rankForDecision([cheesyChicken, plainChicken], { ...ctx, preferences, exposure: [] });
+    expect(fresh.map(d => d.recipe.id)).toEqual(['plain', 'cheesy']);
+    // (variety: false adds up to 4 points of jitter per recipe)
+    expect(fresh[0].score - fresh[1].score).toBeGreaterThan(DISLIKE_PENALTY - 4);
+    expect(fresh[0].score - fresh[1].score).toBeLessThan(DISLIKE_PENALTY + 4);
+
+    // Shown twice and passed over: it drops well behind, even against a
+    // recipe with nothing else going for it.
+    const nothingSpecial = recipe({ id: 'meh', tags: [] });
+    const twice = [{ id: 'cheesy', at: 1 }, { id: 'cheesy', at: 2 }];
+    const backedOff = rankForDecision([cheesyChicken, nothingSpecial], { ...ctx, preferences, exposure: twice });
+    expect(backedOff[0].recipe.id).toBe('meh');
+
+    // ...unless they cooked it anyway, which cancels the back-off: the
+    // recipe is back to the mild nudge (≈ 60+ points better than backed off).
+    const cooked = [{ id: 'cheesy', at: 1, chosen: true }, { id: 'cheesy', at: 2 }];
+    const forgiven = rankForDecision([cheesyChicken, nothingSpecial], { ...ctx, preferences, exposure: cooked });
+    const scoreOf = (list: typeof forgiven, id: string) => list.find(d => d.recipe.id === id)!.score;
+    expect(scoreOf(forgiven, 'cheesy') - scoreOf(backedOff, 'cheesy')).toBeGreaterThan(60);
+  });
+
+  it('dislikePenalty grows with showings and caps, never for recipes that were chosen', () => {
+    expect(dislikePenalty(0, 5, false)).toBe(0);
+    expect(dislikePenalty(1, 0, false)).toBe(DISLIKE_PENALTY);
+    expect(dislikePenalty(1, 1, false)).toBeGreaterThan(dislikePenalty(1, 0, false));
+    expect(dislikePenalty(1, 2, false)).toBeGreaterThan(dislikePenalty(1, 1, false) + 30);
+    expect(dislikePenalty(1, 9, false)).toBe(dislikePenalty(1, 2, false)); // caps
+    expect(dislikePenalty(1, 9, true)).toBe(DISLIKE_PENALTY);
+  });
+
+  it('dietary restrictions and allergies are still a hard no, whatever the tastes say', () => {
+    const loves = tagsForTasteIds(['cheesy']);
+    const cheesyVegan = recipe({ id: 'v', tags: ['cheesy'], dietary: ['vegan'] });
+    const cheesyDairy = recipe({ id: 'd', tags: ['cheesy'], dietary: [], allergens: ['dairy'] });
+    expect(passesDietaryFilter(cheesyDairy, { ...prefs, favoriteTags: loves, dietary: ['vegan'] })).toBe(false);
+    expect(passesDietaryFilter(cheesyDairy, { ...prefs, favoriteTags: loves, avoidAllergens: ['dairy'] })).toBe(false);
+    expect(passesDietaryFilter(cheesyVegan, { ...prefs, favoriteTags: loves, dietary: ['vegan'] })).toBe(true);
   });
 
   it('the pool query asks for the user’s loved tags as a second slice', () => {
