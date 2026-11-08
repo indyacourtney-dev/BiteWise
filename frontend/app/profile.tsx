@@ -91,13 +91,14 @@ export default function ProfileScreen() {
 
   // "Your tastes" at a glance. Never = hard rules; Loves / Less often = soft.
   const allergenLabel = (k: string) => [...ALLERGEN_OPTIONS, ...MORE_ALLERGEN_OPTIONS].find(o => o.key === k)?.label ?? k;
+  // Never = allergies and the foods they banned outright. Watch out = how
+  // they eat: diet rules (always respected) and health goals (come first).
   const never = [
     ...preferences.avoidAllergens.map(allergenLabel),
     ...(preferences.customAllergies ?? []),
-    ...dietRules(preferences).map(dietLabel),
     ...(preferences.customAvoid ?? []),
   ];
-  const eatingFor = dietGoals(preferences).map(dietLabel);
+  const watchOut = [...dietRules(preferences).map(dietLabel), ...dietGoals(preferences).map(dietLabel)];
   const loves = [
     ...tasteIdsForTags(preferences.favoriteTags).map(id => TASTE_OPTIONS.find(o => o.id === id)?.label ?? id),
     ...preferences.cuisines.map(c => CUISINE_OPTIONS.find(o => o.id === c || o.label === c)?.label ?? c),
@@ -141,11 +142,11 @@ export default function ProfileScreen() {
               <Text style={styles.tastesChange}>Change</Text>
             </TouchableOpacity>
           </View>
-          <TasteRow label="Never" tone="red" items={never} empty="Nothing ruled out" />
-          {eatingFor.length > 0 ? <TasteRow label="Eating for" tone="green" items={eatingFor} empty="" /> : null}
+          <TasteRow label="Never" tone="red" items={never} empty="No allergies or banned foods" />
+          <TasteRow label="Watch out" tone="gold" items={watchOut} empty="No diets or health goals" />
           <TasteRow label="Loves" tone="green" items={loves} empty="Tell us what you enjoy" />
           <TasteRow label="Less often" tone="muted" items={[...lessOften, ...(spice ? [spice] : [])]} empty="Nothing to go easy on" />
-          <Text style={styles.tastesNote}>“Never” is a hard rule. “Eating for” and “Loves” come first; “Less often” still comes up now and then — the app learns from what you cook.</Text>
+          <Text style={styles.tastesNote}>“Never” is a hard rule. “Watch out” shapes every suggestion: diets are always respected and health goals come first. “Less often” still comes up now and then — the app learns from what you cook.</Text>
         </View>
 
         {/* Your goal (optional) */}
@@ -215,9 +216,9 @@ export default function ProfileScreen() {
   );
 }
 
-function TasteRow({ label, tone, items, empty }: { label: string; tone: 'red' | 'green' | 'muted'; items: string[]; empty: string }) {
-  const color = { red: COLORS.redText, green: COLORS.green, muted: COLORS.textMuted }[tone];
-  const pillTone = { red: 'red' as const, green: 'green' as const, muted: 'blue' as const }[tone];
+function TasteRow({ label, tone, items, empty }: { label: string; tone: 'red' | 'gold' | 'green' | 'muted'; items: string[]; empty: string }) {
+  const color = { red: COLORS.redText, gold: COLORS.textGold, green: COLORS.green, muted: COLORS.textMuted }[tone];
+  const pillTone = { red: 'red' as const, gold: 'gold' as const, green: 'green' as const, muted: 'blue' as const }[tone];
   const unique = Array.from(new Set(items)).slice(0, 8);
   return (
     <View style={styles.tasteRow}>
