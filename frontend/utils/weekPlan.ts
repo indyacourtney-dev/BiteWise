@@ -21,7 +21,7 @@
 // but never the dish from the day before.
 
 import { favoriteOverlap, dislikeOverlap, plateBalanceScore } from './matching';
-import { goalFit, type GoalKind, type MealTargets } from './goals';
+import { focusFit, goalFit, type MealGoal } from './goals';
 import { profileOf } from './thisOrThat';
 import type { PantryCategoryId, PantryItem, PlannedMeal, PlanDayStatus, PlanSlot, Recipe, UserPreferences } from '../types';
 
@@ -104,7 +104,7 @@ export interface FillOptions {
   /** Points to subtract, e.g. for dishes suggested or eaten recently (utils/variety.ts). */
   penalty?: (r: Recipe) => number;
   /** Fitness goal per slot (utils/goals.ts goalForMeal). Missing = no goal. */
-  goalFor?: (slot: PlanSlot) => { kind: GoalKind; target: MealTargets } | null;
+  goalFor?: (slot: PlanSlot) => MealGoal | null;
 }
 
 /** Best recipe for one slot, given what's already planned. null if nothing is left. */
@@ -148,7 +148,8 @@ export function pickForSlot(
     if (slot !== 'breakfast' && r.nutrition.calories > 0) score += 2 * plateBalanceScore(r.plate);
     // A week that fits the person's goal (protein up, or portions in check).
     const goal = opts.goalFor?.(slot);
-    if (goal && r.nutrition.calories > 0) score += 2 * goalFit(r.nutrition, goal.kind, goal.target).score;
+    if (goal && r.nutrition.calories > 0) score += 2 * goalFit(r, goal.kind, goal.target).score;
+    if (goal?.focuses?.length) score += 1.5 * focusFit(r, goal.focuses).score;
     if (pr && pr === yesterdayProtein) score -= 3;
     if (pr && (proteinCount.get(pr) ?? 0) >= 2) score -= 2;
     if (type !== 'other') score -= 1.2 * (typeCount.get(type) ?? 0);

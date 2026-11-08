@@ -25,7 +25,8 @@ import { configured } from '@/lib/supabase';
 import { removeAvatar, uploadAvatar } from '@/lib/accountApi';
 import { setMyProfileCache, useMyProfile } from '@/hooks/useMyProfile';
 import { ageOn } from '@/utils/age';
-import { GOAL_LABELS, dailyTargets, formatHeight, formatWeight, isCompleteGoals } from '@/utils/goals';
+import { FOCUS_INFO, GOAL_LABELS, dailyTargets, formatHeight, formatWeight, isCompleteGoals } from '@/utils/goals';
+import { GOAL_ICONS } from '@/constants/goalIcons';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -147,11 +148,13 @@ export default function ProfileScreen() {
         {/* Your goal (optional) */}
         {goalDaily && preferences.goals ? (
           <TouchableOpacity style={styles.goalCard} onPress={() => router.push('/settings/goals')} accessibilityRole="button" accessibilityLabel="Change your goal">
-            <View style={styles.goalIcon}><FontAwesome name={preferences.goals.goal === 'gain' ? 'bolt' : preferences.goals.goal === 'lose' ? 'leaf' : 'balance-scale'} size={16} color={COLORS.darkNavy} /></View>
+            <View style={styles.goalIcon}><FontAwesome name={GOAL_ICONS[preferences.goals.goal]} size={16} color={COLORS.darkNavy} /></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.goalTitle}>{GOAL_LABELS[preferences.goals.goal]}</Text>
               <Text style={styles.goalLine}>~{goalDaily.calories.toLocaleString('en-US')} cal · {goalDaily.protein} g protein a day · {formatHeight(preferences.goals.heightCm, preferences.goals.units)} · {formatWeight(preferences.goals.weightKg, preferences.goals.units)}</Text>
-              <Text style={styles.goalNote}>Picks and portion tips lean this way.</Text>
+              <Text style={styles.goalNote}>
+                {preferences.goals.focuses?.length ? `Also: ${preferences.goals.focuses.map(f => FOCUS_INFO[f].label.toLowerCase()).join(', ')}` : 'Picks and portion tips lean this way.'}
+              </Text>
             </View>
             <Text style={styles.tastesChange}>Change</Text>
           </TouchableOpacity>

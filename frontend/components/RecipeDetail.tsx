@@ -28,7 +28,7 @@ import { findCustomConflicts } from '../utils/customFoods';
 import { getPantryCoverage, pantryHas } from '../utils/matching';
 import { scaleAmount } from '../utils/servings';
 import { ageOn } from '../utils/age';
-import { GOAL_LABELS, goalFit, goalForMeal, isCompleteGoals } from '../utils/goals';
+import { FOCUS_INFO, GOAL_LABELS, focusFit, goalFit, goalForMeal, isCompleteGoals } from '../utils/goals';
 import { useApp } from '../context/AppContext';
 import { useAccessibility } from '../hooks/useAccessibility';
 import {
@@ -174,7 +174,7 @@ export default function RecipeDetail({
     if (meal === 'dessert') return null;
     const g = goalForMeal(preferences.goals, birthDate ? ageOn(birthDate) : null, meal);
     if (!g) return null;
-    return { ...g, fit: goalFit(recipe.nutrition, g.kind, g.target), mealLabel: MEAL_INFO[meal].label.toLowerCase() };
+    return { ...g, fit: goalFit(recipe, g.kind, g.target), focus: focusFit(recipe, g.focuses), mealLabel: MEAL_INFO[meal].label.toLowerCase() };
   })();
   const onList = useMemo(() => new Set(grocery.map(g => g.name.toLowerCase())), [grocery]);
   const missingRequired = recipe.ingredients.filter(i => !i.optional && !pantryHas(pantry, i.name));
@@ -420,6 +420,9 @@ export default function RecipeDetail({
           <Card style={styles.blockPad}>
             <GoalBar label="Calories" value={Math.round(recipe.nutrition.calories)} target={goalView.target.calories} unit="" meal={goalView.mealLabel} />
             <GoalBar label="Protein" value={Math.round(recipe.nutrition.protein)} target={goalView.target.protein} unit=" g" meal={goalView.mealLabel} />
+            {goalView.kind === 'performance' ? (
+              <GoalBar label="Carbs" value={Math.round(recipe.nutrition.carbs)} target={goalView.target.carbs} unit=" g" meal={goalView.mealLabel} />
+            ) : null}
             {goalView.fit.reason ? (
               <View style={styles.goalLine}>
                 <FontAwesome name="check-circle" size={14} color={COLORS.green} />
@@ -430,6 +433,20 @@ export default function RecipeDetail({
               <View style={styles.goalLine}>
                 <FontAwesome name="lightbulb-o" size={14} color={COLORS.textGold} />
                 <Text style={styles.goalLineText}>{goalView.fit.portion}</Text>
+              </View>
+            ) : null}
+            {goalView.focus.checks.length ? (
+              <View style={styles.focusList}>
+                <Text style={styles.focusTitle}>Your focuses</Text>
+                {goalView.focus.checks.map(c => (
+                  <View key={c.id} style={styles.focusRow}>
+                    <FontAwesome name={c.hit ? 'check-circle' : 'plus-circle'} size={14} color={c.hit ? COLORS.green : COLORS.textGold} style={{ marginTop: 2 }} />
+                    <Text style={styles.focusText}>
+                      <Text style={{ fontWeight: '700', color: COLORS.darkNavy }}>{FOCUS_INFO[c.id].label}: </Text>
+                      {c.hit ? c.reason : c.addTip}
+                    </Text>
+                  </View>
+                ))}
               </View>
             ) : null}
             <Text style={styles.goalFine}>Per serving. Targets are estimates from your goal, not medical advice.</Text>
@@ -766,6 +783,10 @@ const styles = StyleSheet.create({
   goalLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 2, marginBottom: 6 },
   goalLineText: { flex: 1, fontSize: 13, lineHeight: 18, color: COLORS.textDark },
   goalFine: { fontSize: 11.5, color: COLORS.textMuted, marginTop: 4 },
+  focusList: { marginTop: 6, marginBottom: 8, gap: 8, borderTopWidth: 1, borderTopColor: COLORS.background, paddingTop: 12 },
+  focusTitle: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: COLORS.textMuted },
+  focusRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  focusText: { flex: 1, fontSize: 13, lineHeight: 18, color: COLORS.textDark },
   noteBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     backgroundColor: COLORS.lightYellow, borderWidth: 1, borderColor: COLORS.yellowBorder,

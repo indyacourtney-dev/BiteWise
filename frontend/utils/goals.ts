@@ -13,9 +13,27 @@
 // floors so "lose weight" never turns into a crash diet. These are
 // estimates for planning meals, not medical advice; the screen says so.
 
-import type { MealType } from '../types';
+import type { MealType, Recipe } from '../types';
+import {
+  addedSugar, checkFocus, focusFit, hasComplexCarbs, hasWholeGrains, moodFoods, processedSalty,
+  type FocusId,
+} from './focus';
 
-export type GoalKind = 'maintain' | 'lose' | 'gain';
+export type { FocusId } from './focus';
+export { FOCUS_IDS, FOCUS_INFO, focusFit } from './focus';
+
+/**
+ * What someone is working toward. Each kind has its own calorie and
+ * protein rule (dailyTargets) and its own way of judging a serving
+ * (goalFit):
+ *   lose         a deficit; light, filling plates; portions suggested
+ *   gain         protein first, a modest surplus
+ *   performance  complex carbs to fuel, protein to recover
+ *   health       lots of veg, whole grains, less sugar / salt / saturated fat
+ *   energy       steady protein + fiber, no sugar crashes, mood foods
+ *   maintain     about what you burn
+ */
+export type GoalKind = 'maintain' | 'lose' | 'gain' | 'performance' | 'health' | 'energy';
 export type ActivityLevel = 'low' | 'light' | 'moderate' | 'high';
 /** Used only for the resting-energy formula. 'unspecified' uses the midpoint. */
 export type BodyType = 'female' | 'male' | 'unspecified';
@@ -23,6 +41,8 @@ export type UnitSystem = 'imperial' | 'metric';
 
 export interface NutritionGoals {
   goal: GoalKind;
+  /** Extra things to lean toward (utils/focus.ts). Optional; any number. */
+  focuses?: FocusId[];
   heightCm: number;
   weightKg: number;
   activity: ActivityLevel;
@@ -35,6 +55,8 @@ export interface NutritionGoals {
 export interface DailyTargets {
   calories: number;
   protein: number;
+  /** Grams of carbohydrate a day. */
+  carbs: number;
   /** Resting energy (kcal/day). */
   bmr: number;
   /** Energy with activity (kcal/day). */
@@ -46,6 +68,8 @@ export interface DailyTargets {
 export interface MealTargets {
   calories: number;
   protein: number;
+  /** Grams; used by the performance goal. */
+  carbs: number;
 }
 
 export interface GoalFit {
@@ -57,16 +81,35 @@ export interface GoalFit {
   portion: string | null;
 }
 
+export const GOAL_KINDS: GoalKind[] = ['lose', 'gain', 'performance', 'health', 'energy', 'maintain'];
+
 export const GOAL_LABELS: Record<GoalKind, string> = {
-  maintain: 'Stay where I am',
   lose: 'Lose weight',
-  gain: 'Gain muscle',
+  gain: 'Build muscle',
+  performance: 'Athletic performance',
+  health: 'General health',
+  energy: 'Energy & sleep',
+  maintain: 'Stay where I am',
 };
 
+/** The aim, in a few words. */
+export const GOAL_AIMS: Record<GoalKind, string> = {
+  lose: 'Lose body fat and keep lean muscle.',
+  gain: 'More muscle, strength and definition.',
+  performance: 'Stamina, power, speed and recovery.',
+  health: 'Heart health, blood pressure, cholesterol, steady blood sugar.',
+  energy: 'No midday crash; deeper, more restful sleep.',
+  maintain: 'Stay at the weight you are.',
+};
+
+/** How meals will lean — the strategy, in plain words. */
 export const GOAL_BLURBS: Record<GoalKind, string> = {
+  lose: 'A sustainable calorie deficit, plenty of lean protein to protect muscle, high-fiber whole foods to stay full.',
+  gain: 'Maintenance or a moderate surplus, enough protein every day, and fuel around your workouts.',
+  performance: 'Complex carbs for glycogen, protein to recover, and fluids and electrolytes through the day.',
+  health: 'More colorful fruit and veg, whole grains over refined, and less added sugar, salt and saturated fat.',
+  energy: 'Balanced meals with steady protein and fiber — no blood-sugar crashes — plus nuts, fish and greens.',
   maintain: 'Meals that are about right for your day.',
-  lose: 'Lighter, filling plates and sensible portions — no crash diets.',
-  gain: 'More protein at every meal, with enough fuel to build on.',
 };
 
 export const ACTIVITY_LABELS: Record<ActivityLevel, { label: string; hint: string }> = {
@@ -88,8 +131,10 @@ export const MEAL_SHARE: Record<MealType, number> = {
 };
 
 /** Protein per kg of body weight, per day. */
-const PROTEIN_PER_KG: Record<GoalKind, number> = { maintain: 1.2, lose: 1.6, gain: 1.8 };
-const CALORIE_ADJUST: Record<GoalKind, number> = { maintain: 0, lose: -500, gain: 300 };
+const PROTEIN_PER_KG: Record<GoalKind, number> = { maintain: 1.2, lose: 1.6, gain: 1.8, performance: 1.6, health: 1.2, energy: 1.3 };
+const CALORIE_ADJUST: Record<GoalKind, number> = { maintain: 0, lose: -500, gain: 300, performance: 200, health: 0, energy: 0 };
+/** Share of calories from carbohydrate, for the carb target (4 kcal/g). */
+const CARB_SHARE: Record<GoalKind, number> = { maintain: 0.5, lose: 0.4, gain: 0.45, performance: 0.55, health: 0.5, energy: 0.45 };
 
 /** Nobody is sent below this, whatever the arithmetic says. */
 export function calorieFloor(body: BodyType = 'unspecified'): number {
@@ -114,24 +159,35 @@ export function dailyTargets(g: NutritionGoals, age: number): DailyTargets {
   const floored = raw < floor;
   const calories = roundTo(Math.max(floor, raw), 10);
   const protein = roundTo(g.weightKg * PROTEIN_PER_KG[g.goal], 5);
-  return { calories, protein, bmr, tdee, floored };
+  const carbs = roundTo((calories * CARB_SHARE[g.goal]) / 4, 5);
+  return { calories, protein, carbs, bmr, tdee, floored };
 }
 
 export function mealTargets(daily: DailyTargets, meal: MealType): MealTargets {
   const share = MEAL_SHARE[meal] ?? 0.3;
-  return { calories: Math.round(daily.calories * share), protein: Math.round(daily.protein * share) };
+  return {
+    calories: Math.round(daily.calories * share),
+    protein: Math.round(daily.protein * share),
+    carbs: Math.round(daily.carbs * share),
+  };
+}
+
+export interface MealGoal {
+  kind: GoalKind;
+  target: MealTargets;
+  focuses: FocusId[];
 }
 
 /** Everything a ranker needs for one meal, or null when no goal is set. */
-export function goalForMeal(goals: NutritionGoals | null | undefined, age: number | null, meal: MealType): { kind: GoalKind; target: MealTargets } | null {
+export function goalForMeal(goals: NutritionGoals | null | undefined, age: number | null, meal: MealType): MealGoal | null {
   if (!goals || !isCompleteGoals(goals)) return null;
   const daily = dailyTargets(goals, age ?? 30);
-  return { kind: goals.goal, target: mealTargets(daily, meal) };
+  return { kind: goals.goal, target: mealTargets(daily, meal), focuses: goals.focuses ?? [] };
 }
 
 export function isCompleteGoals(g: Partial<NutritionGoals> | null | undefined): g is NutritionGoals {
   return !!g
-    && (g.goal === 'maintain' || g.goal === 'lose' || g.goal === 'gain')
+    && !!g.goal && GOAL_KINDS.includes(g.goal)
     && typeof g.heightCm === 'number' && g.heightCm >= HEIGHT_RANGE_CM.min && g.heightCm <= HEIGHT_RANGE_CM.max
     && typeof g.weightKg === 'number' && g.weightKg >= WEIGHT_RANGE_KG.min && g.weightKg <= WEIGHT_RANGE_KG.max
     && !!g.activity && g.activity in ACTIVITY_FACTOR;
@@ -141,11 +197,64 @@ export function isCompleteGoals(g: Partial<NutritionGoals> | null | undefined): 
  * How one serving (calories, protein) fits a meal target under a goal.
  * Desserts and recipes with no nutrition should not be scored (callers skip).
  */
-export function goalFit(serving: { calories: number; protein: number }, kind: GoalKind, target: MealTargets): GoalFit {
+export function goalFit(recipe: Recipe, kind: GoalKind, target: MealTargets): GoalFit {
+  const serving = recipe.nutrition;
   const c = Math.max(0, serving.calories);
   const p = Math.max(0, serving.protein);
+  const carbs = Math.max(0, serving.carbs ?? 0);
   const ratio = target.calories > 0 ? c / target.calories : 1;
   const proteinFit = target.protein > 0 ? Math.min(1, p / target.protein) : 1;
+
+  if (kind === 'performance') {
+    // Fuel first (complex carbs), then protein to recover, then enough on the plate.
+    const carbFit = target.carbs > 0 ? Math.min(1, carbs / target.carbs) : 1;
+    const complex = hasComplexCarbs(recipe);
+    const calFit = ratio >= 0.7 ? 1 : ratio / 0.7;
+    const score = 0.4 * (complex.length ? Math.max(carbFit, 0.6) : carbFit) + 0.35 * proteinFit + 0.25 * calFit;
+    let reason: string | null = null;
+    if (carbFit >= 0.75 && proteinFit >= 0.6) reason = complex.length ? `Fuel to train on: ${complex[0]} and ${Math.round(p)} g protein` : 'Carbs to fuel, protein to recover';
+    else if (carbFit >= 0.75) reason = 'Good fuel for training';
+    let portion: string | null = null;
+    if (carbFit < 0.5) portion = 'Add a carb side — rice, potatoes, oats or bread — to fuel training';
+    else if (proteinFit < 0.5) portion = `Add protein to recover: aim for ~${target.protein} g this meal`;
+    return { score, reason, portion };
+  }
+
+  if (kind === 'health') {
+    // Veg-forward, whole grains, not much sugar or salt.
+    const produce = Math.min(1, recipe.plate.produce / 45);
+    const grains = hasWholeGrains(recipe).length > 0 ? 1 : 0.5;
+    const salty = processedSalty(recipe);
+    const sugar = addedSugar(recipe);
+    const clean = Math.max(0, 1 - 0.5 * Math.min(1, salty.length) - 0.5 * Math.min(1, sugar.length));
+    const about = Math.max(0, 1 - Math.abs(ratio - 1) / 0.6);
+    const score = 0.45 * produce + 0.15 * grains + 0.25 * clean + 0.15 * about;
+    let reason: string | null = null;
+    if (produce >= 0.8 && clean >= 0.75) reason = grains === 1 ? 'Heart-friendly: plenty of veg and whole grains' : 'Heart-friendly: plenty of veg, little added salt or sugar';
+    else if (produce >= 0.8) reason = 'Mostly vegetables';
+    let portion: string | null = null;
+    if (produce < 0.5) portion = 'Add a vegetable side or a salad to fill half the plate';
+    else if (salty.length) portion = `Go easy on the ${salty[0]} — it carries most of the salt`;
+    else if (sugar.length && sugar[0] !== 'sweet') portion = `Use less ${sugar[0]} than the recipe says`;
+    return { score, reason, portion };
+  }
+
+  if (kind === 'energy') {
+    // Steady energy: protein and fiber together, mood foods, no sugar spike.
+    const pFit = Math.min(1, p / Math.max(15, target.protein * 0.7));
+    const fiber = checkFocus(recipe, 'fiber').score;
+    const mood = Math.min(1, moodFoods(recipe).length / 2);
+    const sugar = addedSugar(recipe).length > 0 ? 1 : 0;
+    const score = Math.max(0, 0.4 * pFit + 0.3 * fiber + 0.3 * mood - 0.3 * sugar);
+    let reason: string | null = null;
+    if (pFit >= 0.8 && fiber >= 0.5 && !sugar) reason = 'Steady energy: protein and fiber together';
+    else if (mood >= 1 && !sugar) reason = `Mood food: ${moodFoods(recipe).slice(0, 2).join(' and ')}`;
+    let portion: string | null = null;
+    if (sugar) portion = 'Sweet things spike and crash — save this for after a meal, not instead of one';
+    else if (pFit < 0.5) portion = 'Add protein so it holds you: eggs, beans, fish or yogurt';
+    else if (fiber < 0.5) portion = 'Add fiber so it lasts: whole grains, beans or a big handful of greens';
+    return { score, reason, portion };
+  }
 
   if (kind === 'lose') {
     // Light enough, and filling enough that it sticks.
@@ -193,7 +302,8 @@ export function goalFit(serving: { calories: number; protein: number }, kind: Go
 
 /** "Lose weight · ~1,650 cal/day · 110 g protein" */
 export function goalSummary(g: NutritionGoals, daily: DailyTargets): string {
-  return `${GOAL_LABELS[g.goal]} · ~${formatInt(daily.calories)} cal/day · ${daily.protein} g protein`;
+  const focuses = g.focuses?.length ? ` · ${g.focuses.length} focus${g.focuses.length === 1 ? '' : 'es'}` : '';
+  return `${GOAL_LABELS[g.goal]} · ~${formatInt(daily.calories)} cal/day · ${daily.protein} g protein${focuses}`;
 }
 
 // ---- units -------------------------------------------------------------

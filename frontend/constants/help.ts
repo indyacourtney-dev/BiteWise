@@ -169,13 +169,14 @@ export const HELP_TOPICS: Record<HelpTopicId, HelpTopic> = {
   },
   goals: {
     id: 'goals', title: 'Your goal', emoji: '🎽', icon: 'heartbeat', tone: 'yellow', where: 'Profile → Your goal',
-    summary: 'Lose weight, gain muscle or stay put — meals follow, gently.',
+    summary: 'Lose weight, build muscle, train harder, eat for health or energy — meals follow, gently.',
     steps: [
-      'Choose a goal and enter your height, weight and how active you are.',
-      'The app works out a day’s calories and protein and splits them across meals.',
-      'Picks lean toward meals that fit; recipe pages show how a serving measures up and suggest a portion.',
-      'Turn it off any time. These are estimates for planning meals, not medical advice.',
+      'Choose a goal and enter your height, weight and how active you are. Each goal has its own way of judging a meal.',
+      'Add focuses if you like: more fiber, eat the rainbow, lean protein, healthy fats, fermented foods.',
+      'The app works out a day’s calories and protein (and carbs, for performance) and splits them across meals.',
+      'Picks lean toward meals that fit; each recipe shows how a serving measures up, which focuses it serves, and what to add.',
     ],
+    tips: ['Turn it off any time. These are estimates for planning meals, not medical advice.'],
   },
 };
 

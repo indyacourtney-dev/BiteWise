@@ -18,19 +18,18 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { SettingsHeader, settingsStyles as s } from '@/components/SettingsUI';
 import { PrimaryButton, SecondaryButton, SegmentedControl } from '@/components/ui';
 import { COLORS } from '@/constants/Colors';
+import { GOAL_ICONS } from '@/constants/goalIcons';
 import { useApp } from '@/context/AppContext';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import { ageOn } from '@/utils/age';
 import { confirmAction } from '@/utils/confirm';
 import {
-  ACTIVITY_LABELS, GOAL_BLURBS, GOAL_LABELS, HEIGHT_RANGE_CM, WEIGHT_RANGE_KG,
+  ACTIVITY_LABELS, FOCUS_IDS, FOCUS_INFO, GOAL_AIMS, GOAL_BLURBS, GOAL_KINDS, GOAL_LABELS, HEIGHT_RANGE_CM, WEIGHT_RANGE_KG,
   cmToFtIn, dailyTargets, ftInToCm, isCompleteGoals, kgToLb, lbToKg, mealTargets,
-  type ActivityLevel, type BodyType, type GoalKind, type NutritionGoals, type UnitSystem,
+  type ActivityLevel, type BodyType, type FocusId, type GoalKind, type NutritionGoals, type UnitSystem,
 } from '@/utils/goals';
 
-const GOALS: GoalKind[] = ['lose', 'gain', 'maintain'];
 const ACTIVITIES: ActivityLevel[] = ['low', 'light', 'moderate', 'high'];
-const GOAL_ICONS: Record<GoalKind, React.ComponentProps<typeof FontAwesome>['name']> = { lose: 'leaf', gain: 'bolt', maintain: 'balance-scale' };
 
 const num = (t: string): number | null => {
   const n = parseFloat(t.replace(',', '.'));
@@ -51,6 +50,8 @@ function GoalsForm() {
   const saved = preferences.goals ?? null;
 
   const [goal, setGoal] = useState<GoalKind>(saved?.goal ?? 'lose');
+  const [focuses, setFocuses] = useState<Set<FocusId>>(new Set(saved?.focuses ?? []));
+  const toggleFocus = (f: FocusId) => setFocuses(prev => { const n = new Set(prev); n.has(f) ? n.delete(f) : n.add(f); return n; });
   const [units, setUnits] = useState<UnitSystem>(saved?.units ?? 'imperial');
   const [activity, setActivity] = useState<ActivityLevel>(saved?.activity ?? 'light');
   const [body, setBody] = useState<BodyType>(saved?.body ?? 'unspecified');
@@ -64,7 +65,7 @@ function GoalsForm() {
   const heightCm = units === 'metric' ? num(cm) : (num(ft) !== null ? ftInToCm(num(ft)!, num(inch) ?? 0) : null);
   const weightKg = units === 'metric' ? num(kg) : (num(lb) !== null ? lbToKg(num(lb)!) : null);
 
-  const draft: Partial<NutritionGoals> = { goal, activity, body, units, heightCm: heightCm ?? undefined, weightKg: weightKg ?? undefined };
+  const draft: Partial<NutritionGoals> = { goal, focuses: FOCUS_IDS.filter(f => focuses.has(f)), activity, body, units, heightCm: heightCm ?? undefined, weightKg: weightKg ?? undefined };
   const complete = isCompleteGoals(draft);
   const heightBad = heightCm !== null && (heightCm < HEIGHT_RANGE_CM.min || heightCm > HEIGHT_RANGE_CM.max);
   const weightBad = weightKg !== null && (weightKg < WEIGHT_RANGE_KG.min || weightKg > WEIGHT_RANGE_KG.max);
@@ -115,7 +116,7 @@ function GoalsForm() {
         {/* WHAT */}
         <Text style={st.label}>What are you after?</Text>
         <View style={{ gap: 8 }}>
-          {GOALS.map(g => {
+          {GOAL_KINDS.map(g => {
             const on = g === goal;
             return (
               <TouchableOpacity
@@ -124,19 +125,54 @@ function GoalsForm() {
                 onPress={() => setGoal(g)}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: on }}
+                accessibilityLabel={`${GOAL_LABELS[g]}. ${GOAL_AIMS[g]}`}
               >
                 <View style={[st.optionIcon, on && st.optionIconOn]}>
                   <FontAwesome name={GOAL_ICONS[g]} size={15} color={on ? COLORS.darkNavy : COLORS.textMuted} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[st.optionTitle, on && st.optionTitleOn]}>{GOAL_LABELS[g]}</Text>
-                  <Text style={[st.optionBlurb, on && st.optionBlurbOn]}>{GOAL_BLURBS[g]}</Text>
+                  <Text style={[st.optionBlurb, on && st.optionBlurbOn]}>{GOAL_AIMS[g]}</Text>
+                  {on ? (
+                    <View style={st.strategy}>
+                      <Text style={st.strategyLabel}>How meals will lean</Text>
+                      <Text style={st.strategyText}>{GOAL_BLURBS[g]}</Text>
+                    </View>
+                  ) : null}
                 </View>
                 <FontAwesome name={on ? 'check-circle' : 'circle-o'} size={20} color={on ? COLORS.goldYellow : COLORS.borderLight} />
               </TouchableOpacity>
             );
           })}
         </View>
+
+        {/* FOCUSES */}
+        <Text style={st.label}>Also focus on <Text style={st.labelSoft}>· optional, pick any</Text></Text>
+        <View style={st.card}>
+          {FOCUS_IDS.map((f, i) => {
+            const on = focuses.has(f);
+            const info = FOCUS_INFO[f];
+            return (
+              <TouchableOpacity
+                key={f}
+                style={[st.focus, i < FOCUS_IDS.length - 1 && st.focusBorder]}
+                onPress={() => toggleFocus(f)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: on }}
+                accessibilityLabel={`${info.label}. ${info.goal}`}
+              >
+                <Text style={st.focusEmoji}>{info.emoji}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={st.focusTitle}>{info.label}</Text>
+                  <Text style={st.focusGoal}>{info.goal}</Text>
+                  {on ? <Text style={st.focusHow}>{info.how}</Text> : null}
+                </View>
+                <View style={[st.check, on && st.checkOn]}>{on ? <FontAwesome name="check" size={12} color={COLORS.darkNavy} /> : null}</View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <Text style={st.hint}>Each focus is read off a recipe’s ingredients: picks lean toward meals that serve it, and every recipe shows what it has and what to add.</Text>
 
         {/* ABOUT YOU */}
         <View style={st.labelRow}>
@@ -216,6 +252,12 @@ function GoalsForm() {
                   <Text style={st.dayBig}>{daily.protein} g</Text>
                   <Text style={st.dayUnit}>protein a day</Text>
                 </View>
+                {goal === 'performance' ? (
+                  <View style={{ flex: 1 }}>
+                    <Text style={st.dayBig}>{daily.carbs} g</Text>
+                    <Text style={st.dayUnit}>carbs a day</Text>
+                  </View>
+                ) : null}
               </View>
               <View style={st.mealRows}>
                 {(['breakfast', 'lunch', 'dinner'] as const).map(m => {
@@ -223,20 +265,12 @@ function GoalsForm() {
                   return (
                     <View key={m} style={st.mealRow}>
                       <Text style={st.mealName}>{m[0].toUpperCase() + m.slice(1)}</Text>
-                      <Text style={st.mealNums}>~{t.calories} cal · {t.protein} g protein</Text>
+                      <Text style={st.mealNums}>~{t.calories} cal · {t.protein} g protein{goal === 'performance' ? ` · ${t.carbs} g carbs` : ''}</Text>
                     </View>
                   );
                 })}
               </View>
-              <Text style={st.dayNote}>
-                {goal === 'lose' && daily.floored
-                  ? 'Kept at a safe minimum rather than lower — losing weight slower and steadily works better.'
-                  : goal === 'lose'
-                    ? 'About 500 calories under what you burn: roughly a pound a week, with protein kept high so you stay full.'
-                    : goal === 'gain'
-                      ? 'A modest surplus and plenty of protein — enough to build on without piling on.'
-                      : 'About what you burn in a day, so meals keep you where you are.'}
-              </Text>
+              <Text style={st.dayNote}>{dayNote(goal, daily.floored)}</Text>
             </>
           ) : (
             <Text style={st.dayEmpty}>Add your height and weight to see your numbers.</Text>
@@ -252,6 +286,20 @@ function GoalsForm() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function dayNote(goal: GoalKind, floored: boolean): string {
+  switch (goal) {
+    case 'lose':
+      return floored
+        ? 'Kept at a safe minimum rather than lower — losing weight slowly and steadily works better.'
+        : 'About 500 calories under what you burn — roughly a pound a week — with protein kept high so you keep muscle and stay full.';
+    case 'gain': return 'A modest surplus and plenty of protein: enough to build on without piling on.';
+    case 'performance': return 'A little above what you burn, with carbs leading so there’s glycogen to train on and protein to recover. Drink through the day.';
+    case 'health': return 'About what you burn. Meals lean toward vegetables, whole grains and less added sugar and salt.';
+    case 'energy': return 'About what you burn, spread evenly. Meals pair protein with fiber so energy stays level, and favor foods like nuts, fish and greens.';
+    default: return 'About what you burn in a day, so meals keep you where you are.';
+  }
 }
 
 function Field({ value, onChange, suffix, width, bad, label }: { value: string; onChange: (t: string) => void; suffix: string; width: number; bad: boolean; label: string }) {
@@ -290,6 +338,19 @@ const st = StyleSheet.create({
   optionTitleOn: { color: COLORS.cardWhite },
   optionBlurb: { fontSize: 12.5, lineHeight: 17, color: COLORS.textMuted, marginTop: 2 },
   optionBlurbOn: { color: COLORS.navyMuted },
+  strategy: { marginTop: 10, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 10 },
+  strategyLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: COLORS.goldYellow },
+  strategyText: { fontSize: 13, lineHeight: 18, color: COLORS.cardWhite, marginTop: 3 },
+  labelSoft: { textTransform: 'none', letterSpacing: 0, fontWeight: '600' },
+
+  focus: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 12 },
+  focusBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
+  focusEmoji: { fontSize: 22, width: 30, textAlign: 'center', marginTop: 1 },
+  focusTitle: { fontSize: 15, fontWeight: '700', color: COLORS.darkNavy },
+  focusGoal: { fontSize: 12.5, lineHeight: 17, color: COLORS.textMuted, marginTop: 2 },
+  focusHow: { fontSize: 12.5, lineHeight: 17, color: COLORS.textDark, marginTop: 6, backgroundColor: COLORS.lightYellow, borderRadius: 10, padding: 8 },
+  check: { width: 26, height: 26, borderRadius: 8, borderWidth: 1, borderColor: COLORS.borderLight, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  checkOn: { backgroundColor: COLORS.goldYellow, borderColor: COLORS.goldYellow },
 
   card: { backgroundColor: COLORS.cardWhite, borderRadius: 16, borderWidth: 1, borderColor: COLORS.borderLight, padding: 14 },
   fieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44 },
