@@ -8,6 +8,7 @@
 
 import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { COLORS } from '../constants/Colors';
@@ -22,8 +23,8 @@ export default function BirthdayForm() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null); // waiting for "Yes, save it"
   const [saving, setSaving] = useState(false);
-  const dayRef = useRef<TextInput>(null);
-  const yearRef = useRef<TextInput>(null);
+  const dayRef = useRef<TextInputInstance>(null);
+  const yearRef = useRef<TextInputInstance>(null);
 
   // ----- Already saved: locked -----
   if (birthDate) {
@@ -161,7 +162,7 @@ export default function BirthdayForm() {
 }
 
 const Field = React.forwardRef<
-  TextInput,
+  TextInputInstance,
   {
     label: string;
     placeholder: string;

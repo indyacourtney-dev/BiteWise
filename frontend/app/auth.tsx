@@ -23,6 +23,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
@@ -54,9 +55,9 @@ export default function AuthScreen() {
 
   // Keyboard flow: Return/Enter moves to the next field and submits from
   // the last one, on web (Enter key) as well as iOS/Android (return key).
-  const emailRef = useRef<TextInput>(null);
-  const passwordRef = useRef<TextInput>(null);
-  const confirmRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInputInstance>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
+  const confirmRef = useRef<TextInputInstance>(null);
 
   const switchMode = (m: Mode) => {
     setMode(m);

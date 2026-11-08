@@ -28,6 +28,7 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -201,7 +202,7 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
   };
 
   // Jump from the day strip to a day.
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const dayY = useRef<Record<string, number>>({});
 
   return (

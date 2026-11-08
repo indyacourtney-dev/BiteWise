@@ -14,6 +14,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Modal, Platform, ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import type { HostInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
@@ -115,7 +116,7 @@ export default function RecipeDetail({
 
   const detailOffset = useRef(0);
   const reviewsOffset = useRef<number | null>(null);
-  const reviewsNode = useRef<View>(null);
+  const reviewsNode = useRef<HostInstance>(null);
   const handleReviewSummary = useCallback((summary: typeof reviewSummary) => {
     setReviewSummary(summary);
   }, []);

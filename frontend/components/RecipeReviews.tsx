@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import type { HostInstance } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { COLORS } from '../constants/Colors';
@@ -51,7 +52,7 @@ interface Props {
   }) => void;
   onLayout?: (y: number) => void;
   /** The section's root view, so the screen can scroll it into view. */
-  innerRef?: React.Ref<View>;
+  innerRef?: React.Ref<HostInstance>;
 }
 
 export default function RecipeReviews({

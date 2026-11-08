@@ -41,14 +41,14 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color as string} />,
         }}
       />
       <Tabs.Screen
         name="kitchen"
         options={{
           title: 'Kitchen',
-          tabBarIcon: ({ color }) => <FontAwesome name="shopping-basket" size={21} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="shopping-basket" size={21} color={color as string} />,
           tabBarBadge: needsAttention > 0 ? needsAttention : undefined,
           tabBarBadgeStyle: { backgroundColor: COLORS.goldYellow, color: COLORS.darkNavy, fontWeight: '800' },
           tabBarAccessibilityLabel:
@@ -59,7 +59,7 @@ export default function TabLayout() {
         name="plan"
         options={{
           title: 'Plan',
-          tabBarIcon: ({ color }) => <FontAwesome name="calendar" size={21} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="calendar" size={21} color={color as string} />,
           tabBarBadge: dinnerPlanned ? undefined : '',
           tabBarBadgeStyle: { backgroundColor: COLORS.goldYellow, minWidth: 8, height: 8, borderRadius: 4, marginTop: 2 },
           tabBarAccessibilityLabel: dinnerPlanned ? 'Plan' : 'Plan, nothing planned for tonight',
@@ -69,14 +69,14 @@ export default function TabLayout() {
         name="favorites"
         options={{
           title: 'Saved',
-          tabBarIcon: ({ color }) => <FontAwesome name="heart" size={21} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="heart" size={21} color={color as string} />,
         }}
       />
       <Tabs.Screen
         name="community"
         options={{
           title: 'Community',
-          tabBarIcon: ({ color }) => <FontAwesome name="comments" size={22} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="comments" size={22} color={color as string} />,
         }}
       />
     </Tabs>

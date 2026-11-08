@@ -7,6 +7,7 @@
 
 import React, { useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -27,7 +28,7 @@ export default function TourScreen() {
   // static web render, which squeezes every page into one screen).
   const [width, setWidth] = useState(() => Dimensions.get('window').width || 390);
   const { from } = useLocalSearchParams<{ from?: string }>();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const [index, setIndex] = useState(0);
   const last = index === TOUR.length - 1;
 

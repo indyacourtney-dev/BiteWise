@@ -12,6 +12,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Pressable, Platform } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
@@ -50,7 +51,7 @@ export default function AddItemsSheet({ visible, onClose, initialQuery = '' }: {
   const { pantry, addPantryItem, updatePantryQuantity, preferences } = useApp();
   const [query, setQuery] = useState(initialQuery);
   const [added, setAdded] = useState<string[]>([]);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
 
   useEffect(() => {
     if (visible) {

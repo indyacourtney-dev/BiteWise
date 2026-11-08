@@ -12,6 +12,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, TouchableOpacity, ScrollView, View, Text, Image } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -71,7 +72,7 @@ export default function ThisOrThatScreen() {
   const a11y = useAccessibility();
   const insets = useSafeAreaInsets();
   const scrollPad = { paddingBottom: insets.bottom + 32 };
-  const resultScrollRef = useRef<ScrollView>(null);
+  const resultScrollRef = useRef<ScrollViewInstance>(null);
 
   // The questions are about protein / carbs / veggies, so the game plays
   // for lunch or dinner (dinner when another meal is selected).
@@ -511,11 +512,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderLight,
     overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    boxShadow: '0 3px 6px rgba(0,0,0,0.12)',
   },
   photo: { width: '100%', height: 170, backgroundColor: COLORS.blueSoft },
   emojiBadge: {
@@ -528,11 +525,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardWhite,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
+    boxShadow: '0 2px 3px rgba(0,0,0,0.15)',
   },
   emojiBadgeText: { fontSize: 22 },
   photoInfo: { paddingHorizontal: 16, paddingVertical: 12 },
