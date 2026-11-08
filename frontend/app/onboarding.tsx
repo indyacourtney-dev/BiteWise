@@ -85,7 +85,8 @@ export default function OnboardingScreen() {
       favoriteTags,
     });
     completeOnboarding();
-    router.replace('/');
+    // Questions first, then the guided tour of the app, then Home.
+    router.replace('/tour?from=onboarding');
   };
 
   const next = () => {

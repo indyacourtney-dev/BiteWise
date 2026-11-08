@@ -100,6 +100,8 @@ function RootLayoutNav() {
               <Stack.Screen name="settings/privacy" />
               <Stack.Screen name="settings/about" />
               <Stack.Screen name="settings/goals" />
+              <Stack.Screen name="help" />
+              <Stack.Screen name="tour" options={{ gestureEnabled: false }} />
               <Stack.Screen name="shareRecipe" options={{ presentation: 'modal' }} />
               <Stack.Screen name="chat/[roomId]" />
             </Stack>

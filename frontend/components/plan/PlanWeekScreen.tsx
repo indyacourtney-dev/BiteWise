@@ -32,6 +32,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
+import { HelpButton } from '@/components/Help';
 import { COLORS } from '@/constants/Colors';
 import { getRecipeById, formatTime, getTotalTime } from '@/constants/recipes';
 import { getRecipeImage, getFallbackRecipeImage } from '@/constants/recipeImages';
@@ -223,7 +224,10 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
         contentContainerStyle={[styles.scroll, embedded && { paddingTop: 10 }, { paddingBottom: (embedded ? bottomPadding : insets.bottom) + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.h1} accessibilityRole="header">{weekStart === today ? 'This week' : 'My week'}</Text>
+        <View style={styles.h1Row}>
+          <Text style={styles.h1} accessibilityRole="header">{weekStart === today ? 'This week' : 'My week'}</Text>
+          <HelpButton topic="plan" />
+        </View>
         <Text style={styles.sub}>
           {weekStart !== today
             ? plannedCount === 0 ? 'No meals planned for this week.' : `${plannedCount} meals planned this week`
@@ -787,6 +791,7 @@ const styles = StyleSheet.create({
   },
   scroll: { paddingHorizontal: 20, paddingTop: 8 },
   h1: { fontFamily: SERIF, fontSize: 26, color: COLORS.darkNavy },
+  h1Row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   sub: { fontSize: 14, color: COLORS.textMuted, marginTop: 2 },
 
   weekNav: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16 },

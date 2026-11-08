@@ -18,6 +18,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import RecipeDetail from '@/components/RecipeDetail';
 import { COLORS } from '@/constants/Colors';
+import { HelpButton } from '@/components/Help';
 import { RECIPES, formatTime, getTotalTime, DIFFICULTY_LABELS } from '@/constants/recipes';
 import { getRecipeImage, getFallbackRecipeImage, hasRecipePhoto } from '@/constants/recipeImages';
 import { passesDietaryFilter } from '@/utils/matching';
@@ -443,7 +444,7 @@ function Header({ onExit, center, right }: { onExit: () => void; center?: React.
         </TouchableOpacity>
       </View>
       <View style={styles.headerCenter}>{center}</View>
-      <View style={styles.headerRight}>{right}</View>
+      <View style={styles.headerRight}>{right ?? <HelpButton topic="thisOrThat" />}</View>
     </View>
   );
 }

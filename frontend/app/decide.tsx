@@ -16,6 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
+import { HelpButton } from '@/components/Help';
 import RecipeListCard from '@/components/RecipeListCard';
 import { Card, Chip, Display, IconButton, Pill, PrimaryButton, RecipeTile, ScreenHeader, SecondaryButton, SectionLabel, ui } from '@/components/ui';
 import { COLORS } from '@/constants/Colors';
@@ -56,7 +57,12 @@ export default function DecideScreen() {
       <ScreenHeader
         kicker="Pick for me"
         title={`${MEAL_INFO[mealType].label} · ${preferences.householdSize === 1 ? 'just you' : `${preferences.householdSize} people`}`}
-        right={<IconButton icon="sliders" label="Change meal" tone="plain" onPress={() => setShowMeals(v => !v)} />}
+        right={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <HelpButton topic="decide" tone="plain" style={{ borderWidth: 0, backgroundColor: 'transparent' }} />
+            <IconButton icon="sliders" label="Change meal" tone="plain" onPress={() => setShowMeals(v => !v)} />
+          </View>
+        }
       />
 
       <ScrollView

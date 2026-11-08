@@ -20,6 +20,7 @@ import RecipeDetail from '@/components/RecipeDetail';
 import FavoriteButton from '@/components/FavoriteButton';
 import ShareToRoomModal from '@/components/ShareToRoomModal';
 import AddToWeekModal from '@/components/AddToWeekModal';
+import { HelpButton } from '@/components/Help';
 import { Display, IconButton, PrimaryButton, ScreenHeader, ui } from '@/components/ui';
 import { getRecipeById } from '@/constants/recipes';
 import { COLORS } from '@/constants/Colors';
@@ -79,6 +80,7 @@ export default function RecipeScreen() {
         onBack={goBack}
         right={recipe ? (
           <View style={styles.headerActions}>
+            <HelpButton topic="recipe" tone="light" />
             {configured ? <IconButton icon="comments-o" label="Share to a chat room" onPress={() => setSharing(true)} /> : null}
             <FavoriteButton recipeId={recipe.id} boxed />
           </View>

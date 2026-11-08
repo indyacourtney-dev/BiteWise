@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
+import { HelpButton } from '@/components/Help';
 import PantryPane from '@/components/kitchen/PantryPane';
 import GroceryPane from '@/components/kitchen/GroceryPane';
 import { Display, SegmentedControl } from '@/components/ui';
@@ -36,7 +37,10 @@ export default function KitchenScreen() {
     <View style={styles.header}>
       <View style={styles.titleRow}>
         <Display size={26}>Kitchen</Display>
-        <Text style={styles.subtitle}>{tab === 'pantry' ? 'What you have' : 'What to buy'}</Text>
+        <View style={styles.subRow}>
+          <Text style={styles.subtitle}>{tab === 'pantry' ? 'What you have' : 'What to buy'}</Text>
+          <HelpButton topic={tab === 'pantry' ? 'pantry' : 'grocery'} />
+        </View>
       </View>
       <SegmentedControl<Tab>
         value={tab}
@@ -57,6 +61,7 @@ export default function KitchenScreen() {
 
 const styles = StyleSheet.create({
   header: { paddingTop: 6 },
-  titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  subRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   subtitle: { fontSize: 13, fontWeight: '600', color: COLORS.textMuted },
 });

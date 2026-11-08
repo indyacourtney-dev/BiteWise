@@ -18,6 +18,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
+import { HelpButton } from '@/components/Help';
 import { Card, Chip, Display, Pill, PrimaryButton, RecipeTile, ScreenHeader, SecondaryButton, SectionLabel, SegmentedControl, ui } from '@/components/ui';
 import { COLORS } from '@/constants/Colors';
 import { useApp } from '@/context/AppContext';
@@ -87,6 +88,7 @@ export default function DrinksScreen() {
         kicker="Drinks"
         title="Something to sip"
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        right={<HelpButton topic="drinks" />}
       />
 
       <ScrollView contentContainerStyle={[ui.pad, { paddingBottom: insets.bottom + 28 }]} showsVerticalScrollIndicator={false}>

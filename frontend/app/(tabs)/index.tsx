@@ -27,6 +27,7 @@ import { useDecision } from '@/hooks/useDecision';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import { useMyProfile } from '@/hooks/useMyProfile';
 import Avatar from '@/components/Avatar';
+import { HelpButton } from '@/components/Help';
 import { Card, Chip, Display, Pill, PrimaryButton, RecipeTile, SecondaryButton, ui } from '@/components/ui';
 import { MEAL_INFO, MEAL_TYPES, QUIZ_MEAL_TYPES } from '@/utils/meals';
 import { stockStatus } from '@/utils/pantryStatus';
@@ -104,6 +105,7 @@ export default function Home() {
             <Text style={s.kicker}>{dayName} · {MEAL_INFO[mealType].label}</Text>
             <Display size={26}>{greetingFor()}, {userName}</Display>
           </View>
+          <HelpButton topic="home" style={{ marginRight: 8 }} />
           <TouchableOpacity
             onPress={() => router.push('/profile')}
             activeOpacity={0.8}

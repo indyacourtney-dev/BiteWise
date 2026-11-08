@@ -180,7 +180,9 @@ export default function ProfileScreen() {
           <SettingsRow icon="lock" label="Privacy & data" onPress={() => router.push('/settings/privacy')} last />
         </SettingsSection>
 
-        <SettingsSection title="About" footer={`BiteWise ${Constants.expoConfig?.version ?? ''} · ${Platform.OS}`}>
+        <SettingsSection title="Help" footer={`BiteWise ${Constants.expoConfig?.version ?? ''} · ${Platform.OS}`}>
+          <SettingsRow icon="question-circle" label="Help & how it works" onPress={() => router.push('/help')} />
+          <SettingsRow icon="play-circle" label="Take the tour again" onPress={() => router.push('/tour')} />
           <SettingsRow icon="info-circle" label="How BiteWise picks meals" onPress={() => router.push('/settings/about')} last />
         </SettingsSection>
 
