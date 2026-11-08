@@ -1,3 +1,4 @@
+import type { NutritionGoals } from '../utils/goals';
 
 // 'random' was Surprise Me (removed); kept so older saved history still loads.
 export type GameMode = 'pantry' | 'weekly' | 'thisorthat' | 'decide' | 'random';
@@ -86,6 +87,12 @@ export interface Recipe {
   allergensVerified?: boolean;
   /** Set by the database (recipes.contains_alcohol). Hidden from under-21s. */
   containsAlcohol?: boolean;
+  /**
+   * 'drink' = cocktails, mocktails, smoothies, coffee… shown only in the
+   * Drinks section; meal picks and the week plan use food only.
+   * Missing = food.
+   */
+  kind?: 'food' | 'drink';
   /** true = the source didn't say how many it serves; nutrition is per ~500 kcal portion. */
   servingsEstimated?: boolean;
   source?: 'bitewise' | 'kaggle' | 'community';
@@ -208,6 +215,18 @@ export interface UserPreferences {
    * Missing = false, so alcohol stays hidden until the age is known.
    */
   allowAlcohol?: boolean;
+  /**
+   * When the person first opened the Cocktails section and accepted the
+   * responsible-drinking note (ms). Asked once; synced with the account.
+   */
+  cocktailsConfirmedAt?: number;
+  /**
+   * Optional fitness / nutrition goal set in Profile (never in onboarding):
+   * height, weight, activity and what they're after. Turned into calorie
+   * and protein targets by utils/goals.ts; synced with the account like the
+   * rest of preferences. Missing = no goal, nothing changes.
+   */
+  goals?: NutritionGoals | null;
 }
 
 // ============================================
@@ -272,6 +291,8 @@ export interface PlannedMeal {
   servingsEstimated?: boolean;
   cooked: boolean;
   addedAt: number;
+  /** Last change (ms), used to sync between devices (lib/planSync.ts). */
+  updatedAt?: number;
 }
 
 // ============================================
@@ -320,6 +341,16 @@ export interface AppSettings {
   haptics: boolean;
   /** Speed for "Read aloud" on recipes. 1 = normal. */
   speechRate: 0.75 | 1 | 1.25;
+  /**
+   * Which voice reads recipes aloud: an identifier from
+   * expo-speech getAvailableVoicesAsync(). null = the device's default.
+   * Voices differ per device, so this is saved on the device, not the account.
+   */
+  voiceId?: string | null;
+  /** The "how your pantry works" card has been dismissed on this device. */
+  pantryTipSeen?: boolean;
+  /** Fill also plans surplus portions as leftovers. Off = the person decides. */
+  planLeftovers?: boolean;
 }
 
 export interface QuizRun {

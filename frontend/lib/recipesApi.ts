@@ -20,6 +20,8 @@ export interface CandidateFilters {
   tags?: string[];
   /** Recipes that satisfy ALL of these, e.g. ['vegetarian', 'gluten-free']. */
   dietary?: string[];
+  /** Recipes that carry at least ONE of these (eating goals like heart-healthy). */
+  dietaryAny?: string[];
   /** Drop recipes that contain OR may contain ANY of these allergens. */
   excludeAllergens?: string[];
   /**
@@ -32,6 +34,11 @@ export interface CandidateFilters {
   /** Prep + cook time limit in minutes. */
   maxTotalMinutes?: number | null;
   source?: Recipe['source'];
+  /**
+   * Food is the default everywhere a meal is being chosen; the Drinks
+   * section asks for 'drink'. 'any' is for search by name.
+   */
+  kind?: 'food' | 'drink' | 'any';
   limit?: number;
   /**
    * true: start at a random offset so repeated calls return different
@@ -49,6 +56,7 @@ function applyFilters<Q extends { [k: string]: any }>(query: Q, f: CandidateFilt
   if (f.mealType) q = q.contains('meal_types', [f.mealType]);
   if (f.tags?.length) q = q.overlaps('tags', f.tags);
   if (f.dietary?.length) q = q.contains('dietary', f.dietary);
+  if (f.dietaryAny?.length) q = q.overlaps('dietary', f.dietaryAny);
   if (f.excludeAllergens?.length) {
     q = q
       .not('allergens', 'ov', pgArray(f.excludeAllergens))
@@ -56,6 +64,8 @@ function applyFilters<Q extends { [k: string]: any }>(query: Q, f: CandidateFilt
   }
   if (verifiedOnly) q = q.eq('allergens_verified', true);
   if (f.source) q = q.eq('source', f.source);
+  const kind = f.kind ?? 'food';
+  if (kind !== 'any') q = q.eq('kind', kind);
   // Total time is two columns; cook time alone is a safe pre-filter, the
   // exact prep + cook check happens in the app (utils/decide.ts).
   if (f.maxTotalMinutes) q = q.lte('cook_minutes', f.maxTotalMinutes);
@@ -70,21 +80,55 @@ export async function fetchCandidateRecipes(filters: CandidateFilters = {}): Pro
   if (!configured) return [];
   const limit = filters.limit ?? 200;
 
-  let offset = 0;
-  if (filters.shuffle) {
-    const countQuery = applyFilters(supabase.from('recipes').select('id', { count: 'exact', head: true }), filters);
-    const { count, error } = await countQuery;
-    if (error) throw error;
-    offset = Math.floor(Math.random() * Math.max(0, (count ?? 0) - limit));
-  }
+  if (filters.shuffle) return sampleRecipes(filters, limit);
 
   const query = applyFilters(supabase.from('recipes').select(SELECT), filters)
-    .order(filters.shuffle ? 'id' : 'favorite_count', { ascending: Boolean(filters.shuffle) })
-    .range(offset, offset + limit - 1);
+    .order('favorite_count', { ascending: false })
+    .range(0, limit - 1);
   const { data, error } = await query;
   if (error) throw error;
   return (data as RecipeRow[]).map(rowToRecipe);
 }
+
+/**
+ * A random sample that matches the filters, in two cheap steps:
+ *   1. ids: the first `limit` matches with rnd >= r (wrapping round to
+ *      rnd < r if the end of the range comes first). Every recipe has a
+ *      random `rnd` key and a covering index, so this is an index-only
+ *      scan — milliseconds, however big the table.
+ *   2. the full rows for those ids.
+ * The old way (ORDER BY id OFFSET random) had to read and sort every
+ * matching row first: 25 s for desserts, past the API's 8 s timeout, so
+ * desserts came back empty.
+ */
+async function sampleRecipes(filters: CandidateFilters, limit: number): Promise<Recipe[]> {
+  const r = Math.random();
+  const ids: string[] = [];
+  const page = async (from: number, to: number | null, n: number) => {
+    let q: any = applyFilters(supabase.from('recipes').select('id'), filters).gte('rnd', from);
+    if (to !== null) q = q.lt('rnd', to);
+    const { data, error } = await q.order('rnd').limit(n);
+    if (error) throw error;
+    (data as { id: string }[]).forEach(row => ids.push(row.id));
+  };
+  await page(r, null, limit);
+  if (ids.length < limit) await page(0, r, limit - ids.length);
+  if (ids.length === 0) return [];
+
+  // PostgREST puts the ids in the URL, so fetch them in chunks.
+  const rows: RecipeRow[] = [];
+  for (let i = 0; i < ids.length; i += ID_CHUNK) {
+    const { data, error } = await supabase.from('recipes').select(SELECT).in('id', ids.slice(i, i + ID_CHUNK));
+    if (error) throw error;
+    rows.push(...(data as RecipeRow[]));
+  }
+  // Keep the random order the sample came in.
+  const order = new Map(ids.map((id, i) => [id, i]));
+  rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  return rows.map(rowToRecipe);
+}
+
+const ID_CHUNK = 100;
 
 export async function fetchRecipeById(id: string): Promise<Recipe | undefined> {
   if (!configured) return undefined;

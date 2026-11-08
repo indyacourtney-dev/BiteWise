@@ -1,325 +1,347 @@
+// app/(tabs)/index.tsx — HOME, answer first.
+//
+// The app's promise is to take the decision off your plate, so Home opens
+// on an answer: one pick for the current meal, with the reasons it was
+// chosen and how much of it is already in your pantry. "Cook this" goes to
+// the recipe; "Swap" shows the next best. The other ways to decide (This or
+// That, your pantry), the Drinks section and a running-low nudge sit below.
+//
+// The pick comes from the same engine as Pick for me (hooks/useDecision.ts)
+// with the craving set to "anything". Opening the app does NOT count as
+// "showing" the pick for variety purposes; only Swap and Cook do, so the
+// suggestion stays put through the day.
 
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from 'expo-router/js-tabs';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { COLORS } from '@/constants/Colors';
-import { homeStyles } from '@/styles/homeStyles';
+import { DIFFICULTY_LABELS, formatTime, getTotalTime } from '@/constants/recipes';
+import { getRecipeImage, hasRecipePhoto } from '@/constants/recipeImages';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
-import MealTypePicker from '@/components/MealTypePicker';
-import Avatar from '@/components/Avatar';
+import { useDecision } from '@/hooks/useDecision';
+import { useAccessibility } from '@/hooks/useAccessibility';
 import { useMyProfile } from '@/hooks/useMyProfile';
-import { MEAL_INFO, QUIZ_MEAL_TYPES } from '@/utils/meals';
+import Avatar from '@/components/Avatar';
+import { HelpButton } from '@/components/Help';
+import { Card, Chip, Display, Pill, PrimaryButton, RecipeTile, SecondaryButton, ui } from '@/components/ui';
+import { MEAL_INFO, MEAL_TYPES, QUIZ_MEAL_TYPES } from '@/utils/meals';
 import { stockStatus } from '@/utils/pantryStatus';
-import { todayIso } from '@/utils/age';
-import { addDays } from '@/utils/weekPlan';
+import { getPlateSuggestion } from '@/utils/matching';
+import type { MealType } from '@/types';
 
-// Header section with greeting, brand label, and sign-out
-const HeaderSection = ({
-  userName,
-  subtitle,
-  onSignOut,
-  onProfile,
-  avatarUrl,
-}: {
-  userName: string;
-  subtitle: string;
-  onSignOut: () => void;
-  onProfile: () => void;
-  avatarUrl?: string | null;
-}) => (
-  <View style={homeStyles.headerContainer}>
-    <View style={homeStyles.greetingRow}>
-      <View style={homeStyles.waveIconContainer}>
-        <Text style={homeStyles.waveEmoji}>👋</Text>
-      </View>
-      <View style={homeStyles.greetingTextContainer}>
-        <Text style={homeStyles.greetingTitle}>Hey {userName}!</Text>
-        <Text style={homeStyles.greetingSubtitle}>{subtitle}</Text>
-      </View>
-      {/* Profile: change diet, allergies and tastes any time. */}
-      <TouchableOpacity
-        onPress={onProfile}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityLabel="Profile and settings"
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: COLORS.cardWhite,
-          borderWidth: 1,
-          borderColor: COLORS.borderLight,
-          marginRight: 8,
-        }}
-      >
-        {avatarUrl ? (
-          <Avatar url={avatarUrl} size={34} label="Profile and settings" />
-        ) : (
-          <Ionicons name="person-circle-outline" size={22} color={COLORS.darkNavy} />
-        )}
-      </TouchableOpacity>
-      {/* Sign out lives on Home so it's always one tap away. The auth
-          gate notices the dropped session and returns to the login. */}
-      <TouchableOpacity
-        onPress={onSignOut}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityLabel="Sign out"
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: COLORS.cardWhite,
-          borderWidth: 1,
-          borderColor: COLORS.borderLight,
-        }}
-      >
-        <Ionicons name="log-out-outline" size={20} color={COLORS.darkNavy} />
-      </TouchableOpacity>
-    </View>
-    <Text style={homeStyles.brandLogo}>BiteWise</Text>
-  </View>
-);
-
-// This-or-That game card (lunch & dinner: its questions are about protein/carbs/greens)
-const FeaturedGameCard = ({ onStartGame }: { onStartGame: () => void }) => (
-  <View style={homeStyles.heroCard}>
-    <View style={homeStyles.clocheContainer}>
-      <MaterialCommunityIcons name="silverware-fork-knife" size={42} color={COLORS.goldYellow} />
-    </View>
-
-    <Text style={homeStyles.heroTitle}>Craving something?</Text>
-    <Text style={homeStyles.heroTitleHighlight}>Play "This or That!"</Text>
-    <Text style={homeStyles.heroSubtitle}>
-      Pick between two dishes a few times. Each round learns from your last tap.
-    </Text>
-
-    <TouchableOpacity style={homeStyles.heroButton} activeOpacity={0.8} onPress={onStartGame}>
-      <Text style={homeStyles.heroButtonText}>Start Game</Text>
-      <View style={homeStyles.heroButtonIconCircle}>
-        <Ionicons name="arrow-forward" size={16} color={COLORS.goldYellow} />
-      </View>
-    </TouchableOpacity>
-  </View>
-);
-
-// Running-low reminder: only shows when the pantry needs restocking or the
-// list has things on it, and opens the Grocery tab.
-const KitchenNudge = () => {
-  const router = useRouter();
-  const { pantry, grocery } = useApp();
-  const listed = new Set(grocery.map(g => g.name.toLowerCase()));
-  const low = pantry.filter(i => stockStatus(i) !== 'ok' && !listed.has(i.name.toLowerCase()));
-  const toBuy = grocery.filter(g => !g.checked).length;
-  if (low.length === 0 && toBuy === 0) return null;
-
-  const names = low.slice(0, 2).map(i => i.name.toLowerCase());
-  const more = low.length - names.length;
-  const text =
-    low.length > 0
-      ? `You're low on ${names.join(names.length === 2 && more === 0 ? ' and ' : ', ')}${more > 0 ? ` and ${more} more` : ''}`
-      : `${toBuy} item${toBuy === 1 ? '' : 's'} on your grocery list`;
-
-  return (
-    <TouchableOpacity
-      onPress={() => router.push('/grocery')}
-      activeOpacity={0.85}
-      accessibilityRole="button"
-      accessibilityLabel={`${text}. Open grocery list`}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        backgroundColor: COLORS.cardWhite,
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: low.length > 0 ? '#EDE28A' : COLORS.borderLight,
-        padding: 12,
-        marginBottom: 18,
-      }}
-    >
-      <View
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: low.length > 0 ? COLORS.lightYellow : COLORS.lightBlueBg,
-        }}
-      >
-        <Text style={{ fontSize: 20 }}>{low.length > 0 ? low[0].icon : '🛒'}</Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.darkNavy }} numberOfLines={2}>
-          {text}
-        </Text>
-        <Text style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 2 }}>
-          {low.length > 0 ? 'Add them to your grocery list' : 'Open your grocery list'}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={COLORS.darkNavy} />
-    </TouchableOpacity>
-  );
-};
-
-interface QuickDeciderCardProps {
-  title: string;
-  iconName: string;
-  iconType: 'mci' | 'ionicons';
-  bgColor: string;
-  buttonBgColor: string;
-  buttonIconColor: string;
-  borderColor?: string;
-  onPress: () => void;
+function greetingFor(now = new Date()): string {
+  const h = now.getHours();
+  if (h < 5) return 'Up late';
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
 }
 
-const QuickDeciderCard: React.FC<QuickDeciderCardProps> = ({
-  title,
-  iconName,
-  iconType,
-  bgColor,
-  buttonBgColor,
-  buttonIconColor,
-  borderColor,
-  onPress,
-}) => (
-  <TouchableOpacity
-    style={[
-      homeStyles.deciderCard,
-      { backgroundColor: bgColor },
-      borderColor ? { borderWidth: 1, borderColor } : null,
-    ]}
-    activeOpacity={0.85}
-    onPress={onPress}
-  >
-    <View style={homeStyles.deciderIconContainer}>
-      {iconType === 'mci' ? (
-        <MaterialCommunityIcons name={iconName as any} size={48} color={COLORS.darkNavy} />
-      ) : (
-        <Ionicons name={iconName as any} size={48} color={COLORS.darkNavy} />
-      )}
-    </View>
+const PICK_LABEL: Record<MealType, string> = {
+  breakfast: 'This morning’s pick',
+  brunch: 'Brunch pick',
+  lunch: 'Lunch pick',
+  dinner: 'Tonight’s pick',
+  dessert: 'Dessert pick',
+};
 
-    <Text style={homeStyles.deciderTitle}>{title}</Text>
-
-    <View style={[homeStyles.deciderArrowCircle, { backgroundColor: buttonBgColor }]}>
-      <Ionicons name="arrow-forward" size={18} color={buttonIconColor} />
-    </View>
-  </TouchableOpacity>
-);
-
-// Main home screen layout
 export default function Home() {
   const router = useRouter();
-  const { profile: myProfile } = useMyProfile();
-  const { preferences, mealType, setMealType, mealPlan } = useApp();
-
-  // What the Plan my week card says: tonight's dinner if planned, else progress.
-  const today = todayIso();
-  const weekEnd = addDays(today, 6);
-  const weekMeals = mealPlan.filter(m => m.date >= today && m.date <= weekEnd);
-  const tonight = weekMeals.find(m => m.date === today && m.slot === 'dinner');
-  const weekSummary = tonight
-    ? `Tonight: ${tonight.name}`
-    : weekMeals.length > 0
-      ? `${weekMeals.length} meal${weekMeals.length === 1 ? '' : 's'} planned for the next 7 days`
-      : 'See and plan your meals for the next 7 days';
-  const quizMeal = QUIZ_MEAL_TYPES.includes(mealType);
-  const { user, signOut } = useAuth();
-
-  // The tab bar floats over screen content, so the scroll has to pad past
-  // it or the last cards sit underneath it and can't be reached.
   const tabBarHeight = useBottomTabBarHeight();
+  const a11y = useAccessibility();
+  const { user } = useAuth();
+  const { profile: myProfile } = useMyProfile();
+  const { preferences, mealType, setMealType, pantry, grocery } = useApp();
 
-  // Prefer the name they typed in onboarding, fall back to their
-  // account username, then a friendly generic.
   const userName = preferences.name?.trim() || user?.user_metadata?.username || 'there';
+  const initials = userName.slice(0, 2).toUpperCase();
+  const dayName = new Date().toLocaleDateString(undefined, { weekday: 'long' });
+
+  const decision = useDecision({ mealType, craving: 'anything', noteShown: false });
+  const pick = decision.pick;
+
+  const cook = () => {
+    if (!pick) return;
+    a11y.haptic('success');
+    const recipe = decision.lockIn(pick);
+    if (recipe) router.push(`/recipe/${recipe.id}`);
+  };
+
+  // Running-low nudge: pantry items low/out that aren't on the list yet.
+  const nudge = useMemo(() => {
+    const listed = new Set(grocery.map(g => g.name.toLowerCase()));
+    const low = pantry.filter(i => stockStatus(i) !== 'ok' && !listed.has(i.name.toLowerCase()));
+    const toBuy = grocery.filter(g => !g.checked).length;
+    if (low.length === 0 && toBuy === 0) return null;
+    const names = low.slice(0, 2).map(i => i.name.toLowerCase());
+    const more = low.length - names.length;
+    const inPick = pick ? low.filter(i => pick.recipe.ingredients.some(ing => ing.name.toLowerCase().includes(i.name.toLowerCase()))).length : 0;
+    return {
+      title: low.length > 0
+        ? `Low on ${names.join(names.length === 2 && more === 0 ? ' and ' : ', ')}${more > 0 ? ` and ${more} more` : ''}`
+        : `${toBuy} item${toBuy === 1 ? '' : 's'} on your grocery list`,
+      sub: inPick > 0 ? `${inPick === 1 ? 'One is' : `${inPick} are`} in your pick` : low.length > 0 ? 'Add them to your grocery list' : 'Open your grocery list',
+      cta: low.length > 0 ? 'Add to list' : 'Open',
+      warn: low.length > 0,
+    };
+  }, [pantry, grocery, pick]);
+
+  const quizMeal = QUIZ_MEAL_TYPES.includes(mealType);
 
   return (
-    <SafeAreaView style={homeStyles.safeArea} edges={['top']}>
-      <View style={homeStyles.topDiagonalBackground} />
-
+    <SafeAreaView style={ui.screen} edges={['top']}>
       <ScrollView
-        contentContainerStyle={[homeStyles.scrollContent, { paddingBottom: tabBarHeight + 32 }]}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 28 }}
         showsVerticalScrollIndicator={false}
       >
-        <HeaderSection userName={userName} subtitle={MEAL_INFO[mealType].prompt}
-          onSignOut={signOut}
-          onProfile={() => router.push('/profile')}
-          avatarUrl={myProfile?.avatarUrl}
-        />
-
-        {/* Which meal? Pre-selected from the time of day; every decider below uses it. */}
-        <View style={{ marginBottom: 18 }}>
-          <Text style={[homeStyles.sectionTitle, { marginBottom: 10 }]}>What are we eating?</Text>
-          <MealTypePicker value={mealType} onChange={setMealType} />
+        {/* HEADER */}
+        <View style={[ui.pad, s.header]}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.kicker}>{dayName} · {MEAL_INFO[mealType].label}</Text>
+            <Display size={26}>{greetingFor()}, {userName}</Display>
+          </View>
+          <HelpButton topic="home" style={{ marginRight: 8 }} />
+          <TouchableOpacity
+            onPress={() => router.push('/profile')}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Profile and settings"
+            style={s.avatarBtn}
+          >
+            {myProfile?.avatarUrl ? (
+              <Avatar url={myProfile.avatarUrl} size={44} label="Profile and settings" />
+            ) : (
+              <Text style={s.avatarText}>{initials}</Text>
+            )}
+          </TouchableOpacity>
         </View>
 
-        <KitchenNudge />
+        {/* MEAL SWITCH */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[ui.pad, s.mealRow]}>
+          {MEAL_TYPES.map(m => (
+            <Chip key={m} label={MEAL_INFO[m].label} small selected={m === mealType} onPress={() => setMealType(m)} />
+          ))}
+        </ScrollView>
 
-        {quizMeal ? <FeaturedGameCard onStartGame={() => router.push('/thisorthat')} /> : null}
-
-        <View style={homeStyles.sectionHeader}>
-          <Text style={homeStyles.sectionTitle}>
-            Quick Deciders <Text style={homeStyles.sparkleEmoji}>✨</Text>
-          </Text>
-          <Text style={homeStyles.sectionSubtitle}>Let us help you get cooking.</Text>
+        {/* THE PICK */}
+        <View style={ui.pad}>
+          {decision.loading && !pick ? (
+            <Card style={s.pickCard}>
+              <RecipeTile height={150} />
+              <View style={[s.pickBody, { alignItems: 'center', paddingVertical: 28 }]}>
+                <ActivityIndicator color={COLORS.darkNavy} />
+                <Text style={s.hint}>Finding your {MEAL_INFO[mealType].label.toLowerCase()}…</Text>
+              </View>
+            </Card>
+          ) : !pick ? (
+            <Card style={s.pickCard}>
+              <View style={[s.pickBody, { gap: 10 }]}>
+                <Display size={20}>Nothing fits every rule</Display>
+                <Text style={s.hint}>
+                  Your allergies and diets rule out everything we have for {MEAL_INFO[mealType].label.toLowerCase()} right now.
+                  Try another meal, or loosen a preference.
+                </Text>
+                <SecondaryButton label="Check preferences" onPress={() => router.push('/settings/preferences')} />
+              </View>
+            </Card>
+          ) : (
+            <Card style={s.pickCard}>
+              <View>
+                {hasRecipePhoto(pick.recipe) ? (
+                  <Image source={getRecipeImage(pick.recipe)} style={s.pickImage} accessibilityIgnoresInvertColors />
+                ) : (
+                  <RecipeTile height={150} emoji={pick.recipe.emoji} />
+                )}
+                <View style={s.pickTagLeft}><Pill label={PICK_LABEL[mealType]} tone="navy" /></View>
+                {pick.pantryPercent !== null && pantry.length > 0 ? (
+                  <View style={s.pickTagRight}><Pill label={`${pick.pantryPercent}% in pantry`} tone="yellow" /></View>
+                ) : null}
+              </View>
+              <View style={s.pickBody}>
+                <Display size={22}>{pick.recipe.name}</Display>
+                <View style={s.metaRow}>
+                  <Meta icon="clock-o" text={formatTime(getTotalTime(pick.recipe))} />
+                  <Meta icon="signal" text={DIFFICULTY_LABELS[pick.recipe.difficulty]} />
+                  <Meta icon="users" text={`Serves ${pick.recipe.servings}`} />
+                </View>
+                {pick.reasons.length > 0 ? (
+                  <View style={s.reasons}>
+                    {pick.reasons.slice(0, 3).map(r => (
+                      <View key={r} style={s.reasonRow}>
+                        <FontAwesome name="check-circle-o" size={17} color={COLORS.green} />
+                        <Text style={[s.reasonText, a11y.text(14)]}>{r}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+                {mealType !== 'dessert' && pick.recipe.nutrition.calories > 0 && getPlateSuggestion(pick.recipe.plate) ? (
+                  <View style={s.balanceTip}>
+                    <FontAwesome name="lightbulb-o" size={14} color={COLORS.textGold} />
+                    <Text style={s.balanceTipText}>Round it out: {getPlateSuggestion(pick.recipe.plate)}</Text>
+                  </View>
+                ) : null}
+                <View style={s.actions}>
+                  <PrimaryButton label="Cook this" icon="arrow-right" onPress={cook} style={{ flex: 1, minHeight: 48 }} />
+                  <SecondaryButton label="Swap" icon="random" onPress={decision.skip} style={{ minHeight: 48 }} />
+                </View>
+              </View>
+            </Card>
+          )}
         </View>
 
-        <View style={homeStyles.decidersRow}>
-          <QuickDeciderCard
-            title="Cook with My Pantry"
-            iconName="fridge-outline"
-            iconType="mci"
-            bgColor={COLORS.lightYellow}
-            buttonBgColor={COLORS.goldYellow}
-            buttonIconColor={COLORS.darkNavy}
-            borderColor="#EDE28A"
+        {/* OTHER WAYS TO DECIDE */}
+        <View style={[ui.pad, s.waysRow]}>
+          {quizMeal ? (
+            <WayCard
+              title="This or That"
+              sub="Can’t name it? Tap to find it"
+              icon="th-large"
+              tone="yellow"
+              onPress={() => router.push('/thisorthat')}
+            />
+          ) : (
+            <WayCard
+              title="Pick for me"
+              sub="Tell us your mood, get one pick"
+              icon="magic"
+              tone="yellow"
+              onPress={() => router.push('/decide')}
+            />
+          )}
+          <WayCard
+            title="From my pantry"
+            sub="Use what you have"
+            icon="cutlery"
+            tone="white"
             onPress={() => router.push('/cookWithPantry')}
           />
-
-          <Text style={homeStyles.orDividerText}>OR</Text>
-
-          <QuickDeciderCard
-            title={`Can't Decide? We'll Pick Your ${MEAL_INFO[mealType].label}`}
-            iconName="head-question-outline"
-            iconType="mci"
-            bgColor={COLORS.cardWhite}
-            buttonBgColor={COLORS.darkNavy}
-            buttonIconColor={COLORS.cardWhite}
-            borderColor={COLORS.borderLight}
-            onPress={() => router.push('/decide')}
-          />
         </View>
 
-        {/* Plan my week — the next 7 days of meals (app/planWeek.tsx) */}
+        {/* DRINKS — its own section, never mixed into meal picks */}
         <TouchableOpacity
-          style={homeStyles.planWeekCard}
+          style={[ui.pad, { marginTop: 10 }]}
+          onPress={() => router.push('/drinks')}
           activeOpacity={0.85}
-          onPress={() => router.push('/planWeek')}
+          accessibilityRole="button"
+          accessibilityLabel={preferences.allowAlcohol ? 'Drinks: mocktails, smoothies and cocktails' : 'Drinks: mocktails, smoothies and more'}
         >
-          <View style={homeStyles.planWeekIconCircle}>
-            <MaterialCommunityIcons name="calendar-week" size={26} color={COLORS.darkNavy} />
-          </View>
-          <View style={homeStyles.planWeekTextWrap}>
-            <Text style={homeStyles.planWeekTitle}>Plan my week</Text>
-            <Text style={homeStyles.planWeekSubtitle}>{weekSummary}</Text>
-          </View>
-          <View style={homeStyles.planWeekArrowCircle}>
-            <Ionicons name="arrow-forward" size={18} color={COLORS.cardWhite} />
+          <View style={s.drinksRow}>
+            <FontAwesome name="glass" size={20} color={COLORS.goldYellow} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.drinksTitle}>Drinks</Text>
+              <Text style={s.drinksSub}>{preferences.allowAlcohol ? 'Mocktails, smoothies and cocktails' : 'Mocktails, smoothies and more'}</Text>
+            </View>
+            <FontAwesome name="chevron-right" size={13} color={COLORS.navyMuted} />
           </View>
         </TouchableOpacity>
+
+        {/* KITCHEN NUDGE */}
+        {nudge ? (
+          <TouchableOpacity
+            style={[ui.pad, { marginTop: 10 }]}
+            onPress={() => router.push('/kitchen?tab=grocery')}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={`${nudge.title}. ${nudge.cta}`}
+          >
+            <View style={[s.nudge, nudge.warn ? s.nudgeWarn : null]}>
+              <FontAwesome name={nudge.warn ? 'exclamation-triangle' : 'shopping-cart'} size={18} color={nudge.warn ? COLORS.textGold : COLORS.darkNavy} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.nudgeTitle} numberOfLines={2}>{nudge.title}</Text>
+                <Text style={s.nudgeSub}>{nudge.sub}</Text>
+              </View>
+              <View style={s.nudgeCta}><Text style={s.nudgeCtaText}>{nudge.cta}</Text></View>
+            </View>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+function Meta({ icon, text }: { icon: React.ComponentProps<typeof FontAwesome>['name']; text: string }) {
+  return (
+    <View style={s.meta}>
+      <FontAwesome name={icon} size={13} color={COLORS.textMuted} />
+      <Text style={s.metaText}>{text}</Text>
+    </View>
+  );
+}
+
+function WayCard({ title, sub, icon, tone, onPress }: {
+  title: string; sub: string; icon: React.ComponentProps<typeof FontAwesome>['name']; tone: 'yellow' | 'white'; onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[s.way, tone === 'yellow' ? s.wayYellow : s.wayWhite]}
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${sub}`}
+    >
+      <FontAwesome name={icon} size={22} color={COLORS.darkNavy} />
+      <View style={{ flex: 1 }}>
+        <Text style={s.wayTitle}>{title}</Text>
+        <Text style={[s.waySub, tone === 'yellow' && { color: '#4A4A2A' }]}>{sub}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const s = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 6 },
+  kicker: { fontSize: 13, fontWeight: '600', color: COLORS.textMuted, marginBottom: 2 },
+  avatarBtn: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.darkNavy,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+  },
+  avatarText: { color: COLORS.goldYellow, fontWeight: '800', fontSize: 15 },
+
+  mealRow: { gap: 8, paddingTop: 16, paddingBottom: 2 },
+
+  pickCard: { marginTop: 16, borderRadius: 22 },
+  pickImage: { width: '100%', height: 150, backgroundColor: COLORS.tileSand },
+  pickTagLeft: { position: 'absolute', top: 12, left: 12 },
+  pickTagRight: { position: 'absolute', top: 12, right: 12 },
+  pickBody: { padding: 18, gap: 12 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 14, flexWrap: 'wrap' },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  metaText: { fontSize: 13, color: COLORS.textMuted, fontWeight: '500' },
+  reasons: { gap: 7 },
+  reasonRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  reasonText: { flex: 1, fontSize: 14, color: COLORS.textDark },
+  actions: { flexDirection: 'row', gap: 10, marginTop: 2 },
+  balanceTip: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: COLORS.lightYellow, borderRadius: 12, padding: 10 },
+  balanceTipText: { flex: 1, fontSize: 12, lineHeight: 17, color: COLORS.textDark },
+  hint: { fontSize: 13, color: COLORS.textMuted, lineHeight: 19, textAlign: 'center' },
+
+  waysRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  way: { flex: 1, minHeight: 76, borderRadius: 16, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  wayYellow: { backgroundColor: COLORS.goldYellow },
+  wayWhite: { backgroundColor: COLORS.cardWhite, borderWidth: 1, borderColor: COLORS.borderLight },
+  wayTitle: { fontSize: 14, fontWeight: '800', color: COLORS.darkNavy },
+  waySub: { fontSize: 12, fontWeight: '500', color: COLORS.textMuted, marginTop: 1 },
+
+  drinksRow: {
+    minHeight: 56, borderRadius: 16, backgroundColor: COLORS.darkNavy,
+    paddingVertical: 10, paddingLeft: 14, paddingRight: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+  },
+  drinksTitle: { fontSize: 14, fontWeight: '700', color: COLORS.cardWhite },
+  drinksSub: { fontSize: 12, color: COLORS.navyMuted, marginTop: 1 },
+
+  nudge: {
+    minHeight: 56, borderRadius: 16, backgroundColor: COLORS.cardWhite, borderWidth: 1, borderColor: COLORS.borderLight,
+    paddingVertical: 10, paddingLeft: 14, paddingRight: 10, flexDirection: 'row', alignItems: 'center', gap: 12,
+  },
+  nudgeWarn: { backgroundColor: COLORS.lightYellow, borderColor: COLORS.yellowBorder },
+  nudgeTitle: { fontSize: 14, fontWeight: '700', color: COLORS.textDark },
+  nudgeSub: { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
+  nudgeCta: { height: 34, paddingHorizontal: 12, borderRadius: 10, backgroundColor: COLORS.darkNavy, alignItems: 'center', justifyContent: 'center' },
+  nudgeCtaText: { color: COLORS.cardWhite, fontSize: 13, fontWeight: '700' },
+});

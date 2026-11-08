@@ -8,11 +8,12 @@
 
 import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { COLORS } from '../constants/Colors';
 import { useApp } from '../context/AppContext';
-import { LEGAL_DRINKING_AGE, ageOn, formatBirthDate, parseBirthDate } from '../utils/age';
+import { ageOn, formatBirthDate, parseBirthDate } from '../utils/age';
 
 export default function BirthdayForm() {
   const { birthDate, setBirthDate } = useApp();
@@ -22,13 +23,11 @@ export default function BirthdayForm() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null); // waiting for "Yes, save it"
   const [saving, setSaving] = useState(false);
-  const dayRef = useRef<TextInput>(null);
-  const yearRef = useRef<TextInput>(null);
+  const dayRef = useRef<TextInputInstance>(null);
+  const yearRef = useRef<TextInputInstance>(null);
 
   // ----- Already saved: locked -----
   if (birthDate) {
-    const age = ageOn(birthDate);
-    const adult = age >= LEGAL_DRINKING_AGE;
     return (
       <View style={styles.lockedCard} accessibilityLiveRegion="polite">
         <View style={styles.lockedRow}>
@@ -38,11 +37,7 @@ export default function BirthdayForm() {
             <Text style={styles.lockedDate}>{formatBirthDate(birthDate)}</Text>
           </View>
         </View>
-        <Text style={styles.lockedNote}>
-          {adult
-            ? "You're 21 or older, so recipes made with alcohol are included."
-            : `Recipes made with alcohol are hidden until you turn ${LEGAL_DRINKING_AGE}. Everything else works as usual.`}
-        </Text>
+        <Text style={styles.lockedNote}>Saved to your account. It can't be changed later.</Text>
       </View>
     );
   }
@@ -73,13 +68,12 @@ export default function BirthdayForm() {
       <View style={styles.warning} accessibilityRole="alert">
         <FontAwesome name="exclamation-triangle" size={18} color={COLORS.darkGold} style={styles.warnIcon} />
         <View style={styles.flex1}>
-          <Text style={styles.warnTitle}>Why we ask</Text>
+          <Text style={styles.warnTitle}>One-time only</Text>
           <Text style={styles.warnText}>
-            Some recipes are made with alcohol, like wine, beer or spirits. BiteWise only shows them to people{' '}
-            {LEGAL_DRINKING_AGE} or older.
+            BiteWise uses your birthday to tailor what it shows you.
           </Text>
           <Text style={[styles.warnText, styles.warnStrong]}>
-            Your birthday can't be changed after you save it, so make sure it's right.
+            It can't be changed after you save it, so make sure it's right.
           </Text>
         </View>
       </View>
@@ -168,7 +162,7 @@ export default function BirthdayForm() {
 }
 
 const Field = React.forwardRef<
-  TextInput,
+  TextInputInstance,
   {
     label: string;
     placeholder: string;

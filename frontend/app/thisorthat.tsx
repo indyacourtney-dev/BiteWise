@@ -12,12 +12,15 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, TouchableOpacity, ScrollView, View, Text, Image } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import RecipeDetail from '@/components/RecipeDetail';
+import { Chip, Display, Pill, PrimaryButton, RecipeTile, SecondaryButton, SectionLabel } from '@/components/ui';
 import { COLORS } from '@/constants/Colors';
+import { HelpButton } from '@/components/Help';
 import { RECIPES, formatTime, getTotalTime, DIFFICULTY_LABELS } from '@/constants/recipes';
 import { getRecipeImage, getFallbackRecipeImage, hasRecipePhoto } from '@/constants/recipeImages';
 import { passesDietaryFilter } from '@/utils/matching';
@@ -69,7 +72,7 @@ export default function ThisOrThatScreen() {
   const a11y = useAccessibility();
   const insets = useSafeAreaInsets();
   const scrollPad = { paddingBottom: insets.bottom + 32 };
-  const resultScrollRef = useRef<ScrollView>(null);
+  const resultScrollRef = useRef<ScrollViewInstance>(null);
 
   // The questions are about protein / carbs / veggies, so the game plays
   // for lunch or dinner (dinner when another meal is selected).
@@ -221,35 +224,39 @@ export default function ThisOrThatScreen() {
   if (!finished && current) {
     const [left, right] = current.pair;
     const roundNo = rounds.length + 1;
+    const warmth = sureness < 0.15 ? 'Learning your craving' : sureness < 0.35 ? 'Getting warmer' : 'Almost there';
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header
           onExit={exitToHome}
           center={
-            <View style={styles.meterWrap} accessibilityLabel={`We're ${Math.round(sureness * 100)} percent sure of your craving`}>
-              <View style={styles.meterTrack}>
-                <View style={[styles.meterFill, { width: `${Math.max(6, Math.round(sureness * 100))}%` }]} />
+            <View style={styles.roundWrap} accessibilityLabel={`Round ${roundNo} of up to ${MAX_ROUNDS}. ${warmth}.`}>
+              <Text style={styles.kicker}>This or That</Text>
+              <View style={styles.pips}>
+                {Array.from({ length: MAX_ROUNDS }).map((_, i) => (
+                  <View key={i} style={[styles.pip, i < rounds.length && styles.pipDone, i === rounds.length && styles.pipNow]} />
+                ))}
               </View>
-              <Text style={styles.meterText}>
-                {sureness < 0.15 ? 'Learning your craving' : sureness < 0.35 ? 'Getting warmer' : 'Almost there'}
-              </Text>
             </View>
           }
-          right={<Text style={styles.counter}>{roundNo}/{MAX_ROUNDS}</Text>}
         />
 
         <ScrollView contentContainerStyle={[styles.pad, scrollPad]} showsVerticalScrollIndicator={false}>
-          <Text style={styles.h1}>This or That?</Text>
-          <Text style={styles.sub}>
-            {(current.focus && ROUND_FOCUS[current.focus]) ?? 'Tap the one you would rather eat right now.'}
-          </Text>
+          <View style={styles.roundLine}>
+            <Pill label={`Round ${roundNo}`} tone="yellow" />
+            <Text style={styles.warmth}>{warmth}</Text>
+          </View>
+          <Display size={26} style={{ marginTop: 10 }}>
+            {(current.focus && ROUND_FOCUS[current.focus]) ?? 'Which would you rather eat?'}
+          </Display>
+          <Text style={styles.sub}>Tap the one you’d rather eat right now.</Text>
 
           {[left, right].map((r, i) => (
             <React.Fragment key={r.id}>
               {i === 1 && (
                 <View style={styles.orRow}>
                   <View style={styles.orLine} />
-                  <Text style={styles.orText}>or</Text>
+                  <View style={styles.orBadge}><Text style={styles.orText}>or</Text></View>
                   <View style={styles.orLine} />
                 </View>
               )}
@@ -260,49 +267,54 @@ export default function ThisOrThatScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Choose ${r.name}`}
               >
-                <Image
-                  source={imageFor(r)}
-                  style={styles.photo}
-                  resizeMode="cover"
-                  onError={() => setBroken(prev => ({ ...prev, [r.id]: true }))}
-                />
+                {hasRecipePhoto(r) && !broken[r.id] ? (
+                  <Image
+                    source={imageFor(r)}
+                    style={styles.photo}
+                    resizeMode="cover"
+                    onError={() => setBroken(prev => ({ ...prev, [r.id]: true }))}
+                  />
+                ) : (
+                  <RecipeTile height={170} emoji={r.emoji} tone={i === 0 ? 'clay' : 'sage'} />
+                )}
                 <View style={styles.emojiBadge}>
                   <Text style={styles.emojiBadgeText}>{r.emoji}</Text>
                 </View>
+                <View style={styles.photoPills}>
+                  <Pill label={formatTime(getTotalTime(r))} tone="blue" style={styles.lightPill} />
+                  <Pill label={DIFFICULTY_LABELS[r.difficulty]} tone="blue" style={styles.lightPill} />
+                </View>
                 <View style={styles.photoInfo}>
                   <Text style={styles.photoName} numberOfLines={2}>{r.name}</Text>
-                  <Text style={styles.photoMeta}>
-                    {formatTime(getTotalTime(r))}, {DIFFICULTY_LABELS[r.difficulty].toLowerCase()}
-                  </Text>
+                  <View style={styles.pickHint}>
+                    <Text style={styles.pickHintText}>This one</Text>
+                    <FontAwesome name="arrow-right" size={11} color={COLORS.darkNavy} />
+                  </View>
                 </View>
               </TouchableOpacity>
             </React.Fragment>
           ))}
 
           <View style={styles.actionsRow}>
-            <TouchableOpacity
-              style={styles.neitherBtn}
-              onPress={() => choose('neither')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Neither of these"
-            >
-              <Text style={styles.neitherText}>Neither</Text>
-            </TouchableOpacity>
-            {picked.length > 0 && (
-              <TouchableOpacity
-                style={styles.enoughBtn}
-                onPress={() => {
-                  setFinished(true);
-                  setCurrent(null);
-                }}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-              >
-                <Text style={styles.enoughText}>Show my match</Text>
-              </TouchableOpacity>
-            )}
+            <SecondaryButton label="Neither" onPress={() => choose('neither')} style={{ flex: 1 }} />
+            {picked.length > 0 ? (
+              <PrimaryButton
+                label="Show my match"
+                icon="arrow-right"
+                tone="yellow"
+                onPress={() => { setFinished(true); setCurrent(null); }}
+                style={{ flex: 1.3 }}
+              />
+            ) : null}
           </View>
+
+          {picked.length > 0 ? (
+            <View style={styles.soFar} accessibilityLabel={`So far you picked ${picked.map(p => p.name).join(', ')}`}>
+              <Text style={styles.soFarLabel}>So far</Text>
+              <Text style={styles.soFarEmoji}>{picked.map(p => p.emoji).join('  ')}</Text>
+              <Text style={styles.soFarText} numberOfLines={1}>{picked.map(p => p.name).join(' · ')}</Text>
+            </View>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
     );
@@ -337,7 +349,7 @@ export default function ThisOrThatScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Header
         onExit={exitToHome}
-        center={<Text style={styles.headerTitle}>Your match</Text>}
+        center={<Text style={styles.kicker}>This or That</Text>}
         right={
           <TouchableOpacity
             onPress={() => toggleFavorite(meal.id)}
@@ -356,30 +368,25 @@ export default function ThisOrThatScreen() {
         contentContainerStyle={[styles.resultPad, scrollPad]}
         showsVerticalScrollIndicator={false}
       >
+        <Display size={28} style={{ marginTop: 4 }}>Your match</Display>
         <View style={styles.picksRow}>
           <Text style={styles.picksLabel}>
-            {rounds.length} round{rounds.length === 1 ? '' : 's'}, you picked
+            {rounds.length} round{rounds.length === 1 ? '' : 's'} · you picked
           </Text>
           <Text style={styles.picksEmoji}>{picked.map(p => p.emoji).join('  ')}</Text>
         </View>
 
         {inferred.length > 0 && (
           <View style={styles.inferredWrap}>
-            <Text style={styles.inferredLabel}>What your picks told us</Text>
+            <SectionLabel tone="gold" style={{ marginBottom: 8 }}>What your picks told us</SectionLabel>
             <View style={styles.chipsRow}>
               {inferred.slice(0, 6).map(p => {
                 const hit = matchedSet.has(p.dimension);
-                return (
-                  <View key={p.dimension} style={[styles.chip, !hit && styles.chipMiss]}>
-                    <Text style={styles.chipEmoji}>{p.emoji}</Text>
-                    <Text style={[styles.chipText, !hit && styles.chipTextMiss]}>{p.label}</Text>
-                    {hit ? <FontAwesome name="check" size={11} color={COLORS.darkGold} /> : null}
-                  </View>
-                );
+                return <Chip key={p.dimension} label={`${p.emoji} ${p.label}`} small selected={hit} tone="gold" icon={hit ? 'check' : undefined} />;
               })}
             </View>
             <Text style={styles.inferredHint}>
-              Checked = this dish has it. {sureness >= 0.45 ? 'Your picks were consistent.' : 'A few more rounds would sharpen this.'}
+              Highlighted = this dish has it. {sureness >= 0.45 ? 'Your picks were consistent.' : 'A few more rounds would sharpen this.'}
             </Text>
           </View>
         )}
@@ -418,13 +425,8 @@ export default function ThisOrThatScreen() {
           </>
         )}
 
-        <TouchableOpacity style={styles.primaryBtn} onPress={reset} activeOpacity={0.9}>
-          <FontAwesome name="refresh" size={15} color={COLORS.cardWhite} />
-          <Text style={styles.primaryBtnText}>Play again</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryBtn} onPress={exitToHome} activeOpacity={0.8}>
-          <Text style={styles.secondaryBtnText}>Back to home</Text>
-        </TouchableOpacity>
+        <PrimaryButton label="Play again" icon="refresh" onPress={reset} style={{ marginTop: 24 }} />
+        <SecondaryButton label="Back to home" onPress={exitToHome} style={{ marginTop: 10 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -443,7 +445,7 @@ function Header({ onExit, center, right }: { onExit: () => void; center?: React.
         </TouchableOpacity>
       </View>
       <View style={styles.headerCenter}>{center}</View>
-      <View style={styles.headerRight}>{right}</View>
+      <View style={styles.headerRight}>{right ?? <HelpButton topic="thisOrThat" />}</View>
     </View>
   );
 }
@@ -480,6 +482,23 @@ const styles = StyleSheet.create({
   },
 
   counter: { fontSize: 12, fontWeight: '600', color: COLORS.textMuted },
+  roundWrap: { alignItems: 'center', gap: 6 },
+  kicker: { fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', color: COLORS.textGold },
+  pips: { flexDirection: 'row', gap: 5 },
+  pip: { width: 14, height: 5, borderRadius: 3, backgroundColor: COLORS.borderLight },
+  pipDone: { backgroundColor: COLORS.darkGold },
+  pipNow: { backgroundColor: COLORS.goldYellow, width: 22 },
+  roundLine: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  warmth: { fontSize: 13, fontWeight: '600', color: COLORS.textMuted },
+  orBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999, backgroundColor: COLORS.lightYellow, borderWidth: 1, borderColor: COLORS.yellowBorder },
+  photoPills: { position: 'absolute', left: 12, top: 132, flexDirection: 'row', gap: 6 },
+  lightPill: { backgroundColor: 'rgba(255,255,255,0.94)' },
+  pickHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  pickHintText: { fontSize: 12, fontWeight: '800', color: COLORS.darkNavy },
+  soFar: { marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.cardWhite, borderRadius: 14, borderWidth: 1, borderColor: COLORS.borderLight, paddingVertical: 10, paddingHorizontal: 14 },
+  soFarLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: COLORS.textMuted },
+  soFarEmoji: { fontSize: 18 },
+  soFarText: { flex: 1, fontSize: 12.5, color: COLORS.textMuted },
 
   pad: { paddingHorizontal: 20, paddingBottom: 48 },
   resultPad: { paddingHorizontal: 20, paddingBottom: 56 },
@@ -493,11 +512,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderLight,
     overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    boxShadow: '0 3px 6px rgba(0,0,0,0.12)',
   },
   photo: { width: '100%', height: 170, backgroundColor: COLORS.blueSoft },
   emojiBadge: {
@@ -510,11 +525,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardWhite,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
+    boxShadow: '0 2px 3px rgba(0,0,0,0.15)',
   },
   emojiBadgeText: { fontSize: 22 },
   photoInfo: { paddingHorizontal: 16, paddingVertical: 12 },

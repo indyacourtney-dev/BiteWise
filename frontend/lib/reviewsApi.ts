@@ -149,7 +149,17 @@ export async function saveRecipeReview(
 
 export async function deleteRecipeReview(recipeId: string): Promise<void> {
   assertConfigured();
-  const { error } = await supabase.from('recipe_reviews').delete().eq('recipe_id', recipeId);
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw new Error(sessionError.message);
+  const userId = sessionData.session?.user.id;
+  if (!userId) throw new Error('Sign in to delete your review.');
+  // Row-level security already limits deletes to your own rows; naming the
+  // user here too keeps it explicit and makes a wrong policy fail safe.
+  const { error } = await supabase
+    .from('recipe_reviews')
+    .delete()
+    .eq('recipe_id', recipeId)
+    .eq('user_id', userId);
   if (error) throw new Error(error.message);
 }
 

@@ -46,6 +46,13 @@ import { getIconForItem, guessCategory } from '../constants/Itemicons';
 import { findPantryLibraryItem } from '../constants/pantryData';
 import { aisleFor, stockStatus } from '../utils/pantryStatus';
 import { changedRows, mergeRows, pullKitchen, pushKitchen, syncAvailable } from '../lib/kitchenSync';
+import { planSyncAvailable, pullPlan, pushPlan, statusMaps, statusRows, type StatusRow } from '../lib/planSync';
+import {
+  preferencesSyncAvailable,
+  pullPreferences,
+  pushPreferences,
+  reconcilePreferences,
+} from '../lib/preferencesSync';
 import { configured } from '../lib/supabase';
 import { addFavorite, removeFavorite, syncFavorites } from '../lib/favoritesApi';
 import { ensureProfile } from '../lib/communityApi';
@@ -78,6 +85,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reduceMotion: 'system',
   haptics: true,
   speechRate: 1,
+  voiceId: null,
 };
 
 // Storage keys are scoped PER ACCOUNT. Before this, keys were device-wide,
@@ -90,6 +98,8 @@ const keysFor = (userId: string) =>
     favorites: `@bitewise/${userId}/favorites`,
     history: `@bitewise/${userId}/history`,
     onboarded: `@bitewise/${userId}/onboarded`,
+    /** When onboarding finished + when preferences last changed (ms), for cross-device sync. */
+    prefsMeta: `@bitewise/${userId}/prefsMeta`,
     settings: `@bitewise/${userId}/settings`,
     grocery: `@bitewise/${userId}/grocery`,
     /** Recipes shown in recent This or That games, so the next game shows different ones. */
@@ -115,6 +125,13 @@ interface AppContextValue {
 
   // Onboarding
   hasOnboarded: boolean;
+  /**
+   * True once we've asked the account whether onboarding was finished on
+   * another device (or couldn't). The gate waits for this before sending a
+   * fresh install through setup, so a user who set up on the web isn't
+   * asked again on their phone.
+   */
+  preferencesChecked: boolean;
   completeOnboarding: () => void;
   /** Dev/testing helper: wipes the flag so setup runs again. */
   resetOnboarding: () => void;
@@ -219,7 +236,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const [hydrated, setHydrated] = useState(false);
-  const [hasOnboarded, setHasOnboarded] = useState(false);
+  // Onboarding is a timestamp (not a flag) so two devices can tell whose
+  // copy is newer. null = not finished.
+  const [onboardedAt, setOnboardedAt] = useState<number | null>(null);
+  const [prefsUpdatedAt, setPrefsUpdatedAt] = useState(0);
+  const [preferencesChecked, setPreferencesChecked] = useState(false);
+  const hasOnboarded = onboardedAt !== null;
   const [pantry, setPantry] = useState<PantryItem[]>([]);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [birthDate, setBirthDateState] = useState<string | null>(null);
@@ -243,16 +265,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     groceryRef.current = grocery;
   }, [grocery]);
+  useEffect(() => {
+    mealPlanRef.current = mealPlan;
+  }, [mealPlan]);
+  useEffect(() => {
+    mealPlanDaysRef.current = mealPlanDays;
+  }, [mealPlanDays]);
+  useEffect(() => {
+    mealPlanSlotsRef.current = mealPlanSlots;
+  }, [mealPlanSlots]);
 
-  // Sync bookkeeping (see lib/kitchenSync.ts). Kept in refs + one storage key.
-  const syncMeta = useRef<{
-    lastSyncAt: number | null;
-    pantryTombstones: string[];
-    groceryTombstones: string[];
-  }>({ lastSyncAt: null, pantryTombstones: [], groceryTombstones: [] });
+  // Sync bookkeeping (see lib/kitchenSync.ts and lib/planSync.ts). Kept in
+  // refs + one storage key.
+  const EMPTY_SYNC_META = {
+    lastSyncAt: null as number | null,
+    pantryTombstones: [] as string[],
+    groceryTombstones: [] as string[],
+    planLastSyncAt: null as number | null,
+    planTombstones: [] as string[],
+    planStatusTombstones: [] as string[],
+    /** When each day/slot status last changed, keyed like lib/planSync.ts rows. */
+    planStatusUpdatedAt: {} as Record<string, number>,
+  };
+  const syncMeta = useRef<typeof EMPTY_SYNC_META>({ ...EMPTY_SYNC_META });
   const syncedPantry = useRef(new Map<string, number>());
   const syncedGrocery = useRef(new Map<string, number>());
+  const syncedPlan = useRef(new Map<string, number>());
+  const syncedPlanStatus = useRef(new Map<string, number>());
+  const mealPlanRef = useRef<PlannedMeal[]>([]);
+  const mealPlanDaysRef = useRef<Record<string, PlanDayStatus>>({});
+  const mealPlanSlotsRef = useRef<Record<string, PlanDayStatus>>({});
   const [syncTick, setSyncTick] = useState(0); // bumps when tombstones change
+  /** updatedAt of the preferences copy the account has (lib/preferencesSync.ts). */
+  const prefsSyncedAt = useRef(0);
   useEffect(() => {
     favoritesRef.current = favorites;
   }, [favorites]);
@@ -267,7 +312,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPreferences(DEFAULT_PREFERENCES);
     setFavorites([]);
     setHistory([]);
-    setHasOnboarded(false);
+    setOnboardedAt(null);
+    setPrefsUpdatedAt(0);
+    setPreferencesChecked(false);
+    prefsSyncedAt.current = 0;
     setSettings(DEFAULT_SETTINGS);
     setGrocery([]);
     setRecentGameRecipes([]);
@@ -277,9 +325,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setMealPlanSlots({});
     setBirthDateState(null);
     setBirthDateChecked(false);
-    syncMeta.current = { lastSyncAt: null, pantryTombstones: [], groceryTombstones: [] };
+    syncMeta.current = { ...EMPTY_SYNC_META, planStatusUpdatedAt: {} };
     syncedPantry.current = new Map();
     syncedGrocery.current = new Map();
+    syncedPlan.current = new Map();
+    syncedPlanStatus.current = new Map();
 
     if (!userId) return; // logged out: stay on defaults, gate handles routing
 
@@ -324,7 +374,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         if (data[KEYS.favorites]) setFavorites(JSON.parse(data[KEYS.favorites]!));
         if (data[KEYS.history]) setHistory(JSON.parse(data[KEYS.history]!));
-        if (data[KEYS.onboarded]) setHasOnboarded(JSON.parse(data[KEYS.onboarded]!) === true);
+        // Onboarding: newer installs save when it finished; older ones only
+        // saved a true/false flag. A legacy "true" counts as finished at an
+        // unknown time (0), so an account copy with a real timestamp wins.
+        const legacyOnboarded = data[KEYS.onboarded] ? JSON.parse(data[KEYS.onboarded]!) === true : false;
+        const meta: { updatedAt?: number; onboardedAt?: number | null } = data[KEYS.prefsMeta]
+          ? JSON.parse(data[KEYS.prefsMeta]!)
+          : {};
+        if (meta.onboardedAt !== undefined) setOnboardedAt(meta.onboardedAt);
+        else if (legacyOnboarded) setOnboardedAt(0);
+        setPrefsUpdatedAt(meta.updatedAt ?? 0);
         if (data[KEYS.settings]) setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(data[KEYS.settings]!) });
       } catch (e) {
         // Corrupt or missing storage: fall back to defaults rather than crash.
@@ -353,7 +412,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => persist('preferences', preferences), [preferences, persist]);
   useEffect(() => persist('favorites', favorites), [favorites, persist]);
   useEffect(() => persist('history', history), [history, persist]);
+  // The boolean is still written so an older build of the app reads it.
   useEffect(() => persist('onboarded', hasOnboarded), [hasOnboarded, persist]);
+  useEffect(() => persist('prefsMeta', { updatedAt: prefsUpdatedAt, onboardedAt }), [prefsUpdatedAt, onboardedAt, persist]);
   useEffect(() => persist('settings', settings), [settings, persist]);
   useEffect(() => persist('grocery', grocery), [grocery, persist]);
   useEffect(() => persist('recentGame', recentGameRecipes), [recentGameRecipes, persist]);
@@ -449,9 +510,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         pantryDeletes.forEach(id => syncedPantry.current.delete(id));
         groceryDeletes.forEach(id => syncedGrocery.current.delete(id));
         syncMeta.current = {
+          ...syncMeta.current,
           lastSyncAt: Date.now(),
-          pantryTombstones: meta.pantryTombstones.filter(id => !pantryDeletes.includes(id)),
-          groceryTombstones: meta.groceryTombstones.filter(id => !groceryDeletes.includes(id)),
+          pantryTombstones: syncMeta.current.pantryTombstones.filter(id => !pantryDeletes.includes(id)),
+          groceryTombstones: syncMeta.current.groceryTombstones.filter(id => !groceryDeletes.includes(id)),
         };
         setSyncTick(t => t + 1);
       } catch (e) {
@@ -461,20 +523,195 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [pantry, grocery, syncTick, hydrated, userId]);
 
-  const tombstone = useCallback((table: 'pantry' | 'grocery', ids: string[]) => {
+  const tombstone = useCallback((table: 'pantry' | 'grocery' | 'plan' | 'planStatus', ids: string[]) => {
     if (ids.length === 0) return;
     const meta = syncMeta.current;
-    syncMeta.current =
-      table === 'pantry'
-        ? { ...meta, pantryTombstones: [...new Set([...meta.pantryTombstones, ...ids])] }
-        : { ...meta, groceryTombstones: [...new Set([...meta.groceryTombstones, ...ids])] };
+    const key = { pantry: 'pantryTombstones', grocery: 'groceryTombstones', plan: 'planTombstones', planStatus: 'planStatusTombstones' }[table] as
+      'pantryTombstones' | 'groceryTombstones' | 'planTombstones' | 'planStatusTombstones';
+    syncMeta.current = { ...meta, [key]: [...new Set([...meta[key], ...ids])] };
+    setSyncTick(t => t + 1);
+  }, []);
+
+  // ---------- Week plan sync (Supabase) ----------
+  // Same rhythm as the pantry: pull on sign-in / foreground, push ~1s after
+  // the last change, newest row wins (lib/planSync.ts). Day/slot statuses
+  // travel as rows keyed 'day:<date>' / 'slot:<date>|<slot>'.
+
+  const pullingPlan = useRef(false);
+  const pullPlanNow = useCallback(async () => {
+    if (!hydrated || !userId || !planSyncAvailable() || pullingPlan.current) return;
+    pullingPlan.current = true;
+    try {
+      const remote = await pullPlan();
+      if (!remote) return;
+      const meta = syncMeta.current;
+      const mergedMeals = mergeRows(mealPlanRef.current, remote.meals, {
+        tombstones: new Set(meta.planTombstones),
+        lastSyncAt: meta.planLastSyncAt,
+      });
+      const localStatuses = statusRows(mealPlanDaysRef.current, mealPlanSlotsRef.current, meta.planStatusUpdatedAt);
+      const mergedStatuses = mergeRows(localStatuses, remote.statuses, {
+        tombstones: new Set(meta.planStatusTombstones),
+        lastSyncAt: meta.planLastSyncAt,
+      });
+      syncedPlan.current = new Map(remote.meals.map(r => [r.id, r.updatedAt ?? 0]));
+      syncedPlanStatus.current = new Map(remote.statuses.map(r => [r.id, r.updatedAt ?? 0]));
+      const maps = statusMaps(mergedStatuses);
+      syncMeta.current = { ...syncMeta.current, planStatusUpdatedAt: { ...meta.planStatusUpdatedAt, ...maps.updatedAt } };
+      setMealPlan(mergedMeals);
+      setMealPlanDays(maps.days);
+      setMealPlanSlots(maps.slots);
+      setSyncTick(t => t + 1);
+    } catch (e) {
+      console.warn('BiteWise: week-plan sync (download) failed', e);
+    } finally {
+      pullingPlan.current = false;
+    }
+  }, [hydrated, userId]);
+
+  useEffect(() => {
+    pullPlanNow();
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') pullPlanNow();
+    });
+    return () => sub.remove();
+  }, [pullPlanNow]);
+
+  useEffect(() => {
+    if (!hydrated || !userId || !planSyncAvailable()) return;
+    const timer = setTimeout(async () => {
+      const meta = syncMeta.current;
+      const mealUpserts = changedRows(mealPlan, syncedPlan.current);
+      const statuses = statusRows(mealPlanDays, mealPlanSlots, meta.planStatusUpdatedAt);
+      const statusUpserts = changedRows(statuses, syncedPlanStatus.current);
+      const mealDeletes = [...meta.planTombstones];
+      const statusDeletes = [...meta.planStatusTombstones];
+      if (!mealUpserts.length && !statusUpserts.length && !mealDeletes.length && !statusDeletes.length) return;
+      try {
+        const ok = await pushPlan({ mealUpserts, mealDeletes, statusUpserts, statusDeletes });
+        if (!ok) return;
+        mealUpserts.forEach(m => syncedPlan.current.set(m.id, m.updatedAt ?? 0));
+        statusUpserts.forEach((s: StatusRow) => syncedPlanStatus.current.set(s.id, s.updatedAt ?? 0));
+        mealDeletes.forEach(id => syncedPlan.current.delete(id));
+        statusDeletes.forEach(id => syncedPlanStatus.current.delete(id));
+        syncMeta.current = {
+          ...syncMeta.current,
+          planLastSyncAt: Date.now(),
+          planTombstones: syncMeta.current.planTombstones.filter(id => !mealDeletes.includes(id)),
+          planStatusTombstones: syncMeta.current.planStatusTombstones.filter(id => !statusDeletes.includes(id)),
+        };
+        setSyncTick(t => t + 1);
+      } catch (e) {
+        console.warn('BiteWise: week-plan sync (upload) failed', e);
+      }
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [mealPlan, mealPlanDays, mealPlanSlots, syncTick, hydrated, userId]);
+
+  /** Remember when a day/slot status changed, and tombstone it when cleared. */
+  const stampStatus = useCallback((key: string, status: PlanDayStatus) => {
+    const meta = syncMeta.current;
+    if (status === 'cook') {
+      const { [key]: _gone, ...rest } = meta.planStatusUpdatedAt;
+      syncMeta.current = { ...meta, planStatusUpdatedAt: rest, planStatusTombstones: [...new Set([...meta.planStatusTombstones, key])] };
+    } else {
+      syncMeta.current = {
+        ...meta,
+        planStatusUpdatedAt: { ...meta.planStatusUpdatedAt, [key]: Date.now() },
+        planStatusTombstones: meta.planStatusTombstones.filter(k => k !== key),
+      };
+    }
     setSyncTick(t => t + 1);
   }, []);
 
   // ---------- Onboarding ----------
 
-  const completeOnboarding = useCallback(() => setHasOnboarded(true), []);
-  const resetOnboarding = useCallback(() => setHasOnboarded(false), []);
+  const completeOnboarding = useCallback(() => {
+    const now = Date.now();
+    setOnboardedAt(now);
+    setPrefsUpdatedAt(now);
+  }, []);
+  const resetOnboarding = useCallback(() => {
+    setOnboardedAt(null);
+    setPrefsUpdatedAt(Date.now());
+  }, []);
+
+  // ---------- Preferences & onboarding sync (Supabase) ----------
+  // Once per sign-in, after local data is loaded: compare this device's
+  // copy with the account's. The newer one wins (lib/preferencesSync.ts).
+  // Changes made here are uploaded about a second after the last edit.
+
+  const preferencesRef = useRef<UserPreferences>(DEFAULT_PREFERENCES);
+  useEffect(() => {
+    preferencesRef.current = preferences;
+  }, [preferences]);
+  const onboardedAtRef = useRef<number | null>(null);
+  useEffect(() => {
+    onboardedAtRef.current = onboardedAt;
+  }, [onboardedAt]);
+  const prefsUpdatedAtRef = useRef(0);
+  useEffect(() => {
+    prefsUpdatedAtRef.current = prefsUpdatedAt;
+  }, [prefsUpdatedAt]);
+
+  useEffect(() => {
+    if (!hydrated || !userId) return;
+    if (!preferencesSyncAvailable()) {
+      setPreferencesChecked(true);
+      return;
+    }
+    let cancelled = false;
+    // Never hold the gate for long: offline, go with what this device knows.
+    const giveUp = setTimeout(() => {
+      if (!cancelled) setPreferencesChecked(true);
+    }, 6000);
+    (async () => {
+      try {
+        const remote = await pullPreferences();
+        if (cancelled) return;
+        const local = {
+          updatedAt: prefsUpdatedAtRef.current,
+          onboardedAt: onboardedAtRef.current,
+          hasChanges: JSON.stringify(preferencesRef.current) !== JSON.stringify(DEFAULT_PREFERENCES),
+        };
+        const action = reconcilePreferences(local, remote);
+        if (action === 'adopt' && remote) {
+          setPreferences({ ...DEFAULT_PREFERENCES, ...remote.preferences });
+          setOnboardedAt(remote.onboardedAt);
+          setPrefsUpdatedAt(remote.updatedAt);
+          prefsSyncedAt.current = remote.updatedAt;
+        } else if (action === 'push') {
+          prefsSyncedAt.current = remote?.updatedAt ?? 0;
+          // An older install that finished onboarding before timestamps
+          // existed has updatedAt 0: stamp it now so the push effect below
+          // sees this device as newer and uploads it.
+          if (prefsUpdatedAtRef.current <= prefsSyncedAt.current) setPrefsUpdatedAt(Date.now());
+        } else if (remote) {
+          prefsSyncedAt.current = remote.updatedAt;
+        }
+      } catch (e) {
+        console.warn('BiteWise: preferences sync (download) failed', e);
+      } finally {
+        clearTimeout(giveUp);
+        if (!cancelled) setPreferencesChecked(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      clearTimeout(giveUp);
+    };
+  }, [hydrated, userId]);
+
+  useEffect(() => {
+    if (!hydrated || !userId || !preferencesChecked || !preferencesSyncAvailable()) return;
+    if (prefsUpdatedAt <= prefsSyncedAt.current) return; // nothing newer here
+    const timer = setTimeout(async () => {
+      const stamp = prefsUpdatedAtRef.current;
+      const ok = await pushPreferences(preferencesRef.current, onboardedAtRef.current, stamp);
+      if (ok) prefsSyncedAt.current = Math.max(prefsSyncedAt.current, stamp);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [preferences, onboardedAt, prefsUpdatedAt, preferencesChecked, hydrated, userId]);
 
   // ---------- Pantry ----------
 
@@ -593,36 +830,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ---------- Plan my week ----------
 
+  /** Replace the plan, remembering which meals disappeared so other devices drop them too. */
+  const commitPlan = useCallback((next: PlannedMeal[]) => {
+    const nextIds = new Set(next.map(m => m.id));
+    const removed = mealPlanRef.current.filter(m => !nextIds.has(m.id)).map(m => m.id);
+    mealPlanRef.current = next; // so back-to-back calls in one tick see each other
+    setMealPlan(next);
+    tombstone('plan', removed);
+  }, [tombstone]);
+
   const planMeals = useCallback((entries: Omit<PlannedMeal, 'id' | 'addedAt'>[]) => {
     if (entries.length === 0) return;
     const now = Date.now();
-    const added = entries.map((entry, index) => ({
+    const added: PlannedMeal[] = entries.map((entry, index) => ({
       ...entry,
       servings: entry.servings ?? Math.max(1, preferences.householdSize),
       mealServings: entry.mealServings ?? Math.min(entry.servings ?? Math.max(1, preferences.householdSize), Math.max(1, preferences.householdSize)),
       id: `${now}-${index}-${Math.random().toString(36).slice(2, 6)}`,
       addedAt: now,
+      updatedAt: now,
     }));
-    setMealPlan(prev => {
-      const replacedSlots = new Set(added.map(meal => planSlotKey(meal.date, meal.slot)));
-      const replacedSources = new Set(
-        prev
-          .filter(meal => replacedSlots.has(planSlotKey(meal.date, meal.slot)))
-          .map(meal => `${meal.date}|${meal.slot}|${meal.recipeId}`)
-      );
-      const kept = prev.filter(meal =>
-        !replacedSlots.has(planSlotKey(meal.date, meal.slot)) &&
-        !(meal.leftoverSourceKey && replacedSources.has(meal.leftoverSourceKey))
-      );
-      const working = [...kept, ...added];
-      const leftovers = added.flatMap(meal =>
-        rolloverLeftovers(meal, working, preferences.householdSize, mealPlanDays, mealPlanSlots, now)
-      );
-      return [...working, ...leftovers];
-    });
+    const prev = mealPlanRef.current;
+    const replacedSlots = new Set(added.map(meal => planSlotKey(meal.date, meal.slot)));
+    const replacedSources = new Set(
+      prev
+        .filter(meal => replacedSlots.has(planSlotKey(meal.date, meal.slot)))
+        .map(meal => `${meal.date}|${meal.slot}|${meal.recipeId}`)
+    );
+    const kept = prev.filter(meal =>
+      !replacedSlots.has(planSlotKey(meal.date, meal.slot)) &&
+      !(meal.leftoverSourceKey && replacedSources.has(meal.leftoverSourceKey))
+    );
+    const working = [...kept, ...added];
+    const leftovers = added
+      .flatMap(meal => rolloverLeftovers(meal, working, preferences.householdSize, mealPlanDays, mealPlanSlots, now))
+      .map(l => ({ ...l, updatedAt: l.updatedAt ?? now }));
+    commitPlan([...working, ...leftovers]);
     // Planned = chosen, so Decide for me and next week's plan suggest other things.
     setRecipeExposure(prev => addExposures(prev, entries.map(e => ({ id: e.recipeId, at: now, chosen: true }))));
-  }, [mealPlanDays, mealPlanSlots, preferences.householdSize]);
+  }, [mealPlanDays, mealPlanSlots, preferences.householdSize, commitPlan]);
 
   const planMeal = useCallback(
     (
@@ -654,98 +900,101 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [planMeals, preferences.householdSize]
   );
 
-  const unplanMeal = useCallback((id: string) => setMealPlan(prev => {
+  const unplanMeal = useCallback((id: string) => {
+    const prev = mealPlanRef.current;
     const removed = prev.find(meal => meal.id === id);
-    if (!removed) return prev;
+    if (!removed) return;
     const sourceKey = `${removed.date}|${removed.slot}|${removed.recipeId}`;
-    return prev.filter(meal => meal.id !== id && !(meal.leftoverSourceKey === sourceKey && !removed.isLeftovers));
-  }), []);
+    commitPlan(prev.filter(meal => meal.id !== id && !(meal.leftoverSourceKey === sourceKey && !removed.isLeftovers)));
+  }, [commitPlan]);
 
   const unplanMeals = useCallback((entries: { date: string; slot: PlanSlot; recipeId: string }[]) => {
     const keys = new Set(entries.map(entry => `${entry.date}|${entry.slot}|${entry.recipeId}`));
-    setMealPlan(prev => prev.filter(meal =>
+    commitPlan(mealPlanRef.current.filter(meal =>
       !keys.has(`${meal.date}|${meal.slot}|${meal.recipeId}`) &&
       !(meal.leftoverSourceKey && keys.has(meal.leftoverSourceKey))
     ));
-  }, []);
+  }, [commitPlan]);
 
   const clearMealPlanRange = useCallback((startDate: string, endDate: string) => {
-    const cleared = clearPlanRange(mealPlan, mealPlanDays, mealPlanSlots, startDate, endDate);
-    setMealPlan(cleared.meals);
+    const cleared = clearPlanRange(mealPlanRef.current, mealPlanDays, mealPlanSlots, startDate, endDate);
+    commitPlan(cleared.meals);
+    // Statuses that went away in the range are deletions for other devices.
+    Object.keys(mealPlanDays).filter(d => !(d in cleared.dayStatuses)).forEach(d => stampStatus(`day:${d}`, 'cook'));
+    Object.keys(mealPlanSlots).filter(k => !(k in cleared.slotStatuses)).forEach(k => stampStatus(`slot:${k}`, 'cook'));
     setMealPlanDays(cleared.dayStatuses);
     setMealPlanSlots(cleared.slotStatuses);
-  }, [mealPlan, mealPlanDays, mealPlanSlots]);
+  }, [mealPlanDays, mealPlanSlots, commitPlan, stampStatus]);
 
-  const toggleMealCooked = useCallback(
-    (id: string) => setMealPlan(prev => prev.map(m => (m.id === id ? { ...m, cooked: !m.cooked } : m))),
-    []
-  );
+  const toggleMealCooked = useCallback((id: string) => {
+    const now = Date.now();
+    commitPlan(mealPlanRef.current.map(m => (m.id === id ? { ...m, cooked: !m.cooked, updatedAt: now } : m)));
+  }, [commitPlan]);
 
   const updateMealServings = useCallback((id: string, servings: number) => {
     const nextServings = Math.max(1, Math.min(20, Math.round(servings)));
-    setMealPlan(prev => {
-      const source = prev.find(meal => meal.id === id);
-      if (!source || source.isLeftovers) return prev;
-      if ((mealPlanDays[source.date] && mealPlanDays[source.date] !== 'cook') ||
-        (mealPlanSlots[planSlotKey(source.date, source.slot)] && mealPlanSlots[planSlotKey(source.date, source.slot)] !== 'cook')) return prev;
-      const sourceKey = `${source.date}|${source.slot}|${source.recipeId}`;
-      const kept = prev.filter(meal => meal.leftoverSourceKey !== sourceKey);
-      const updated = {
-        ...source,
-        servings: nextServings,
-        mealServings: Math.min(nextServings, Math.max(1, preferences.householdSize)),
-      };
-      const working = kept.map(meal => meal.id === id ? updated : meal);
-      return [
-        ...working,
-        ...rolloverLeftovers(updated, working, preferences.householdSize, mealPlanDays, mealPlanSlots),
-      ];
-    });
-  }, [mealPlanDays, mealPlanSlots, preferences.householdSize]);
+    const prev = mealPlanRef.current;
+    const source = prev.find(meal => meal.id === id);
+    if (!source || source.isLeftovers) return;
+    if ((mealPlanDays[source.date] && mealPlanDays[source.date] !== 'cook') ||
+      (mealPlanSlots[planSlotKey(source.date, source.slot)] && mealPlanSlots[planSlotKey(source.date, source.slot)] !== 'cook')) return;
+    const now = Date.now();
+    const sourceKey = `${source.date}|${source.slot}|${source.recipeId}`;
+    const kept = prev.filter(meal => meal.leftoverSourceKey !== sourceKey);
+    const updated: PlannedMeal = {
+      ...source,
+      servings: nextServings,
+      mealServings: Math.min(nextServings, Math.max(1, preferences.householdSize)),
+      updatedAt: now,
+    };
+    const working = kept.map(meal => meal.id === id ? updated : meal);
+    commitPlan([
+      ...working,
+      ...rolloverLeftovers(updated, working, preferences.householdSize, mealPlanDays, mealPlanSlots, now).map(l => ({ ...l, updatedAt: l.updatedAt ?? now })),
+    ]);
+  }, [mealPlanDays, mealPlanSlots, preferences.householdSize, commitPlan]);
 
   const setPlanDayStatus = useCallback((date: string, status: PlanDayStatus) => {
-    const sources = mealPlan.filter(meal => meal.date === date && !meal.isLeftovers);
+    const prev = mealPlanRef.current;
+    const now = Date.now();
+    const sources = prev.filter(meal => meal.date === date && !meal.isLeftovers);
     const sourceKeys = new Set(sources.map(meal => `${meal.date}|${meal.slot}|${meal.recipeId}`));
     const nextDayStatuses = { ...mealPlanDays };
     if (status === 'cook') delete nextDayStatuses[date];
     else nextDayStatuses[date] = status;
-    setMealPlan(prev => {
-      const base = prev.filter(meal => !(meal.leftoverSourceKey && sourceKeys.has(meal.leftoverSourceKey)));
-      if (status !== 'cook') return base;
-      return sources.reduce((working, source) => {
-        if (mealPlanSlots[planSlotKey(date, source.slot)] && mealPlanSlots[planSlotKey(date, source.slot)] !== 'cook') return working;
-        return [...working, ...rolloverLeftovers(source, working, preferences.householdSize, nextDayStatuses, mealPlanSlots)];
-      }, base);
-    });
-    setMealPlanDays(prev => {
-      const next = { ...prev };
-      if (status === 'cook') delete next[date];
-      else next[date] = status;
-      return next;
-    });
-  }, [mealPlan, mealPlanSlots, preferences.householdSize]);
+    const base = prev.filter(meal => !(meal.leftoverSourceKey && sourceKeys.has(meal.leftoverSourceKey)));
+    const next = status !== 'cook'
+      ? base
+      : sources.reduce((working, source) => {
+          if (mealPlanSlots[planSlotKey(date, source.slot)] && mealPlanSlots[planSlotKey(date, source.slot)] !== 'cook') return working;
+          return [...working, ...rolloverLeftovers(source, working, preferences.householdSize, nextDayStatuses, mealPlanSlots, now).map(l => ({ ...l, updatedAt: l.updatedAt ?? now }))];
+        }, base);
+    commitPlan(next);
+    setMealPlanDays(nextDayStatuses);
+    stampStatus(`day:${date}`, status);
+  }, [mealPlanDays, mealPlanSlots, preferences.householdSize, commitPlan, stampStatus]);
 
   const setPlanSlotStatus = useCallback((date: string, slot: PlanSlot, status: PlanDayStatus) => {
     const key = planSlotKey(date, slot);
-    const source = mealPlan.find(meal => meal.date === date && meal.slot === slot && !meal.isLeftovers);
+    const prev = mealPlanRef.current;
+    const now = Date.now();
+    const source = prev.find(meal => meal.date === date && meal.slot === slot && !meal.isLeftovers);
     if (source) {
       const sourceKey = `${source.date}|${source.slot}|${source.recipeId}`;
-      setMealPlan(prev => {
-        const working = prev.filter(meal => meal.leftoverSourceKey !== sourceKey);
-        if (
-          status !== 'cook' ||
-          (mealPlanDays[date] && mealPlanDays[date] !== 'cook')
-        ) return working;
-        return [...working, ...rolloverLeftovers(source, working, preferences.householdSize, mealPlanDays, { ...mealPlanSlots, [key]: 'cook' })];
-      });
+      const working = prev.filter(meal => meal.leftoverSourceKey !== sourceKey);
+      const next = (status !== 'cook' || (mealPlanDays[date] && mealPlanDays[date] !== 'cook'))
+        ? working
+        : [...working, ...rolloverLeftovers(source, working, preferences.householdSize, mealPlanDays, { ...mealPlanSlots, [key]: 'cook' }, now).map(l => ({ ...l, updatedAt: l.updatedAt ?? now }))];
+      commitPlan(next);
     }
-    setMealPlanSlots(prev => {
-      const next = { ...prev };
+    setMealPlanSlots(prevSlots => {
+      const next = { ...prevSlots };
       if (status === 'cook') delete next[key];
       else next[key] = status;
       return next;
     });
-  }, [mealPlan, mealPlanDays, mealPlanSlots, preferences.householdSize]);
+    stampStatus(`slot:${key}`, status);
+  }, [mealPlanDays, mealPlanSlots, preferences.householdSize, commitPlan, stampStatus]);
 
   const noteRecipesShown = useCallback((ids: string[], chosen = false) => {
     if (ids.length === 0) return;
@@ -854,6 +1103,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // allowAlcohol comes from the birthday only; it can't be switched on here.
     const { allowAlcohol: _ignored, ...rest } = patch;
     setPreferences(prev => ({ ...prev, ...rest }));
+    setPrefsUpdatedAt(Date.now()); // so the account copy knows this device is newer
   }, []);
 
   // ---------- Age safeguard ----------
@@ -954,6 +1204,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value: AppContextValue = {
     hydrated,
     hasOnboarded,
+    preferencesChecked,
     completeOnboarding,
     resetOnboarding,
     pantry,

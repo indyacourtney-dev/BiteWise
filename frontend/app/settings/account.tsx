@@ -82,7 +82,7 @@ export default function AccountScreen() {
 
           <SettingsSection
             title="Birthday"
-            footer="Locked once saved, because it decides whether recipes made with alcohol are shown (21+). If it's wrong, contact the BiteWise team."
+            footer="Locked once saved. If it's wrong, contact the BiteWise team."
           >
             <View style={[s.padded, { flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
               <FontAwesome name="lock" size={15} color={COLORS.textMuted} />

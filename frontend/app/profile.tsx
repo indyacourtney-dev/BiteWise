@@ -12,21 +12,28 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import Constants from 'expo-constants';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import Avatar from '@/components/Avatar';
 import { SettingsHeader, SettingsRow, SettingsSection, settingsStyles } from '@/components/SettingsUI';
+import { Pill } from '@/components/ui';
 import { COLORS } from '@/constants/Colors';
+import { ALLERGEN_OPTIONS, CUISINE_OPTIONS, MORE_ALLERGEN_OPTIONS, TASTE_OPTIONS, tasteIdsForTags } from '@/constants/preferenceOptions';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { configured } from '@/lib/supabase';
 import { removeAvatar, uploadAvatar } from '@/lib/accountApi';
 import { setMyProfileCache, useMyProfile } from '@/hooks/useMyProfile';
+import { ageOn } from '@/utils/age';
+import { dietGoals, dietLabel, dietRules } from '@/utils/diets';
+import { FOCUS_INFO, GOAL_LABELS, dailyTargets, formatHeight, formatWeight, isCompleteGoals } from '@/utils/goals';
+import { GOAL_ICONS } from '@/constants/goalIcons';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
-  const { preferences, settings, favorites } = useApp();
+  const { preferences, settings, favorites, birthDate } = useApp();
   const { profile } = useMyProfile();
 
   const [sheet, setSheet] = useState(false);
@@ -82,6 +89,25 @@ export default function ProfileScreen() {
 
   const textSizeLabel = { 1: 'Default', 1.15: 'Large', 1.3: 'Larger', 1.5: 'Largest' }[settings.textScale];
 
+  // "Your tastes" at a glance. Never = hard rules; Loves / Less often = soft.
+  const allergenLabel = (k: string) => [...ALLERGEN_OPTIONS, ...MORE_ALLERGEN_OPTIONS].find(o => o.key === k)?.label ?? k;
+  // Never = allergies and the foods they banned outright. Watch out = how
+  // they eat: diet rules (always respected) and health goals (come first).
+  const never = [
+    ...preferences.avoidAllergens.map(allergenLabel),
+    ...(preferences.customAllergies ?? []),
+    ...(preferences.customAvoid ?? []),
+  ];
+  const watchOut = [...dietRules(preferences).map(dietLabel), ...dietGoals(preferences).map(dietLabel)];
+  const loves = [
+    ...tasteIdsForTags(preferences.favoriteTags).map(id => TASTE_OPTIONS.find(o => o.id === id)?.label ?? id),
+    ...preferences.cuisines.map(c => CUISINE_OPTIONS.find(o => o.id === c || o.label === c)?.label ?? c),
+    ...(preferences.customLoves ?? []),
+  ];
+  const lessOften = tasteIdsForTags(preferences.dislikedTags).map(id => TASTE_OPTIONS.find(o => o.id === id)?.label ?? id);
+  const spice = preferences.spiceTolerance ? `Spice: ${preferences.spiceTolerance}` : null;
+  const goalDaily = isCompleteGoals(preferences.goals) ? dailyTargets(preferences.goals, birthDate ? ageOn(birthDate) : 30) : null;
+
   return (
     <SafeAreaView style={settingsStyles.safeArea} edges={['top']}>
       <SettingsHeader title="Profile & settings" />
@@ -94,32 +120,66 @@ export default function ProfileScreen() {
             accessibilityRole="button"
             accessibilityLabel={profile?.avatarUrl ? 'Change profile photo' : 'Add a profile photo'}
           >
-            <Avatar url={profile?.avatarUrl} emoji={profile?.avatarEmoji} size={96} label="Your profile photo" />
+            <Avatar url={profile?.avatarUrl} emoji={profile?.avatarEmoji} size={72} label="Your profile photo" />
             <View style={styles.cameraBadge}>
               {busy ? <ActivityIndicator color={COLORS.darkNavy} size="small" /> : <Text style={styles.cameraIcon}>📷</Text>}
             </View>
           </TouchableOpacity>
-          <Text style={styles.name}>{displayName}</Text>
-          {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
-          <Text style={styles.stats}>❤️ {favorites.length} favorite{favorites.length === 1 ? '' : 's'}</Text>
-          {error ? <Text style={[settingsStyles.error, styles.center]}>{error}</Text> : null}
+          <View style={styles.heroText}>
+            <Text style={styles.name}>{displayName}</Text>
+            <Text style={styles.email} numberOfLines={1}>
+              {[user?.email, preferences.householdSize === 1 ? 'cooking for 1' : `cooking for ${preferences.householdSize}`].filter(Boolean).join(' · ')}
+            </Text>
+          </View>
         </View>
+        {error ? <Text style={[settingsStyles.error, styles.center]}>{error}</Text> : null}
+
+        {/* Your tastes at a glance */}
+        <View style={styles.tastes}>
+          <View style={styles.tastesHead}>
+            <Text style={styles.tastesTitle}>Your tastes</Text>
+            <TouchableOpacity onPress={() => router.push('/settings/preferences')} accessibilityRole="button" accessibilityLabel="Change your tastes">
+              <Text style={styles.tastesChange}>Change</Text>
+            </TouchableOpacity>
+          </View>
+          <TasteRow label="Never" tone="red" items={never} empty="No allergies or banned foods" />
+          <TasteRow label="Watch out" tone="gold" items={watchOut} empty="No diets or health goals" />
+          <TasteRow label="Loves" tone="green" items={loves} empty="Tell us what you enjoy" />
+          <TasteRow label="Less often" tone="muted" items={[...lessOften, ...(spice ? [spice] : [])]} empty="Nothing to go easy on" />
+          <Text style={styles.tastesNote}>“Never” is a hard rule. “Watch out” shapes every suggestion: diets are always respected and health goals come first. “Less often” still comes up now and then — the app learns from what you cook.</Text>
+        </View>
+
+        {/* Your goal (optional) */}
+        {goalDaily && preferences.goals ? (
+          <TouchableOpacity style={styles.goalCard} onPress={() => router.push('/settings/goals')} accessibilityRole="button" accessibilityLabel="Change your goal">
+            <View style={styles.goalIcon}><FontAwesome name={GOAL_ICONS[preferences.goals.goal]} size={16} color={COLORS.darkNavy} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.goalTitle}>{GOAL_LABELS[preferences.goals.goal]}</Text>
+              <Text style={styles.goalLine}>~{goalDaily.calories.toLocaleString('en-US')} cal · {goalDaily.protein} g protein a day · {formatHeight(preferences.goals.heightCm, preferences.goals.units)} · {formatWeight(preferences.goals.weightKg, preferences.goals.units)}</Text>
+              <Text style={styles.goalNote}>
+                {preferences.goals.focuses?.length ? `Also: ${preferences.goals.focuses.map(f => FOCUS_INFO[f].label.toLowerCase()).join(', ')}` : 'Picks and portion tips lean this way.'}
+              </Text>
+            </View>
+            <Text style={styles.tastesChange}>Change</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={[styles.goalCard, styles.goalCardEmpty]} onPress={() => router.push('/settings/goals')} accessibilityRole="button">
+            <View style={styles.goalIcon}><FontAwesome name="heartbeat" size={16} color={COLORS.darkNavy} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.goalTitle}>Set a fitness goal</Text>
+              <Text style={styles.goalLine}>Lose weight, gain muscle or stay put — meal picks and portions follow. Optional.</Text>
+            </View>
+            <FontAwesome name="chevron-right" size={13} color={COLORS.textMuted} />
+          </TouchableOpacity>
+        )}
 
         <SettingsSection title="Account">
           <SettingsRow icon="user" label="Name, email & password" onPress={() => router.push('/settings/account')} last />
         </SettingsSection>
 
         <SettingsSection title="Food">
-          <SettingsRow
-            icon="cutlery"
-            label="Food preferences"
-            value={[
-              preferences.avoidAllergens.length + (preferences.customAllergies?.length ?? 0) > 0 ? 'allergies set' : '',
-              preferences.dietary.length ? `${preferences.dietary.length} diet${preferences.dietary.length === 1 ? '' : 's'}` : '',
-            ].filter(Boolean).join(' · ') || undefined}
-            onPress={() => router.push('/settings/preferences')}
-            last
-          />
+          <SettingsRow icon="cutlery" label="Food preferences" value={spice ?? undefined} onPress={() => router.push('/settings/preferences')} />
+          <SettingsRow icon="heart" label="Saved recipes" value={String(favorites.length)} onPress={() => router.push('/favorites')} last />
         </SettingsSection>
 
         <SettingsSection title="App">
@@ -127,7 +187,9 @@ export default function ProfileScreen() {
           <SettingsRow icon="lock" label="Privacy & data" onPress={() => router.push('/settings/privacy')} last />
         </SettingsSection>
 
-        <SettingsSection title="About" footer={`BiteWise ${Constants.expoConfig?.version ?? ''} · ${Platform.OS}`}>
+        <SettingsSection title="Help" footer={`BiteWise ${Constants.expoConfig?.version ?? ''} · ${Platform.OS}`}>
+          <SettingsRow icon="question-circle" label="Help & how it works" onPress={() => router.push('/help')} />
+          <SettingsRow icon="play-circle" label="Take the tour again" onPress={() => router.push('/tour')} />
           <SettingsRow icon="info-circle" label="How BiteWise picks meals" onPress={() => router.push('/settings/about')} last />
         </SettingsSection>
 
@@ -154,6 +216,23 @@ export default function ProfileScreen() {
   );
 }
 
+function TasteRow({ label, tone, items, empty }: { label: string; tone: 'red' | 'gold' | 'green' | 'muted'; items: string[]; empty: string }) {
+  const color = { red: COLORS.redText, gold: COLORS.textGold, green: COLORS.green, muted: COLORS.textMuted }[tone];
+  const pillTone = { red: 'red' as const, gold: 'gold' as const, green: 'green' as const, muted: 'blue' as const }[tone];
+  const unique = Array.from(new Set(items)).slice(0, 8);
+  return (
+    <View style={styles.tasteRow}>
+      <Text style={[styles.tasteLabel, { color }]}>{label}</Text>
+      <View style={styles.tastePills}>
+        {unique.length === 0
+          ? <Text style={styles.tasteEmpty}>{empty}</Text>
+          : unique.map(t => <Pill key={t} label={t} tone={pillTone} />)}
+        {items.length > 8 ? <Text style={styles.tasteEmpty}>+{items.length - 8} more</Text> : null}
+      </View>
+    </View>
+  );
+}
+
 function SheetButton({ label, onPress, danger, muted }: { label: string; onPress: () => void; danger?: boolean; muted?: boolean }) {
   return (
     <TouchableOpacity style={styles.sheetBtn} onPress={onPress} accessibilityRole="button">
@@ -163,16 +242,31 @@ function SheetButton({ label, onPress, danger, muted }: { label: string; onPress
 }
 
 const styles = StyleSheet.create({
-  hero: { alignItems: 'center', paddingTop: 8, gap: 4 },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingTop: 8 },
+  heroText: { flex: 1, gap: 2 },
+  goalCard: { marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.cardWhite, borderRadius: 18, borderWidth: 1, borderColor: COLORS.borderLight, padding: 14 },
+  goalCardEmpty: { backgroundColor: COLORS.lightYellow, borderColor: COLORS.yellowBorder },
+  goalIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: COLORS.goldYellow, alignItems: 'center', justifyContent: 'center' },
+  goalTitle: { fontSize: 15, fontWeight: '700', color: COLORS.darkNavy },
+  goalLine: { fontSize: 12.5, lineHeight: 17, color: COLORS.textMuted, marginTop: 2 },
+  goalNote: { fontSize: 11.5, color: COLORS.textGold, fontWeight: '600', marginTop: 3 },
+  tastes: { marginTop: 18, backgroundColor: COLORS.cardWhite, borderRadius: 18, borderWidth: 1, borderColor: COLORS.borderLight, padding: 16, gap: 12 },
+  tastesHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tastesTitle: { fontSize: 15, fontWeight: '700', color: COLORS.darkNavy },
+  tastesChange: { fontSize: 13, fontWeight: '700', color: COLORS.textGold },
+  tasteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  tasteLabel: { width: 72, fontSize: 12, fontWeight: '700', paddingTop: 5 },
+  tastePills: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
+  tasteEmpty: { fontSize: 12, color: COLORS.textMuted, paddingTop: 4 },
+  tastesNote: { fontSize: 12, lineHeight: 17, color: COLORS.textMuted },
   cameraBadge: {
     position: 'absolute', right: -2, bottom: -2, width: 34, height: 34, borderRadius: 17,
     backgroundColor: COLORS.goldYellow, alignItems: 'center', justifyContent: 'center',
     borderWidth: 3, borderColor: COLORS.background,
   },
   cameraIcon: { fontSize: 15 },
-  name: { fontSize: 22, fontWeight: '700', color: COLORS.darkNavy, marginTop: 10 },
-  email: { fontSize: 14, color: COLORS.textMuted },
-  stats: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
+  name: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 22, color: COLORS.darkNavy },
+  email: { fontSize: 13, color: COLORS.textMuted },
   center: { textAlign: 'center', marginTop: 8 },
   backdrop: { flex: 1, backgroundColor: 'rgba(28,42,58,0.45)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: COLORS.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 16, paddingBottom: 36 },

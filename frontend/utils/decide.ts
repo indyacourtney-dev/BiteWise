@@ -20,9 +20,12 @@
 // always the top score, and each next pick avoids the kind of dish and
 // protein you just skipped. tests/decide.sim.ts measures the effect.
 
-import { favoriteOverlap, dislikeOverlap, getPantryCoverage, isPlateBalanced } from './matching';
+import { favoriteOverlap, dislikeOverlap, getPantryCoverage, isPlateBalanced, plateBalanceScore } from './matching';
+import { focusFit, goalFit, type MealGoal } from './goals';
+import { dietGoalMatch, dietGoals, dietGoalsSentence, dietLabel, dietRules } from './diets';
 import { getTotalTime } from '../constants/recipes';
 import { lovedFoodsIn } from './customFoods';
+import { CUISINE_LABELS, cuisineMatches } from './cuisine';
 import { drawOrder, recencyPenalty, type Exposure } from './variety';
 import type {
   MealType,
@@ -114,6 +117,8 @@ export interface DecideContext {
   random?: () => number;
   /** false = the old ranking (top score, tiny shuffle). Only for comparisons. */
   variety?: boolean;
+  /** Fitness goal for this meal (utils/goals.ts goalForMeal). Missing = no goal. */
+  goal?: MealGoal | null;
 }
 
 export interface Decision {
@@ -167,6 +172,38 @@ export function ratingPreferenceScore(recipe: Recipe, ratings: RecipeRatingFeedb
 
 const MIN_POOL_AFTER_CRAVING = 3;
 
+// "Foods you'd rather skip" from onboarding are a preference, not a rule:
+// a dish that hits one is suggested LESS, not never. It can come up once
+// or twice; after that it stays out of the way. Cooking it anyway is taken
+// as "actually, that's fine" and lifts the extra penalty. Allergies, diets
+// and the "never suggest" list in Profile are the hard filters, applied
+// before this ranking ever runs (utils/matching.ts passesDietaryFilter).
+export const DISLIKE_PENALTY = 10;          // per skipped chip it hits, always
+export const DISLIKE_SHOWN_PENALTY = 18;    // more, each time it's been shown before
+export const DISLIKE_MAX_SHOWINGS = 2;      // after this many showings it's out of the way
+export const DISLIKE_BACKOFF_PENALTY = 60;
+/** Points for a fully balanced plate (scaled by plateBalanceScore). */
+export const BALANCE_WEIGHT = 16;
+/**
+ * Points for carrying the person's eating goals (heart-healthy, low-sodium…),
+ * scaled by the share matched. Above balance and taste: they asked for it.
+ * Never a filter — see utils/diets.ts.
+ */
+export const DIET_GOAL_WEIGHT = 22;
+/** Points for a serving that fits the person's fitness goal (scaled by goalFit). */
+export const GOAL_WEIGHT = 14;
+/** Points for serving the person's nutrition focuses (scaled by focusFit). */
+export const FOCUS_WEIGHT = 10;
+
+export function dislikePenalty(dislikes: number, timesShown: number, everChosen: boolean): number {
+  if (dislikes <= 0) return 0;
+  let p = DISLIKE_PENALTY * dislikes;
+  if (everChosen) return p; // they made it anyway: just the mild nudge
+  p += DISLIKE_SHOWN_PENALTY * Math.min(timesShown, DISLIKE_MAX_SHOWINGS);
+  if (timesShown >= DISLIKE_MAX_SHOWINGS) p += DISLIKE_BACKOFF_PENALTY;
+  return p;
+}
+
 export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] {
   const exclude = new Set(ctx.exclude ?? []);
   let candidates = pool.filter(r => !exclude.has(r.id));
@@ -178,8 +215,9 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
   if (cravingIsFilter) candidates = craved;
 
   const prefs = ctx.preferences;
+  const rules = dietRules(prefs);
+  const goals = dietGoals(prefs);
   const favIds = new Set(ctx.favorites.map(f => f.recipeId));
-  const cuisines = prefs.cuisines.map(c => c.toLowerCase());
 
   // What they chose for this meal before: tag counts = learned taste.
   const pastRuns = ctx.history.filter(h => h.mealType === ctx.mealType && h.chosenRecipeId);
@@ -187,6 +225,15 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
   pastRuns.forEach(h => h.tags.forEach(t => learned.set(t, (learned.get(t) ?? 0) + 1)));
   const recentPicks = new Set(ctx.history.slice(0, 5).map(h => h.chosenRecipeId).filter(Boolean) as string[]);
   const everPicked = new Set(ctx.history.map(h => h.chosenRecipeId).filter(Boolean) as string[]);
+
+  // How often each recipe has been put in front of the user before, and
+  // whether they ever went with it (for the "rather skip" back-off).
+  const shownCount = new Map<string, number>();
+  const chosenBefore = new Set<string>();
+  for (const e of ctx.exposure ?? []) {
+    shownCount.set(e.id, (shownCount.get(e.id) ?? 0) + 1);
+    if (e.chosen) chosenBefore.add(e.id);
+  }
 
   const scored = candidates
     .map(recipe => {
@@ -199,7 +246,12 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
       // Taste profile from onboarding
       const loves = favoriteOverlap(recipe, prefs.favoriteTags);
       const dislikes = dislikeOverlap(recipe, prefs.dislikedTags);
-      score += loves * 8 - dislikes * 12;
+      score += loves * 8;
+      score -= dislikePenalty(
+        dislikes,
+        shownCount.get(recipe.id) ?? 0,
+        chosenBefore.has(recipe.id) || everPicked.has(recipe.id),
+      );
       if (loves >= 2) reasons.push({ weight: 7, text: 'Lines up with the foods you said you love' });
       const ratingScore = ratingPreferenceScore(recipe, ctx.ratings ?? []);
       score += ratingScore;
@@ -208,16 +260,29 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
       } else if (ratingScore <= -3) {
         reasons.push({ weight: 9, text: 'Adjusted for recipes you rated lower' });
       }
-      const cuisineHit = cuisines.find(c => recipe.tags.some(t => t.toLowerCase() === c));
+      // Cuisines: the database has no cuisine tags, so they're read off the
+      // name and ingredients (utils/cuisine.ts).
+      const cuisineHit = cuisineMatches(recipe, prefs.cuisines)[0];
       if (cuisineHit) {
         score += 6;
-        reasons.push({ weight: 6, text: `${cuisineHit[0].toUpperCase()}${cuisineHit.slice(1)}, one of your favorite cuisines` });
+        reasons.push({ weight: 6, text: `${CUISINE_LABELS[cuisineHit]}, one of your favorite cuisines` });
       }
       // Foods they told us they love (Profile)
       const loved = lovedFoodsIn(recipe, prefs);
       if (loved.length > 0) {
         score += Math.min(16, loved.length * 8);
         reasons.push({ weight: 8, text: `Has ${loved.slice(0, 2).join(' and ')}, which you love` });
+      }
+
+      // Eating goals (heart-healthy, low-sodium, blood-sugar friendly…)
+      if (goals.length > 0) {
+        const gm = dietGoalMatch(recipe, goals);
+        score += DIET_GOAL_WEIGHT * gm.share;
+        if (gm.matched.length === goals.length) {
+          reasons.push({ weight: 7.5, text: goals.length === 1 ? dietGoalsSentence(gm.matched) : `Fits all ${goals.length} of your eating goals` });
+        } else if (gm.matched.length > 0) {
+          reasons.push({ weight: 5.5, text: dietGoalsSentence(gm.matched) });
+        }
       }
 
       if (recipe.vibe === 'spicy') {
@@ -234,12 +299,29 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
         const need = cov.have.length + cov.missing.length;
         if (cov.missing.length === 0) reasons.push({ weight: 10, text: 'You have everything for it already' });
         else if (cov.percent >= 60) reasons.push({ weight: 8, text: `You already have ${cov.have.length} of ${need} ingredients` });
+        // Weaker, but still true: shows only when nothing stronger fills the card.
+        else if (cov.have.length > 0) reasons.push({ weight: 1, text: `You have ${cov.have.length} of ${need} ingredients` });
       }
 
-      // Time
+      // Time. A small nudge only: when the user asked for "quick" the
+      // craving filter already did the work, and a balanced plate (below)
+      // is worth more to them than the fastest option.
       if (total <= 30) {
-        score += ctx.mealType === 'breakfast' || ctx.mealType === 'lunch' ? 8 : 4;
-        reasons.push({ weight: 5, text: `Ready in ${total} minutes` });
+        score += ctx.mealType === 'breakfast' || ctx.mealType === 'lunch' ? 6 : 2;
+        reasons.push({ weight: 4, text: `Ready in ${total} minutes` });
+      } else {
+        reasons.push({ weight: 0.5, text: `About ${total} minutes start to finish` });
+      }
+
+      // Always-true reassurance for people with restrictions (the hard
+      // filters already ran, so these hold for every candidate). Low weight:
+      // anything specific to this recipe outranks them.
+      if (prefs.avoidAllergens.length > 0 || (prefs.customAllergies ?? []).length > 0) {
+        reasons.push({ weight: 1.5, text: 'Safe for your allergies' });
+      }
+      if (rules.length > 0) {
+        const diet = dietLabel(rules[0]).toLowerCase();
+        reasons.push({ weight: 1.2, text: rules.length > 1 ? `Fits ${diet} and your other diets` : `Fits ${diet}` });
       }
       if (prefs.preferredDifficulty && recipe.difficulty === prefs.preferredDifficulty) score += 5;
 
@@ -267,10 +349,28 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
         reasons.push({ weight: 3, text: `A home recipe from ${recipe.authorName}` });
       }
 
-      // Balanced plate (meals only, not dessert)
-      if (ctx.mealType !== 'dessert' && recipe.nutrition.calories > 0 && isPlateBalanced(recipe.plate)) {
-        score += 4;
-        reasons.push({ weight: 4, text: 'A balanced plate' });
+      // Balanced plate (meals only, not dessert). Graded, and weighted above
+      // speed: an overall balanced meal serves someone better than the
+      // quickest one. Nutrition-less community recipes neither gain nor lose.
+      if (ctx.mealType !== 'dessert' && recipe.nutrition.calories > 0) {
+        const balance = plateBalanceScore(recipe.plate);
+        score += BALANCE_WEIGHT * balance;
+        if (isPlateBalanced(recipe.plate)) reasons.push({ weight: 7, text: 'A balanced plate' });
+        else if (balance >= 0.7) reasons.push({ weight: 3, text: 'Close to a balanced plate' });
+      }
+      // Fitness goal: more protein for "gain muscle", lighter and filling
+      // for "lose weight", about-right for "maintain". A soft nudge with a
+      // reason, never a filter — portions are suggested on the recipe page.
+      if (ctx.goal && ctx.mealType !== 'dessert' && recipe.nutrition.calories > 0) {
+        const fit = goalFit(recipe, ctx.goal.kind, ctx.goal.target);
+        score += GOAL_WEIGHT * fit.score;
+        if (fit.reason && fit.score >= 0.75) reasons.push({ weight: 6.5, text: fit.reason });
+      }
+      // Nutrition focuses (more fiber, eat the rainbow, …) read off the ingredients.
+      if (ctx.goal?.focuses?.length && ctx.mealType !== 'dessert') {
+        const ff = focusFit(recipe, ctx.goal.focuses);
+        score += FOCUS_WEIGHT * ff.score;
+        if (ff.reason) reasons.push({ weight: 5, text: ff.reason });
       }
       if (!recipe.source || recipe.source === 'bitewise') score += 3;   // hand-checked recipes
 

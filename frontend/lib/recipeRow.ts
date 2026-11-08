@@ -8,6 +8,7 @@
 // know the database exists. backend/scripts also import this file.
 
 import type { Allergen, DietaryTag, MealType, Nutrition, PlateComposition, Recipe } from '../types';
+import { DRINK_EMOJI } from '../utils/drinks';
 
 /**
  * The nutrition jsonb. Curated recipes have the five Nutrition fields;
@@ -44,6 +45,8 @@ export interface RecipeRow {
   allergens_verified: boolean;
   /** Maintained by a database trigger (age safeguard). Missing until that migration runs. */
   contains_alcohol?: boolean;
+  /** 'food' | 'drink' (drinks migration). Missing = food. */
+  kind?: 'food' | 'drink';
   // Set by the cleaning pipeline (imported) or a database trigger (curated).
   all_ingredients_known?: boolean;
   nutrition_coverage?: number | null;
@@ -72,7 +75,8 @@ export function rowToRecipe(row: RecipeRow): Recipe {
   return {
     id: row.id,
     name: row.name,
-    emoji: row.emoji,
+    // Every drink shows the same glass; the per-recipe emoji is for food.
+    emoji: row.kind === 'drink' ? DRINK_EMOJI : row.emoji,
     tags: row.tags,
     vibe: row.vibe,
     plate: row.plate ?? EMPTY_PLATE,
@@ -90,6 +94,7 @@ export function rowToRecipe(row: RecipeRow): Recipe {
     mayContain: (row.may_contain ?? []) as Allergen[],
     allergensVerified: row.allergens_verified,
     ...(row.contains_alcohol ? { containsAlcohol: true } : {}),
+    ...(row.kind === 'drink' ? { kind: 'drink' as const } : {}),
     servingsEstimated: row.servings_estimated ?? false,
     mealTypes: row.meal_types?.length ? row.meal_types : undefined,
     source: row.source,

@@ -103,7 +103,7 @@ export default function FoodPreferencesScreen() {
           />
         </Section>
 
-        <Section title="Health goals" subtitle="Suggestions only include recipes that fit every goal you pick.">
+        <Section title="Health goals" subtitle="Recipes that fit these come first and say so. Nothing is ruled out, so you always have options.">
           <Chips
             options={HEALTH_OPTIONS.map(o => ({ key: o.key, label: `${o.emoji} ${o.label}`, hint: o.hint }))}
             selected={p.dietary}

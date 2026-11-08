@@ -21,6 +21,7 @@
 //   * diets: a recipe must carry every tag in preferences.dietary
 
 import { supabase } from './supabase';
+import { expandAllergens } from '../utils/matching';
 import type { Allergen, DietaryTag, MealType, PantryItem, UserPreferences } from '../types';
 
 // ============================================
@@ -93,8 +94,10 @@ function pantryNames(pantry: Pantry): string[] {
 
 // Always pass arrays (never null): the phone is the source of truth for
 // preferences, so the server must not fall back to anything else.
+// Allergens are expanded the same way the app filters (shellfish also
+// excludes molluscs), so pantry matches and suggestions never disagree.
 const prefParams = (prefs: Prefs) => ({
-  p_allergens: prefs.avoidAllergens as Allergen[],
+  p_allergens: expandAllergens(prefs.avoidAllergens) as Allergen[],
   p_dietary: prefs.dietary as DietaryTag[],
 });
 

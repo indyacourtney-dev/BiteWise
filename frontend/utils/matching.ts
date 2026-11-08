@@ -28,8 +28,11 @@
 // results rather than deleting two-thirds of the library.
 
 import { findCustomConflicts } from './customFoods';
+import { dietRules } from './diets';
 import { recipeHasAlcohol } from './alcohol';
+import { TASTE_OPTIONS } from '../constants/preferenceOptions';
 import type {
+  Allergen,
   Recipe,
   ScoredRecipe,
   PlateComposition,
@@ -123,6 +126,25 @@ export function isPlateBalanced(plate: PlateComposition): boolean {
 }
 
 /**
+ * How close a plate is to the Healthy Eating Plate, 0..1 (1 = inside every
+ * target band). Each of produce / protein / carbs loses points in
+ * proportion to how far outside its band it sits, so "almost balanced"
+ * ranks well above "all carbs" instead of both scoring zero. Used to rank
+ * picks (utils/decide.ts) and fill the week (utils/weekPlan.ts): an
+ * overall balanced meal is worth more to someone than the quickest one.
+ */
+export function plateBalanceScore(plate: PlateComposition): number {
+  const miss = (value: number, band: { min: number; max: number }) =>
+    value < band.min ? band.min - value : value > band.max ? value - band.max : 0;
+  // Percentage points outside the bands; 25 points off in total = 0.
+  const off =
+    miss(plate.produce, PLATE_TARGETS.produce) +
+    miss(plate.protein, PLATE_TARGETS.protein) +
+    miss(plate.carbs, PLATE_TARGETS.carbs);
+  return Math.max(0, Math.min(1, 1 - off / 25));
+}
+
+/**
  * A specific, actionable tip instead of a generic "add more veggies"
  * on every unbalanced plate.
  */
@@ -156,20 +178,104 @@ function normalize(s: string): string {
   return s.toLowerCase().trim();
 }
 
-/** Loose match so "Chicken Breast" in the pantry satisfies "chicken" in a recipe. */
+// Words that don't identify an ingredient ("fresh lime juice" → lime, juice).
+const INGREDIENT_NOISE = new Set([
+  'fresh', 'freshly', 'large', 'small', 'medium', 'ripe', 'chilled', 'cold', 'hot', 'warm', 'frozen',
+  'chopped', 'diced', 'sliced', 'minced', 'grated', 'shredded', 'crushed', 'ground', 'coarsely', 'finely',
+  'thinly', 'cubed', 'hulled', 'peeled', 'cooked', 'raw', 'dried', 'dry', 'whole', 'boneless', 'skinless',
+  'of', 'or', 'and', 'the', 'a', 'to', 'taste', 'for', 'your', 'choice', 'plus', 'more', 'extra', 'about',
+  'optional', 'divided', 'at', 'room', 'temperature', 'softened', 'melted', 'packed', 'lightly', 'beaten',
+]);
+
+/** "tomatoes" → "tomato", "berries" → "berry", "cloves" → "clove", "leaves" → "leaf". */
+export function singular(word: string): string {
+  if (word.length <= 3) return word;
+  if (word.endsWith('ies')) return word.slice(0, -3) + 'y';
+  if (word.endsWith('ves')) return word.slice(0, -3) + 'f';
+  if (word.endsWith('oes')) return word.slice(0, -2);
+  if (word.endsWith('ses') || word.endsWith('xes') || word.endsWith('ches') || word.endsWith('shes')) return word.slice(0, -2);
+  if (word.endsWith('ss')) return word;
+  if (word.endsWith('s')) return word.slice(0, -1);
+  return word;
+}
+
+/** The identifying words of an ingredient or pantry item, singular, lowercase. */
+export function ingredientWords(name: string): string[] {
+  const out: string[] = [];
+  for (const raw of normalize(name).replace(/\(.*?\)/g, ' ').split(/[^a-z]+/)) {
+    if (!raw || INGREDIENT_NOISE.has(raw)) continue;
+    const w = singular(raw);
+    if (!out.includes(w)) out.push(w);
+  }
+  return out;
+}
+
+/**
+ * Does one thing in the pantry cover one ingredient? Whole words only, so
+ * "Chicken Breast" covers "chicken", "Eggs" covers "egg", "Olive Oil"
+ * covers "extra-virgin olive oil" — but "Ice" doesn't cover "juice" or
+ * "rice", and "Black Beans" doesn't cover "green beans".
+ */
+export function itemCoversIngredient(itemName: string, ingredientName: string): boolean {
+  const have = ingredientWords(itemName);
+  const need = ingredientWords(ingredientName);
+  if (have.length === 0 || need.length === 0) {
+    const a = normalize(itemName);
+    const b = normalize(ingredientName);
+    return a.length > 0 && b.length > 0 && (a === b);
+  }
+  const haveSet = new Set(have);
+  const needSet = new Set(need);
+  // Every word of the shorter name appears in the longer one…
+  const needInHave = need.every(w => haveSet.has(w));
+  const haveInNeed = have.every(w => needSet.has(w));
+  if (!needInHave && !haveInNeed) return false;
+  // …unless the longer name is really a different product: "garlic" isn't
+  // "garlic powder", "rice" isn't "rice vinegar", "chicken" isn't "chicken stock".
+  const longer = need.length >= have.length ? need : have;
+  const shorter = longer === need ? have : need;
+  const head = longer[longer.length - 1];
+  if (longer.length > shorter.length && PRODUCT_WORDS.has(head) && !shorter.includes(head)) return false;
+  return true;
+}
+
+/** Last words that turn an ingredient into a different product (see itemCoversIngredient). */
+const PRODUCT_WORDS = new Set([
+  'vinegar', 'oil', 'sauce', 'paste', 'powder', 'flour', 'syrup', 'extract', 'stock', 'broth',
+  'butter', 'milk', 'cream', 'wine', 'liqueur', 'chip', 'noodle', 'seasoning', 'mix', 'starch',
+  'bread', 'crumb', 'jam', 'jelly', 'soda', 'beer', 'ale', 'yogurt', 'cheese', 'salt', 'sugar', 'water',
+  'tea', 'coffee', 'soup', 'dressing', 'spread', 'drink',
+]);
+
+/** Loose-but-careful match so "Chicken Breast" in the pantry satisfies "chicken" in a recipe. */
 export function pantryHas(pantry: PantryItem[], ingredientName: string): boolean {
-  const needle = normalize(ingredientName);
-  return pantry.some(item => {
-    if (item.quantity <= 0) return false;
-    const have = normalize(item.name);
-    return have.includes(needle) || needle.includes(have);
-  });
+  return pantry.some(item => item.quantity > 0 && itemCoversIngredient(item.name, ingredientName));
 }
 
 export interface PantryCoverage {
   have: string[];
   missing: string[];
   percent: number;
+}
+
+// Things every kitchen has that nobody lists in a pantry.
+const ALWAYS_ON_HAND = new Set(['water', 'ice', 'tap water']);
+
+export function isAlwaysOnHand(ingredientName: string): boolean {
+  const words = ingredientWords(ingredientName);
+  return words.length > 0 && words.every(w => ALWAYS_ON_HAND.has(w));
+}
+
+/**
+ * An ingredient name as a person would say it: "cucumber, thinly sliced"
+ * → "cucumber", "seedless watermelon, cubed" → "watermelon".
+ */
+export function displayIngredientName(name: string): string {
+  const base = name.replace(/\(.*?\)/g, ' ').split(',')[0];
+  const kept = base
+    .split(/\s+/)
+    .filter(w => w && !INGREDIENT_NOISE.has(w.toLowerCase().replace(/[^a-z]/g, '')) && !/^(seedless|boneless|skinless)$/i.test(w));
+  return (kept.length ? kept.join(' ') : base).trim().toLowerCase();
 }
 
 /** Which required ingredients the user has vs. is missing. */
@@ -182,7 +288,7 @@ export function getPantryCoverage(
   const missing: string[] = [];
 
   required.forEach(ing => {
-    if (pantryHas(pantry, ing.name)) have.push(ing.name);
+    if (isAlwaysOnHand(ing.name) || pantryHas(pantry, ing.name)) have.push(ing.name);
     else missing.push(ing.name);
   });
 
@@ -208,6 +314,24 @@ export function ageAllowsRecipe(recipe: Recipe, prefs: Pick<UserPreferences, 'al
   return prefs.allowAlcohol === true || !recipeHasAlcohol(recipe);
 }
 
+/**
+ * Allergens the user picked, plus the ones they imply. The recipe database
+ * tags clams, mussels, squid etc. as 'mollusc' separately from 'shellfish',
+ * so without this a "Shellfish" allergy let 400+ mollusc recipes through.
+ * Wheat is already tagged 'gluten' by the pipeline; it's listed here so a
+ * hand-entered recipe tagged only 'wheat' is caught too.
+ */
+const IMPLIED_ALLERGENS: Partial<Record<Allergen, Allergen[]>> = {
+  shellfish: ['mollusc'],
+  gluten: ['wheat'],
+};
+
+export function expandAllergens(avoid: Allergen[]): Allergen[] {
+  const out = new Set<Allergen>(avoid);
+  for (const a of avoid) IMPLIED_ALLERGENS[a]?.forEach(x => out.add(x));
+  return Array.from(out);
+}
+
 export function passesDietaryFilter(
   recipe: Recipe,
   prefs: UserPreferences
@@ -215,7 +339,8 @@ export function passesDietaryFilter(
   // Age safeguard: recipes made with alcohol only for people 21+ (utils/alcohol.ts).
   if (!ageAllowsRecipe(recipe, prefs)) return false;
 
-  const hasAllergen = recipe.allergens.some(a => prefs.avoidAllergens.includes(a));
+  const avoid = expandAllergens(prefs.avoidAllergens);
+  const hasAllergen = recipe.allergens.some(a => avoid.includes(a));
   if (hasAllergen) return false;
 
   // Recipes from the database can also list hidden allergens ("bread may
@@ -223,9 +348,9 @@ export function passesDietaryFilter(
   // ingredient have allergensVerified === false. For anyone with an
   // allergy, both mean "don't show it".
   const customAllergies = prefs.customAllergies ?? [];
-  if (prefs.avoidAllergens.length > 0 || customAllergies.length > 0) {
+  if (avoid.length > 0 || customAllergies.length > 0) {
     if (recipe.allergensVerified === false) return false;
-    if (recipe.mayContain?.some(a => prefs.avoidAllergens.includes(a))) return false;
+    if (recipe.mayContain?.some(a => avoid.includes(a))) return false;
   }
 
   // Allergies and foods-to-avoid the user typed in Profile.
@@ -234,7 +359,10 @@ export function passesDietaryFilter(
     if (conflicts.allergies.length > 0 || conflicts.avoid.length > 0) return false;
   }
 
-  const meetsDiet = prefs.dietary.every(tag => recipe.dietary.includes(tag));
+  // Diet RULES (vegan, gluten-free, halal…) are hard; eating GOALS
+  // (heart-healthy, low-sodium…) are favored in ranking, never required —
+  // see utils/diets.ts.
+  const meetsDiet = dietRules(prefs).every(tag => recipe.dietary.includes(tag));
   if (!meetsDiet) return false;
 
   if (prefs.maxCookMinutes !== null) {
@@ -261,27 +389,57 @@ export interface ScoreOptions {
 }
 
 /**
- * How many of the user's onboarding taste tags a recipe carries.
- * Used ONLY as a tie-breaker between equal match scores — the quiz
- * answers always outrank standing preferences, because "what I feel
- * like tonight" should beat "what I generally like."
+ * How many of the user's taste choices a recipe hits.
+ *
+ * Counted per CHOICE, not per tag. Each onboarding chip saves several tags
+ * ("Chicken" → chicken + poultry; "Plant-based" → beans, tofu, plant-based,
+ * vegetarian) and the recipe database always applies those tags together,
+ * so counting tags made every chip worth 2–4 points instead of 1 and made
+ * the weights in Decide for me mean something different from what was
+ * written. A chip counts once if any of its tags is on the recipe. Tags
+ * that don't belong to any chip (older saves, hand-typed) still count
+ * one each.
+ *
+ * The recipe's `vibe` (spicy / sweet / savory) counts as a tag: "Spicy food"
+ * and "Sweet & glazed" chips map to tags only a dozen database recipes
+ * carry, while the vibe field is set on every one of them.
  */
-export function favoriteOverlap(recipe: Recipe, favoriteTags: string[]): number {
-  if (favoriteTags.length === 0) return 0;
-  const favs = new Set(favoriteTags.map(t => t.toLowerCase()));
-  return recipe.tags.filter(t => favs.has(t.toLowerCase())).length;
+export function tasteOverlap(recipe: Recipe, userTags: string[]): number {
+  if (userTags.length === 0) return 0;
+  const user = new Set(userTags.map(t => t.toLowerCase()));
+  const onRecipe = new Set([...recipe.tags, recipe.vibe].map(t => t.toLowerCase()));
+  let hits = 0;
+  const covered = new Set<string>();
+  for (const opt of TASTE_OPTIONS) {
+    const tags = opt.tags.map(t => t.toLowerCase());
+    // A chip was chosen when all of its tags were saved (same rule as
+    // tasteIdsForTags in constants/preferenceOptions.ts).
+    if (!tags.every(t => user.has(t))) continue;
+    tags.forEach(t => covered.add(t));
+    if (tags.some(t => onRecipe.has(t))) hits++;
+  }
+  for (const t of user) if (!covered.has(t) && onRecipe.has(t)) hits++;
+  return hits;
 }
 
 /**
- * How many "rather skip" tags a recipe carries. Mirrors favoriteOverlap
- * on the other side of the scale: a SOFT penalty in tie-breaks, never a
- * hard filter (that's what allergens are for). tasteBias below combines
- * both so one preference signal decides ties.
+ * How many of the user's "foods you enjoy" choices a recipe hits.
+ * A soft signal: breaks ties and nudges Decide for me / Plan my week.
+ * The quiz answers always outrank standing preferences, because "what I
+ * feel like tonight" should beat "what I generally like."
+ */
+export function favoriteOverlap(recipe: Recipe, favoriteTags: string[]): number {
+  return tasteOverlap(recipe, favoriteTags);
+}
+
+/**
+ * How many "rather skip" choices a recipe hits. Mirrors favoriteOverlap
+ * on the other side of the scale: a SOFT penalty, never a hard filter
+ * (that's what allergens and "foods to avoid" are for). tasteBias below
+ * combines both so one preference signal decides ties.
  */
 export function dislikeOverlap(recipe: Recipe, dislikedTags: string[]): number {
-  if (dislikedTags.length === 0) return 0;
-  const bad = new Set(dislikedTags.map(t => t.toLowerCase()));
-  return recipe.tags.filter(t => bad.has(t.toLowerCase())).length;
+  return tasteOverlap(recipe, dislikedTags);
 }
 
 /** Net taste signal: loves push a recipe up ties, dislikes push it down. */

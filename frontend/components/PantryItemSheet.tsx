@@ -12,6 +12,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import UnitSelectModal from './UnitSelectModal';
 import { COLORS } from '../constants/Colors';
+import { CATEGORY_LABELS } from '../constants/Itemicons';
 import { getStorageTip, nutritionFor } from '../constants/pantryData';
 import { useApp } from '../context/AppContext';
 import { useAccessibility } from '../hooks/useAccessibility';
@@ -24,6 +25,7 @@ import {
   stockStatus,
   storageFor,
 } from '../utils/pantryStatus';
+import { describeQuantity, freshnessSentence, lowLevelSentence, sinceSentence } from '../utils/pantryWords';
 import type { PantryItem } from '../types';
 
 const SERIF = 'PlayfairDisplay_700Bold';
@@ -111,7 +113,7 @@ function Body({
   const lib = libraryFor(item.name);
   const stock = stockStatus(item);
   const fresh = freshness(item);
-  const freshText = freshnessLabel(fresh);
+  const freshText = freshnessSentence(fresh) ?? freshnessLabel(fresh);
   const storage = STORAGE_LABELS[storageFor(item)];
   const level = lowLevel(item);
   const auto = typeof item.lowAt !== 'number';
@@ -131,7 +133,9 @@ function Body({
         </View>
         <View style={styles.flex1}>
           <Text style={styles.name} accessibilityRole="header">{item.name}</Text>
-          <Text style={styles.subcat}>{lib?.subcategory ?? 'Your item'}</Text>
+          <Text style={styles.subcat}>
+            {lib?.subcategory && lib.subcategory.toLowerCase() !== item.name.toLowerCase() ? lib.subcategory : CATEGORY_LABELS[item.category]}
+          </Text>
         </View>
       </View>
 
@@ -157,7 +161,9 @@ function Body({
 
       {/* How much */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>In your kitchen</Text>
+        <Text style={styles.cardTitle}>
+          In your kitchen{stock !== 'out' ? <Text style={styles.cardTitleSoft}> · {describeQuantity(item)}</Text> : null}
+        </Text>
         <View style={styles.qtyRow}>
           <View style={styles.bigStepper}>
             <StepButton icon="minus" label="One less" onPress={() => onStep(-1)} disabled={item.quantity <= 0} />
@@ -172,7 +178,9 @@ function Body({
 
         <View style={styles.divider} />
 
-        <Text style={styles.cardTitle}>Tell me it's running low at</Text>
+        <Text style={styles.cardTitle}>
+          Tell me it's running low<Text style={styles.cardTitleSoft}> · {lowLevelSentence(item).toLowerCase()}</Text>
+        </Text>
         <View style={styles.qtyRow}>
           <View style={styles.smallStepper}>
             <StepButton icon="minus" label="Lower" small onPress={() => onLowAt(Math.max(0, level - 1))} disabled={level <= 0} />
@@ -190,7 +198,7 @@ function Body({
         </View>
         <Text style={styles.hint}>
           {auto
-            ? `Automatic: a quarter of what you last stocked up (${item.stockedQty ?? item.quantity} ${item.unit.toLowerCase()}).`
+            ? `Automatic: a quarter of what you last stocked up (${describeQuantity({ ...item, quantity: item.stockedQty ?? item.quantity })}). ${sinceSentence(item)}.`
             : 'Your own level. Tap Automatic to go back.'}
         </Text>
       </View>
@@ -332,6 +340,7 @@ const styles = StyleSheet.create({
     padding: 16, marginTop: 16,
   },
   cardTitle: { fontSize: 14, fontWeight: '700', color: COLORS.darkNavy, marginBottom: 10 },
+  cardTitleSoft: { fontWeight: '500', color: COLORS.textMuted },
   divider: { height: 1, backgroundColor: COLORS.borderLight, marginVertical: 14 },
   qtyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   bigStepper: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.background, borderRadius: 16, padding: 4 },

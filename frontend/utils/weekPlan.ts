@@ -20,7 +20,9 @@
 // out (offline, with only the curated recipes), repeats are allowed again,
 // but never the dish from the day before.
 
-import { favoriteOverlap, dislikeOverlap } from './matching';
+import { favoriteOverlap, dislikeOverlap, plateBalanceScore } from './matching';
+import { focusFit, goalFit, type MealGoal } from './goals';
+import { dietGoalMatch, dietGoals } from './diets';
 import { profileOf } from './thisOrThat';
 import type { PantryCategoryId, PantryItem, PlannedMeal, PlanDayStatus, PlanSlot, Recipe, UserPreferences } from '../types';
 
@@ -41,6 +43,28 @@ function toDate(iso: string): Date {
 function toIso(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+/** Whole days from a to b (negative when b is earlier). */
+export function dayDiff(a: string, b: string): number {
+  return Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
+}
+
+const FAMILY_STOP = new Set(['with', 'and', 'the', 'a', 'of', 'in', 'style', 'easy', 'quick', 'best', 'simple', 'classic', 'homemade', 'recipe', 'my', 'mom', 'moms', "mom's", 'grandma', "grandma's"]);
+/**
+ * A rough "same dish" key from the name: the first two meaningful words,
+ * singularised. "Chicken Tacos" and "Chicken Taco Bowls" share a family;
+ * "Lemon Chicken" doesn't.
+ */
+export function nameFamily(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !FAMILY_STOP.has(w))
+    .map(w => w.replace(/(es|s)$/, ''))
+    .slice(0, 2)
+    .join(' ');
+}
+
 export function addDays(iso: string, n: number): string {
   const d = toDate(iso);
   d.setDate(d.getDate() + n);
@@ -102,6 +126,17 @@ export interface FillOptions {
   slotStatuses?: Record<string, PlanDayStatus>;
   /** Points to subtract, e.g. for dishes suggested or eaten recently (utils/variety.ts). */
   penalty?: (r: Recipe) => number;
+  /** Fitness goal per slot (utils/goals.ts goalForMeal). Missing = no goal. */
+  goalFor?: (slot: PlanSlot) => MealGoal | null;
+  /**
+   * Also plan the surplus portions of each batch into later slots as
+   * leftovers. Off by default: Fill gives a different fresh dish in every
+   * slot and the person decides where leftovers go ("Use leftovers" on
+   * any slot).
+   */
+  rollLeftovers?: boolean;
+  /** Dish families already in the week (set by fillWeek). */
+  seenFamilies?: Set<string>;
 }
 
 /** Best recipe for one slot, given what's already planned. null if nothing is left. */
@@ -118,6 +153,13 @@ export function pickForSlot(
   const sameSlot = plan.filter(p => p.slot === slot).map(p => recipesById.get(p.recipeId)).filter(Boolean) as Recipe[];
   const yesterday = plan.find(p => p.slot === slot && p.date === addDays(date, -1));
   const yesterdayProtein = yesterday ? proteinOf(recipesById.get(yesterday.recipeId) ?? ({} as Recipe)) : null;
+  // Variety across the whole day before and after, not just this slot:
+  // no chicken at lunch and dinner two days running, no two pasta nights
+  // back to back.
+  const nearby = plan.filter(p => (p.date !== date && Math.abs(dayDiff(p.date, date)) <= 1) || (p.date === date && p.slot !== slot));
+  const nearbyProteins = new Set(nearby.map(p => proteinOf(recipesById.get(p.recipeId) ?? ({} as Recipe))).filter(Boolean));
+  const nearbyTypes = new Set(nearby.map(p => dishType(recipesById.get(p.recipeId) ?? ({} as Recipe))).filter(t => t !== 'other'));
+  const nearbyNames = new Set(nearby.map(p => nameFamily(p.name)));
   const proteinCount = new Map<string, number>();
   const typeCount = new Map<string, number>();
   for (const r of sameSlot) {
@@ -126,6 +168,7 @@ export function pickForSlot(
     typeCount.set(dishType(r), (typeCount.get(dishType(r)) ?? 0) + 1);
   }
   const loves = [...(opts.preferences.favoriteTags ?? []), ...(opts.preferences.customLoves ?? [])];
+  const goals = dietGoals(opts.preferences);
   const dislikes = opts.preferences.dislikedTags ?? [];
 
   const fresh = library.filter(r => !used.has(r.id));
@@ -140,9 +183,22 @@ export function pickForSlot(
     let score = rand();
     if (opts.favoriteIds?.has(r.id)) score += 1.5;
     score += 0.4 * favoriteOverlap(r, loves) - 0.6 * dislikeOverlap(r, dislikes);
+    // A week of balanced plates beats a week of quick ones (desserts and
+    // nutrition-less home recipes are neutral).
+    if (slot !== 'breakfast' && r.nutrition.calories > 0) score += 2 * plateBalanceScore(r.plate);
+    // Eating goals (heart-healthy, low-sodium…): favored, never required.
+    if (goals.length > 0) score += 2.5 * dietGoalMatch(r, goals).share;
+    // A week that fits the person's goal (protein up, or portions in check).
+    const goal = opts.goalFor?.(slot);
+    if (goal && r.nutrition.calories > 0) score += 2 * goalFit(r, goal.kind, goal.target).score;
+    if (goal?.focuses?.length) score += 1.5 * focusFit(r, goal.focuses).score;
     if (pr && pr === yesterdayProtein) score -= 3;
     if (pr && (proteinCount.get(pr) ?? 0) >= 2) score -= 2;
     if (type !== 'other') score -= 1.2 * (typeCount.get(type) ?? 0);
+    if (pr && nearbyProteins.has(pr)) score -= 1.5;
+    if (type !== 'other' && nearbyTypes.has(type)) score -= 1.5;
+    if (nearbyNames.has(nameFamily(r.name))) score -= 4; // "Chicken Tacos" after "Chicken Taco Bowls"
+    if (opts.seenFamilies?.has(nameFamily(r.name))) score -= 2; // same dish family earlier in the week
     score -= opts.penalty?.(r) ?? 0;
     if (score > bestScore) {
       bestScore = score;
@@ -169,10 +225,12 @@ export function fillWeek(
   const working = [...plan];
   const known = new Map(recipesById);
   const added: PlannedMeal[] = [];
+  const families = new Set(plan.map(p => nameFamily(p.name)));
+  const slotOpts: FillOptions = { ...opts, seenFamilies: families };
   for (const date of days) {
     for (const slot of slots) {
       if (working.some(p => p.date === date && p.slot === slot)) continue;
-      const r = pickForSlot(date, slot, libraries[slot] ?? [], working, known, opts);
+      const r = pickForSlot(date, slot, libraries[slot] ?? [], working, known, slotOpts);
       if (!r) continue;
       const batchServings = Math.max(r.servings, opts.preferences.householdSize);
       const entry = plannedFrom(
@@ -186,6 +244,8 @@ export function fillWeek(
       known.set(r.id, r);
       working.push(entry);
       added.push(entry);
+      families.add(nameFamily(r.name));
+      if (!opts.rollLeftovers) continue;
       const leftovers = rolloverLeftovers(
         entry,
         working,

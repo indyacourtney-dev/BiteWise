@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import type { HostInstance } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { COLORS } from '../constants/Colors';
@@ -51,6 +51,8 @@ interface Props {
     loading: boolean;
   }) => void;
   onLayout?: (y: number) => void;
+  /** The section's root view, so the screen can scroll it into view. */
+  innerRef?: React.Ref<HostInstance>;
 }
 
 export default function RecipeReviews({
@@ -59,6 +61,7 @@ export default function RecipeReviews({
   onPromptDismiss,
   onSummaryChange,
   onLayout,
+  innerRef,
 }: Props) {
   const { user } = useAuth();
   const [data, setData] = useState(EMPTY_DATA);
@@ -69,11 +72,15 @@ export default function RecipeReviews({
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "Delete review" asks once more, inline. (Alert.alert with buttons is a
+  // no-op on the web build, which is why the button used to do nothing there.)
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function openEditor(review: RecipeReview | null) {
     setRating(review?.rating ?? 0);
     setComment(review?.comment ?? '');
     setError(null);
+    setConfirmingDelete(false);
     setModalVisible(true);
   }
 
@@ -112,6 +119,7 @@ export default function RecipeReviews({
 
   const closeEditor = () => {
     setModalVisible(false);
+    setConfirmingDelete(false);
     onPromptDismiss?.();
   };
 
@@ -134,34 +142,26 @@ export default function RecipeReviews({
     }
   };
 
-  const removeReview = () => {
-    Alert.alert('Delete your review?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          void (async () => {
-            setSaving(true);
-            setError(null);
-            try {
-              await deleteRecipeReview(recipeId);
-              setModalVisible(false);
-              onPromptDismiss?.();
-              setRefresh(value => value + 1);
-            } catch (reason) {
-              setError(reviewErrorMessage(reason));
-            } finally {
-              setSaving(false);
-            }
-          })();
-        },
-      },
-    ]);
+  const removeReview = async () => {
+    if (saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await deleteRecipeReview(recipeId);
+      setModalVisible(false);
+      setConfirmingDelete(false);
+      onPromptDismiss?.();
+      setRefresh(value => value + 1);
+    } catch (reason) {
+      setError(reviewErrorMessage(reason));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <View
+      ref={innerRef}
       style={styles.section}
       onLayout={event => onLayout?.(event.nativeEvent.layout.y)}
     >
@@ -301,15 +301,43 @@ export default function RecipeReviews({
                   <Text style={styles.submitButtonText}>Save review</Text>
                 )}
               </TouchableOpacity>
-              {data.ownReview ? (
+              {data.ownReview && !confirmingDelete ? (
                 <TouchableOpacity
                   style={styles.deleteButton}
-                  onPress={removeReview}
+                  onPress={() => setConfirmingDelete(true)}
                   disabled={saving}
                   accessibilityRole="button"
+                  accessibilityLabel="Delete your review"
                 >
                   <Text style={styles.deleteButtonText}>Delete review</Text>
                 </TouchableOpacity>
+              ) : null}
+              {data.ownReview && confirmingDelete ? (
+                <View style={styles.confirmBox} accessibilityRole="alert">
+                  <Text style={styles.confirmTitle}>Delete your review?</Text>
+                  <Text style={styles.confirmText}>Your rating and comment will be removed. This can’t be undone.</Text>
+                  <View style={styles.confirmRow}>
+                    <TouchableOpacity
+                      style={styles.confirmKeep}
+                      onPress={() => setConfirmingDelete(false)}
+                      disabled={saving}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.confirmKeepText}>Keep it</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.confirmDelete, saving && styles.disabledButton]}
+                      onPress={() => void removeReview()}
+                      disabled={saving}
+                      accessibilityRole="button"
+                      accessibilityLabel="Yes, delete my review"
+                    >
+                      {saving ? <ActivityIndicator color={COLORS.cardWhite} /> : (
+                        <Text style={styles.confirmDeleteText}>Delete</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
               ) : null}
               <TouchableOpacity style={styles.skipButton} onPress={closeEditor} disabled={saving}>
                 <Text style={styles.skipButtonText}>Maybe later</Text>
@@ -396,6 +424,38 @@ const styles = StyleSheet.create({
   disabledButton: { opacity: 0.6 },
   deleteButton: { alignItems: 'center', paddingVertical: 12, marginTop: 4 },
   deleteButtonText: { fontSize: 14, fontWeight: '600', color: COLORS.redAccent },
+  confirmBox: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#FDECEA',
+    borderWidth: 1,
+    borderColor: COLORS.redAccent,
+    gap: 6,
+  },
+  confirmTitle: { fontSize: 15, fontWeight: '700', color: COLORS.redAccent },
+  confirmText: { fontSize: 13, lineHeight: 19, color: COLORS.textDark },
+  confirmRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
+  confirmKeep: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: COLORS.cardWhite,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
+  confirmKeepText: { fontSize: 14, fontWeight: '700', color: COLORS.darkNavy },
+  confirmDelete: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: COLORS.redAccent,
+  },
+  confirmDeleteText: { fontSize: 14, fontWeight: '700', color: COLORS.cardWhite },
   skipButton: { alignItems: 'center', paddingVertical: 10 },
   skipButtonText: { fontSize: 14, color: COLORS.textMuted },
 });

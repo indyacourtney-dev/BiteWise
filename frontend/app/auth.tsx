@@ -10,7 +10,7 @@
 // session is memory-only (lib/supabase.ts), so this is the first thing
 // anyone sees on every single launch — by design.
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
@@ -52,6 +53,12 @@ export default function AuthScreen() {
 
   const checks = useMemo(() => passwordChecks(password), [password]);
 
+  // Keyboard flow: Return/Enter moves to the next field and submits from
+  // the last one, on web (Enter key) as well as iOS/Android (return key).
+  const emailRef = useRef<TextInputInstance>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
+  const confirmRef = useRef<TextInputInstance>(null);
+
   const switchMode = (m: Mode) => {
     setMode(m);
     setError(null);
@@ -59,6 +66,7 @@ export default function AuthScreen() {
   };
 
   const handleLogin = async () => {
+    if (busy) return; // Enter pressed twice, or while the request is in flight
     setError(null);
     const emailErr = validateEmail(email);
     if (emailErr) return setError(emailErr);
@@ -76,6 +84,7 @@ export default function AuthScreen() {
   };
 
   const handleSignup = async () => {
+    if (busy) return;
     setError(null);
     const usernameErr = validateUsername(username);
     if (usernameErr) return setError(usernameErr);
@@ -184,6 +193,11 @@ export default function AuthScreen() {
                     placeholderTextColor={COLORS.inactiveGray}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    autoComplete="username"
+                    textContentType="username"
+                    returnKeyType="next"
+                    submitBehavior="submit"
+                    onSubmitEditing={() => emailRef.current?.focus()}
                   />
                 </>
               )}
@@ -191,6 +205,7 @@ export default function AuthScreen() {
               {/* ---- EMAIL ---- */}
               <Text style={styles.fieldLabel}>Email</Text>
               <TextInput
+                ref={emailRef}
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
@@ -199,12 +214,18 @@ export default function AuthScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                autoComplete="email"
+                textContentType="emailAddress"
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => passwordRef.current?.focus()}
               />
 
               {/* ---- PASSWORD ---- */}
               <Text style={styles.fieldLabel}>Password</Text>
               <View style={styles.passwordRow}>
                 <TextInput
+                  ref={passwordRef}
                   style={[styles.input, styles.flex1]}
                   value={password}
                   onChangeText={setPassword}
@@ -213,6 +234,12 @@ export default function AuthScreen() {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  textContentType={mode === 'signup' ? 'newPassword' : 'password'}
+                  // Login: Enter/Return submits. Signup: move on to Confirm.
+                  returnKeyType={mode === 'login' ? 'go' : 'next'}
+                  submitBehavior={mode === 'login' ? 'blurAndSubmit' : 'submit'}
+                  onSubmitEditing={mode === 'login' ? handleLogin : () => confirmRef.current?.focus()}
                 />
                 <TouchableOpacity
                   style={styles.eyeBtn}
@@ -250,6 +277,7 @@ export default function AuthScreen() {
                 <>
                   <Text style={styles.fieldLabel}>Confirm password</Text>
                   <TextInput
+                    ref={confirmRef}
                     style={styles.input}
                     value={confirm}
                     onChangeText={setConfirm}
@@ -258,6 +286,10 @@ export default function AuthScreen() {
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    autoComplete="new-password"
+                    textContentType="newPassword"
+                    returnKeyType="go"
+                    onSubmitEditing={handleSignup}
                   />
                   {confirm.length > 0 && confirm !== password && (
                     <Text style={styles.mismatchText}>Passwords don’t match yet.</Text>
