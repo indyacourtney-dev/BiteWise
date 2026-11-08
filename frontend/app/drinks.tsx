@@ -24,7 +24,7 @@ import { COLORS } from '@/constants/Colors';
 import { useApp } from '@/context/AppContext';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import { fetchDrinks } from '@/lib/drinksApi';
-import { applyDrinkFilters, DRINK_FILTERS, drinksForSegment, keyIngredients, rankDrinks, type DrinkFilter, type DrinkSegment, type RankedDrink } from '@/utils/drinks';
+import { applyDrinkFilters, countByType, DRINK_FILTERS, DRINK_TYPES, drinksForSegment, keyIngredients, rankDrinks, type DrinkFilter, type DrinkSegment, type DrinkType, type RankedDrink } from '@/utils/drinks';
 import { displayIngredientName } from '@/utils/matching';
 import type { Recipe } from '@/types';
 
@@ -40,6 +40,7 @@ export default function DrinksScreen() {
   const [all, setAll] = useState<Recipe[] | null>(null);
   const [error, setError] = useState(false);
   const [featured, setFeatured] = useState(0);
+  const [type, setType] = useState<DrinkType | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,11 +61,14 @@ export default function DrinksScreen() {
   );
   const favoriteIds = useMemo(() => favorites.map(f => f.recipeId), [favorites]);
   const ranked = useMemo(
-    () => rankDrinks(applyDrinkFilters(pool, filters, pantry), pantry, favoriteIds),
-    [pool, filters, pantry, favoriteIds],
+    () => rankDrinks(applyDrinkFilters(pool, filters, pantry, type), pantry, favoriteIds),
+    [pool, filters, pantry, favoriteIds, type],
   );
+  const typeCounts = useMemo(() => countByType(applyDrinkFilters(pool, filters, pantry)), [pool, filters, pantry]);
+  const types = DRINK_TYPES[segment].filter(t => (typeCounts[t.id] ?? 0) > 0);
 
-  useEffect(() => { setFeatured(0); }, [segment, filters, pool.length]);
+  useEffect(() => { setFeatured(0); }, [segment, filters, pool.length, type]);
+  useEffect(() => { setType(null); }, [segment]);
 
   const toggleFilter = (f: DrinkFilter) => {
     a11y.haptic();
@@ -115,6 +119,23 @@ export default function DrinksScreen() {
             />
           ))}
         </View>
+
+        {/* WHAT KIND — one row, counts included, so the section reads as specific drinks, not a pile */}
+        {!needsConfirm && types.length > 1 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.typeRow}>
+            <Chip label={`All · ${Object.values(typeCounts).reduce((a, b) => a + (b ?? 0), 0)}`} small tone="gold" selected={type === null} onPress={() => { a11y.haptic(); setType(null); }} />
+            {types.map(t => (
+              <Chip
+                key={t.id}
+                label={`${t.emoji} ${t.label} · ${typeCounts[t.id]}`}
+                small
+                tone="gold"
+                selected={type === t.id}
+                onPress={() => { a11y.haptic(); setType(type === t.id ? null : t.id); }}
+              />
+            ))}
+          </ScrollView>
+        ) : null}
 
         {needsConfirm ? (
           <Card style={s.confirmCard} tone="navy">
@@ -182,10 +203,10 @@ export default function DrinksScreen() {
                   style={{ marginTop: 22 }}
                   right={barCount > 0 ? <Text style={s.barCount}>Your pantry · {barCount} {barCount === 1 ? 'item' : 'items'}</Text> : undefined}
                 >
-                  {filters.has('pantry') ? 'More you can make' : segment === 'cocktails' ? 'More cocktails' : 'More to try'}
+                  {type ? `More ${DRINK_TYPES[segment].find(t => t.id === type)?.label.toLowerCase() ?? ''}` : filters.has('pantry') ? 'More you can make' : segment === 'cocktails' ? 'More cocktails' : 'More to try'}
                 </SectionLabel>
                 <View style={{ marginTop: 10, gap: 8 }}>
-                  {rest.slice(0, 30).map(item => (
+                  {rest.slice(0, 60).map(item => (
                     <DrinkRow key={item.recipe.id} item={item} saved={isFavorite(item.recipe.id)} onPress={() => open(item.recipe)} />
                   ))}
                 </View>
@@ -283,6 +304,7 @@ function DrinkRow({ item, saved, onPress }: { item: RankedDrink; saved: boolean;
 const s = StyleSheet.create({
   lede: { fontSize: 14, lineHeight: 20, color: COLORS.textMuted, marginTop: 6 },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
+  typeRow: { gap: 8, paddingTop: 10, paddingRight: 20 },
   error: { fontSize: 12, lineHeight: 17, color: COLORS.textMuted, marginTop: 12 },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 60 },
   hint: { fontSize: 13, color: COLORS.textMuted, lineHeight: 19 },
