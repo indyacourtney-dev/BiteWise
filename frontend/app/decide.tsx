@@ -25,6 +25,7 @@ import { getRecipeImage, hasRecipePhoto } from '@/constants/recipeImages';
 import { useApp } from '@/context/AppContext';
 import { useAccessibility } from '@/hooks/useAccessibility';
 import { useDecision } from '@/hooks/useDecision';
+import { configured } from '@/lib/supabase';
 import { CRAVINGS, CRAVINGS_FOR_MEAL, type Craving, type Decision } from '@/utils/decide';
 import { MEAL_INFO, MEAL_TYPES } from '@/utils/meals';
 import { getPlateSuggestion } from '@/utils/matching';
@@ -99,9 +100,12 @@ export default function DecideScreen() {
             <Display size={20}>{d.remaining.length === 0 && d.skipped.length > 0 ? 'That’s everything for now' : 'Nothing fits every rule'}</Display>
             <Text style={s.hint}>
               {d.skipped.length > 0
-                ? 'You’ve seen every match for this craving. Start again, or try another mood.'
-                : `Your allergies and diets rule out everything we have for ${MEAL_INFO[mealType].label.toLowerCase()} right now.`}
+                ? 'You’ve seen every match loaded for this craving. Pull in more from the full recipe library, start again, or try another mood.'
+                : `Your allergies and diet rules rule out everything loaded for ${MEAL_INFO[mealType].label.toLowerCase()}. Try pulling in more recipes.`}
             </Text>
+            {configured ? (
+              <PrimaryButton label={d.loadingMore ? 'Finding more…' : 'Find more recipes'} icon="refresh" busy={d.loadingMore} onPress={() => { d.loadMore(); }} />
+            ) : null}
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <SecondaryButton label="Start again" onPress={d.restart} style={{ flex: 1 }} />
               <SecondaryButton label="Preferences" onPress={() => router.push('/settings/preferences')} style={{ flex: 1 }} />
@@ -116,7 +120,7 @@ export default function DecideScreen() {
                 <RecipeListCard key={dec.recipe.id} recipe={dec.recipe} note={dec.reasons[0]} onPress={() => lockIn(dec)} />
               ))}
             </View>
-            <SecondaryButton label="Show me more instead" onPress={d.restart} style={{ marginTop: 6 }} />
+            <SecondaryButton label="Show me more instead" onPress={() => { if (configured) d.loadMore(); else d.restart(); }} style={{ marginTop: 6 }} />
           </View>
         ) : (
           <Card style={s.card}>

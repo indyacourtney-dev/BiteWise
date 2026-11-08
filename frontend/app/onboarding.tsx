@@ -271,6 +271,9 @@ export default function OnboardingScreen() {
                   </TouchableOpacity>
                 ) : null}
               </View>
+              {showHealth || healthDiets.length > 0 ? (
+                <Text style={styles.hint}>Health goals steer suggestions toward recipes that fit — they never rule anything out.</Text>
+              ) : null}
 
               <View style={styles.syncNote}>
                 <FontAwesome name="shield" size={15} color={COLORS.green} />

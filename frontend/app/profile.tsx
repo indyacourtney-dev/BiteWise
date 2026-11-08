@@ -18,13 +18,14 @@ import Avatar from '@/components/Avatar';
 import { SettingsHeader, SettingsRow, SettingsSection, settingsStyles } from '@/components/SettingsUI';
 import { Pill } from '@/components/ui';
 import { COLORS } from '@/constants/Colors';
-import { ALLERGEN_OPTIONS, CUISINE_OPTIONS, DIETARY_OPTIONS, MORE_ALLERGEN_OPTIONS, TASTE_OPTIONS, tasteIdsForTags } from '@/constants/preferenceOptions';
+import { ALLERGEN_OPTIONS, CUISINE_OPTIONS, MORE_ALLERGEN_OPTIONS, TASTE_OPTIONS, tasteIdsForTags } from '@/constants/preferenceOptions';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { configured } from '@/lib/supabase';
 import { removeAvatar, uploadAvatar } from '@/lib/accountApi';
 import { setMyProfileCache, useMyProfile } from '@/hooks/useMyProfile';
 import { ageOn } from '@/utils/age';
+import { dietGoals, dietLabel, dietRules } from '@/utils/diets';
 import { FOCUS_INFO, GOAL_LABELS, dailyTargets, formatHeight, formatWeight, isCompleteGoals } from '@/utils/goals';
 import { GOAL_ICONS } from '@/constants/goalIcons';
 
@@ -93,9 +94,10 @@ export default function ProfileScreen() {
   const never = [
     ...preferences.avoidAllergens.map(allergenLabel),
     ...(preferences.customAllergies ?? []),
-    ...preferences.dietary.map(d => DIETARY_OPTIONS.find(o => o.key === d)?.label ?? d.replace(/-/g, ' ')),
+    ...dietRules(preferences).map(dietLabel),
     ...(preferences.customAvoid ?? []),
   ];
+  const eatingFor = dietGoals(preferences).map(dietLabel);
   const loves = [
     ...tasteIdsForTags(preferences.favoriteTags).map(id => TASTE_OPTIONS.find(o => o.id === id)?.label ?? id),
     ...preferences.cuisines.map(c => CUISINE_OPTIONS.find(o => o.id === c || o.label === c)?.label ?? c),
@@ -140,9 +142,10 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <TasteRow label="Never" tone="red" items={never} empty="Nothing ruled out" />
+          {eatingFor.length > 0 ? <TasteRow label="Eating for" tone="green" items={eatingFor} empty="" /> : null}
           <TasteRow label="Loves" tone="green" items={loves} empty="Tell us what you enjoy" />
           <TasteRow label="Less often" tone="muted" items={[...lessOften, ...(spice ? [spice] : [])]} empty="Nothing to go easy on" />
-          <Text style={styles.tastesNote}>“Never” is a hard rule. “Less often” still comes up now and then — the app learns from what you cook.</Text>
+          <Text style={styles.tastesNote}>“Never” is a hard rule. “Eating for” and “Loves” come first; “Less often” still comes up now and then — the app learns from what you cook.</Text>
         </View>
 
         {/* Your goal (optional) */}

@@ -28,6 +28,7 @@
 // results rather than deleting two-thirds of the library.
 
 import { findCustomConflicts } from './customFoods';
+import { dietRules } from './diets';
 import { recipeHasAlcohol } from './alcohol';
 import { TASTE_OPTIONS } from '../constants/preferenceOptions';
 import type {
@@ -358,7 +359,10 @@ export function passesDietaryFilter(
     if (conflicts.allergies.length > 0 || conflicts.avoid.length > 0) return false;
   }
 
-  const meetsDiet = prefs.dietary.every(tag => recipe.dietary.includes(tag));
+  // Diet RULES (vegan, gluten-free, halal…) are hard; eating GOALS
+  // (heart-healthy, low-sodium…) are favored in ranking, never required —
+  // see utils/diets.ts.
+  const meetsDiet = dietRules(prefs).every(tag => recipe.dietary.includes(tag));
   if (!meetsDiet) return false;
 
   if (prefs.maxCookMinutes !== null) {

@@ -349,6 +349,8 @@ export interface AppSettings {
   voiceId?: string | null;
   /** The "how your pantry works" card has been dismissed on this device. */
   pantryTipSeen?: boolean;
+  /** Fill also plans surplus portions as leftovers. Off = the person decides. */
+  planLeftovers?: boolean;
 }
 
 export interface QuizRun {

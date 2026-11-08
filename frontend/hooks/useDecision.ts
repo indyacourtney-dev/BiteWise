@@ -43,7 +43,8 @@ export function useDecision({ mealType, craving, active = true, noteShown = true
   const {
     preferences, pantry, favorites, history, recordQuizRun, recipeExposure, noteRecipesShown, birthDate,
   } = useApp();
-  const { recipes, loading, error } = useRecipeLibrary(mealType, preferences);
+  const { recipes, loading, error, loadMore: loadMoreLibrary } = useRecipeLibrary(mealType, preferences);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const [ratings, setRatings] = useState<RecipeRatingFeedback[]>(ratingCache ?? []);
   const [ratingsLoading, setRatingsLoading] = useState(configured && ratingCache === null);
@@ -126,12 +127,26 @@ export function useDecision({ mealType, craving, active = true, noteShown = true
     return d.recipe;
   }, [pick, remaining, mealType, noteRecipesShown, recordQuizRun]);
 
+  /** Pull another slice of the database into the pool and start a fresh round. */
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const { added } = await loadMoreLibrary();
+      restart();
+      return added;
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadMoreLibrary, restart]);
+
   return {
     pick,
     remaining,
     skipped,
     skip,
     restart,
+    loadMore,
+    loadingMore,
     lockIn,
     loading: loading || ratingsLoading,
     poolEmpty: !loading && recipes.length === 0,

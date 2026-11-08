@@ -22,6 +22,7 @@
 
 import { favoriteOverlap, dislikeOverlap, getPantryCoverage, isPlateBalanced, plateBalanceScore } from './matching';
 import { focusFit, goalFit, type MealGoal } from './goals';
+import { dietGoalMatch, dietGoals, dietGoalsSentence, dietLabel, dietRules } from './diets';
 import { getTotalTime } from '../constants/recipes';
 import { lovedFoodsIn } from './customFoods';
 import { CUISINE_LABELS, cuisineMatches } from './cuisine';
@@ -183,6 +184,12 @@ export const DISLIKE_MAX_SHOWINGS = 2;      // after this many showings it's out
 export const DISLIKE_BACKOFF_PENALTY = 60;
 /** Points for a fully balanced plate (scaled by plateBalanceScore). */
 export const BALANCE_WEIGHT = 16;
+/**
+ * Points for carrying the person's eating goals (heart-healthy, low-sodium…),
+ * scaled by the share matched. Above balance and taste: they asked for it.
+ * Never a filter — see utils/diets.ts.
+ */
+export const DIET_GOAL_WEIGHT = 22;
 /** Points for a serving that fits the person's fitness goal (scaled by goalFit). */
 export const GOAL_WEIGHT = 14;
 /** Points for serving the person's nutrition focuses (scaled by focusFit). */
@@ -208,6 +215,8 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
   if (cravingIsFilter) candidates = craved;
 
   const prefs = ctx.preferences;
+  const rules = dietRules(prefs);
+  const goals = dietGoals(prefs);
   const favIds = new Set(ctx.favorites.map(f => f.recipeId));
 
   // What they chose for this meal before: tag counts = learned taste.
@@ -265,6 +274,17 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
         reasons.push({ weight: 8, text: `Has ${loved.slice(0, 2).join(' and ')}, which you love` });
       }
 
+      // Eating goals (heart-healthy, low-sodium, blood-sugar friendly…)
+      if (goals.length > 0) {
+        const gm = dietGoalMatch(recipe, goals);
+        score += DIET_GOAL_WEIGHT * gm.share;
+        if (gm.matched.length === goals.length) {
+          reasons.push({ weight: 7.5, text: goals.length === 1 ? dietGoalsSentence(gm.matched) : `Fits all ${goals.length} of your eating goals` });
+        } else if (gm.matched.length > 0) {
+          reasons.push({ weight: 5.5, text: dietGoalsSentence(gm.matched) });
+        }
+      }
+
       if (recipe.vibe === 'spicy') {
         if (prefs.spiceTolerance === 'mild') score -= 15;
         if (prefs.spiceTolerance === 'hot') { score += 8; reasons.push({ weight: 4, text: 'Has the heat you like' }); }
@@ -299,9 +319,9 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
       if (prefs.avoidAllergens.length > 0 || (prefs.customAllergies ?? []).length > 0) {
         reasons.push({ weight: 1.5, text: 'Safe for your allergies' });
       }
-      if (prefs.dietary.length > 0) {
-        const diet = prefs.dietary[0].replace(/-/g, ' ');
-        reasons.push({ weight: 1.2, text: prefs.dietary.length > 1 ? `Fits ${diet} and your other diets` : `Fits ${diet}` });
+      if (rules.length > 0) {
+        const diet = dietLabel(rules[0]).toLowerCase();
+        reasons.push({ weight: 1.2, text: rules.length > 1 ? `Fits ${diet} and your other diets` : `Fits ${diet}` });
       }
       if (prefs.preferredDifficulty && recipe.difficulty === prefs.preferredDifficulty) score += 5;
 

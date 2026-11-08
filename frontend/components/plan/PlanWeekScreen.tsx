@@ -63,8 +63,9 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
   const a11y = useAccessibility();
   const {
     mealPlan, mealPlanDays, mealPlanSlots, planMeal, planMeals, unplanMeal, unplanMeals, clearMealPlanRange, toggleMealCooked, updateMealServings,
-    setPlanDayStatus, setPlanSlotStatus, preferences, favorites, pantry, addGroceryItem, recipeExposure, birthDate,
+    setPlanDayStatus, setPlanSlotStatus, preferences, favorites, pantry, addGroceryItem, recipeExposure, birthDate, settings, updateSettings,
   } = useApp();
+  const autoLeftovers = settings.planLeftovers ?? false;
   const goalFor = (slot: PlanSlot) => goalForMeal(preferences.goals, birthDate ? ageOn(birthDate) : null, slot);
 
   // ----- the week -----
@@ -78,10 +79,17 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
   const canGoBack = weekStart > oldestWeekStart;
 
   // ----- recipes: every meal's library (curated + database, already filtered) -----
-  const breakfast = useRecipeLibrary('breakfast', preferences).recipes;
-  const lunch = useRecipeLibrary('lunch', preferences).recipes;
-  const dinner = useRecipeLibrary('dinner', preferences).recipes;
+  const breakfastLib = useRecipeLibrary('breakfast', preferences);
+  const lunchLib = useRecipeLibrary('lunch', preferences);
+  const dinnerLib = useRecipeLibrary('dinner', preferences);
+  const breakfast = breakfastLib.recipes;
+  const lunch = lunchLib.recipes;
+  const dinner = dinnerLib.recipes;
   const libraries = useMemo(() => ({ breakfast, lunch, dinner }), [breakfast, lunch, dinner]);
+  const loadMoreFor: Record<PlanSlot, () => Promise<{ added: number; recipes: Recipe[] }>> = {
+    breakfast: breakfastLib.loadMore, lunch: lunchLib.loadMore, dinner: dinnerLib.loadMore,
+  };
+  const [filling, setFilling] = useState(false);
 
   // Planned recipes that aren't in those pools (e.g. added from a recipe page).
   const [extra, setExtra] = useState<Record<string, Recipe>>({});
@@ -146,11 +154,28 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
         (!mealPlanSlots[planSlotKey(date, m.slot)] || mealPlanSlots[planSlotKey(date, m.slot)] === 'cook'))
       .reduce((total, m) => total + (recipesById.get(m.recipeId) ? getTotalTime(recipesById.get(m.recipeId)!) : m.minutes ?? 0), 0);
 
-  const fill = (dates = cookingDays.map(d => d.iso)) => {
+  const fill = async (dates = cookingDays.map(d => d.iso)) => {
     const activePlan = visible.filter(m =>
       (!mealPlanDays[m.date] || mealPlanDays[m.date] === 'cook') &&
       (!mealPlanSlots[planSlotKey(m.date, m.slot)] || mealPlanSlots[planSlotKey(m.date, m.slot)] === 'cook'));
-    const added = fillWeek(dates, slots, libraries, activePlan, recipesById, {
+    // Reach into the full library when a slot's pool is thin for the week
+    // ahead, so Fill has plenty of different dishes to choose from and
+    // never has to repeat one.
+    setFilling(true);
+    let libs = libraries;
+    try {
+      const planned = new Set(mealPlan.map(p => p.recipeId));
+      const refreshed = await Promise.all(slots.map(async slot => {
+        const unused = libs[slot].filter(r => !planned.has(r.id)).length;
+        if (unused >= dates.length * 6) return [slot, libs[slot]] as const;
+        const { recipes } = await loadMoreFor[slot]();
+        return [slot, recipes] as const;
+      }));
+      libs = { ...libs, ...Object.fromEntries(refreshed) } as typeof libraries;
+    } finally {
+      setFilling(false);
+    }
+    const added = fillWeek(dates, slots, libs, activePlan, recipesById, {
       preferences,
       favoriteIds,
       dayStatuses: mealPlanDays,
@@ -158,11 +183,14 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
       // Dishes suggested or eaten in the last few days rank lower (utils/variety.ts).
       penalty: r => recencyPenalty(r.id, recipeExposure) / 10,
       goalFor,
+      // Leftovers are the person's call unless they switched this on.
+      rollLeftovers: autoLeftovers,
     });
+    added.forEach(m => { const r = libs[m.slot]?.find(x => x.id === m.recipeId); if (r && !recipesById.has(r.id)) setExtra(prev => ({ ...prev, [r.id]: r })); });
     planMeals(added.map(({ id: _i, addedAt: _a, ...rest }) => rest));
     setUndoEntries(added.map(({ date, slot, recipeId }) => ({ date, slot, recipeId })));
     a11y.haptic('success');
-    say(added.length ? `Planned ${added.length} meal${added.length === 1 ? '' : 's'}` : 'No more recipes to add');
+    say(added.length ? `Planned ${added.length} meal${added.length === 1 ? '' : 's'}` : 'No more recipes fit — loosen a rule in Profile or try again');
   };
 
   const undoFill = () => {
@@ -321,13 +349,14 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
         {/* Actions */}
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.primaryBtn, emptyCount === 0 && styles.disabled]}
-            onPress={() => fill()}
-            disabled={emptyCount === 0}
+            style={[styles.primaryBtn, (emptyCount === 0 || filling) && styles.disabled]}
+            onPress={() => { fill(); }}
+            disabled={emptyCount === 0 || filling}
             accessibilityRole="button"
+            accessibilityState={{ busy: filling }}
           >
             <FontAwesome name="magic" size={15} color={COLORS.cardWhite} />
-            <Text style={styles.primaryText}>{emptyCount === 0 ? cookingDays.length ? 'Week is full' : 'No cook days' : `Fill ${emptyCount} empty`}</Text>
+            <Text style={styles.primaryText}>{filling ? 'Finding meals…' : emptyCount === 0 ? cookingDays.length ? 'Week is full' : 'No cook days' : `Fill ${emptyCount} empty`}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.goldBtn, need.length === 0 && styles.disabled]}
@@ -340,6 +369,25 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
             <Text style={styles.goldText}>{need.length ? `Shop for it (${need.length})` : 'Nothing to buy'}</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          style={styles.leftoverToggle}
+          onPress={() => { a11y.haptic(); updateSettings({ planLeftovers: !autoLeftovers }); }}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: autoLeftovers }}
+          accessibilityLabel="Let Fill plan leftovers for me"
+        >
+          <View style={[styles.toggleBox, autoLeftovers && styles.toggleBoxOn]}>
+            {autoLeftovers ? <FontAwesome name="check" size={11} color={COLORS.darkNavy} /> : null}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.leftoverTitle}>Let Fill plan leftovers too</Text>
+            <Text style={styles.leftoverHint}>
+              {autoLeftovers
+                ? 'Extra portions of each batch get placed into later lunches and dinners.'
+                : 'Off: every slot gets a different fresh dish. Put leftovers where you want them with “Use leftovers”.'}
+            </Text>
+          </View>
+        </TouchableOpacity>
         {weekHasContent ? (
           <TouchableOpacity
             style={styles.clearWeekButton}
@@ -387,7 +435,7 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
               ) ? (
                 <TouchableOpacity
                   style={styles.dayFillButton}
-                  onPress={() => fill([d.iso])}
+                  onPress={() => { fill([d.iso]); }}
                   accessibilityRole="button"
                   accessibilityLabel={`Fill empty meals for ${d.title}`}
                 >
@@ -847,6 +895,11 @@ const styles = StyleSheet.create({
   slotChipTextOn: { color: COLORS.darkNavy },
 
   actions: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  leftoverToggle: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 12, paddingHorizontal: 2 },
+  toggleBox: { width: 22, height: 22, borderRadius: 7, borderWidth: 1, borderColor: COLORS.borderLight, backgroundColor: COLORS.cardWhite, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  toggleBoxOn: { backgroundColor: COLORS.goldYellow, borderColor: COLORS.goldYellow },
+  leftoverTitle: { fontSize: 13, fontWeight: '700', color: COLORS.darkNavy },
+  leftoverHint: { fontSize: 12, lineHeight: 16, color: COLORS.textMuted, marginTop: 2 },
   primaryBtn: {
     flex: 1,
     flexDirection: 'row',

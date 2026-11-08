@@ -20,6 +20,8 @@ export interface CandidateFilters {
   tags?: string[];
   /** Recipes that satisfy ALL of these, e.g. ['vegetarian', 'gluten-free']. */
   dietary?: string[];
+  /** Recipes that carry at least ONE of these (eating goals like heart-healthy). */
+  dietaryAny?: string[];
   /** Drop recipes that contain OR may contain ANY of these allergens. */
   excludeAllergens?: string[];
   /**
@@ -54,6 +56,7 @@ function applyFilters<Q extends { [k: string]: any }>(query: Q, f: CandidateFilt
   if (f.mealType) q = q.contains('meal_types', [f.mealType]);
   if (f.tags?.length) q = q.overlaps('tags', f.tags);
   if (f.dietary?.length) q = q.contains('dietary', f.dietary);
+  if (f.dietaryAny?.length) q = q.overlaps('dietary', f.dietaryAny);
   if (f.excludeAllergens?.length) {
     q = q
       .not('allergens', 'ov', pgArray(f.excludeAllergens))

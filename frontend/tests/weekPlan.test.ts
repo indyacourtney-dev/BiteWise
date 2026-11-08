@@ -494,7 +494,22 @@ describe('Week planning', () => {
     ]);
   });
 
-  test('auto-fill spreads a four-serving batch over four meal slots', () => {
+  test('fill leaves leftovers to the person unless asked (rollLeftovers)', () => {
+    const recipe: Recipe = { ...RECIPES[0], id: 'four-meals', name: 'Crispy beef tacos', servings: 4 };
+    const added = fillWeek(
+      ['2026-10-14'],
+      ['breakfast'],
+      { breakfast: [recipe], lunch: [recipe], dinner: [recipe] },
+      [],
+      new Map([[recipe.id, recipe]]),
+      { preferences: { ...prefs, householdSize: 1 }, random: () => 0 },
+      100,
+    );
+    expect(added).toHaveLength(1);
+    expect(added[0].isLeftovers).toBeFalsy();
+  });
+
+  test('auto-fill spreads a four-serving batch over four meal slots when leftovers are on', () => {
     const recipe: Recipe = { ...RECIPES[0], id: 'four-meals', name: 'Crispy beef tacos', servings: 4 };
     const dates = ['2026-10-14'];
     const added = fillWeek(
@@ -503,7 +518,7 @@ describe('Week planning', () => {
       { breakfast: [recipe], lunch: [recipe], dinner: [recipe] },
       [],
       new Map([[recipe.id, recipe]]),
-      { preferences: { ...prefs, householdSize: 1 }, random: () => 0 },
+      { preferences: { ...prefs, householdSize: 1 }, random: () => 0, rollLeftovers: true },
       100,
     );
 
