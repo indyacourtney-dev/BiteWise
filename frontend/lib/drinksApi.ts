@@ -7,6 +7,7 @@
 // (utils/matching.ts ageAllowsRecipe) so nothing depends on one layer.
 
 import { CURATED_DRINKS } from '../constants/drinks';
+import { DRINK_EMOJI } from '../utils/drinks';
 import { fetchCandidateRecipes } from './recipesApi';
 import { configured } from './supabase';
 import type { Recipe } from '../types';
@@ -29,7 +30,9 @@ export async function fetchDrinks(): Promise<Recipe[]> {
     }
   }
   const byId = new Map<string, Recipe>();
-  for (const r of CURATED_DRINKS) byId.set(r.id, r);
+  // One glass for every drink (the database rows already come through
+  // rowToRecipe with it; the curated set keeps its emojis for seeding).
+  for (const r of CURATED_DRINKS) byId.set(r.id, { ...r, emoji: DRINK_EMOJI });
   for (const r of remote) byId.set(r.id, r);
   cache = Array.from(byId.values());
   return cache;

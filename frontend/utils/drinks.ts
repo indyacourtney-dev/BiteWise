@@ -15,6 +15,9 @@ import { displayIngredientName, getPantryCoverage, passesDietaryFilter, type Pan
 import type { PantryItem, Recipe, UserPreferences } from '../types';
 
 export type DrinkSegment = 'mocktails' | 'cocktails';
+
+/** Every drink shows the same glass, so the section reads as one thing. */
+export const DRINK_EMOJI = '🥤';
 export type DrinkFilter = 'pantry' | 'quick' | 'crowd';
 
 export const DRINK_FILTERS: { id: DrinkFilter; label: string; icon: string }[] = [

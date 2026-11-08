@@ -8,6 +8,7 @@
 // know the database exists. backend/scripts also import this file.
 
 import type { Allergen, DietaryTag, MealType, Nutrition, PlateComposition, Recipe } from '../types';
+import { DRINK_EMOJI } from '../utils/drinks';
 
 /**
  * The nutrition jsonb. Curated recipes have the five Nutrition fields;
@@ -74,7 +75,8 @@ export function rowToRecipe(row: RecipeRow): Recipe {
   return {
     id: row.id,
     name: row.name,
-    emoji: row.emoji,
+    // Every drink shows the same glass; the per-recipe emoji is for food.
+    emoji: row.kind === 'drink' ? DRINK_EMOJI : row.emoji,
     tags: row.tags,
     vibe: row.vibe,
     plate: row.plate ?? EMPTY_PLATE,
