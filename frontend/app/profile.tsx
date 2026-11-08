@@ -12,6 +12,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import Constants from 'expo-constants';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import Avatar from '@/components/Avatar';
 import { SettingsHeader, SettingsRow, SettingsSection, settingsStyles } from '@/components/SettingsUI';
@@ -23,12 +24,14 @@ import { useAuth } from '@/context/AuthContext';
 import { configured } from '@/lib/supabase';
 import { removeAvatar, uploadAvatar } from '@/lib/accountApi';
 import { setMyProfileCache, useMyProfile } from '@/hooks/useMyProfile';
+import { ageOn } from '@/utils/age';
+import { GOAL_LABELS, dailyTargets, formatHeight, formatWeight, isCompleteGoals } from '@/utils/goals';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
-  const { preferences, settings, favorites } = useApp();
+  const { preferences, settings, favorites, birthDate } = useApp();
   const { profile } = useMyProfile();
 
   const [sheet, setSheet] = useState(false);
@@ -99,6 +102,7 @@ export default function ProfileScreen() {
   ];
   const lessOften = tasteIdsForTags(preferences.dislikedTags).map(id => TASTE_OPTIONS.find(o => o.id === id)?.label ?? id);
   const spice = preferences.spiceTolerance ? `Spice: ${preferences.spiceTolerance}` : null;
+  const goalDaily = isCompleteGoals(preferences.goals) ? dailyTargets(preferences.goals, birthDate ? ageOn(birthDate) : 30) : null;
 
   return (
     <SafeAreaView style={settingsStyles.safeArea} edges={['top']}>
@@ -139,6 +143,28 @@ export default function ProfileScreen() {
           <TasteRow label="Less often" tone="muted" items={[...lessOften, ...(spice ? [spice] : [])]} empty="Nothing to go easy on" />
           <Text style={styles.tastesNote}>“Never” is a hard rule. “Less often” still comes up now and then — the app learns from what you cook.</Text>
         </View>
+
+        {/* Your goal (optional) */}
+        {goalDaily && preferences.goals ? (
+          <TouchableOpacity style={styles.goalCard} onPress={() => router.push('/settings/goals')} accessibilityRole="button" accessibilityLabel="Change your goal">
+            <View style={styles.goalIcon}><FontAwesome name={preferences.goals.goal === 'gain' ? 'bolt' : preferences.goals.goal === 'lose' ? 'leaf' : 'balance-scale'} size={16} color={COLORS.darkNavy} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.goalTitle}>{GOAL_LABELS[preferences.goals.goal]}</Text>
+              <Text style={styles.goalLine}>~{goalDaily.calories.toLocaleString('en-US')} cal · {goalDaily.protein} g protein a day · {formatHeight(preferences.goals.heightCm, preferences.goals.units)} · {formatWeight(preferences.goals.weightKg, preferences.goals.units)}</Text>
+              <Text style={styles.goalNote}>Picks and portion tips lean this way.</Text>
+            </View>
+            <Text style={styles.tastesChange}>Change</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={[styles.goalCard, styles.goalCardEmpty]} onPress={() => router.push('/settings/goals')} accessibilityRole="button">
+            <View style={styles.goalIcon}><FontAwesome name="heartbeat" size={16} color={COLORS.darkNavy} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.goalTitle}>Set a fitness goal</Text>
+              <Text style={styles.goalLine}>Lose weight, gain muscle or stay put — meal picks and portions follow. Optional.</Text>
+            </View>
+            <FontAwesome name="chevron-right" size={13} color={COLORS.textMuted} />
+          </TouchableOpacity>
+        )}
 
         <SettingsSection title="Account">
           <SettingsRow icon="user" label="Name, email & password" onPress={() => router.push('/settings/account')} last />
@@ -209,6 +235,12 @@ function SheetButton({ label, onPress, danger, muted }: { label: string; onPress
 const styles = StyleSheet.create({
   hero: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingTop: 8 },
   heroText: { flex: 1, gap: 2 },
+  goalCard: { marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.cardWhite, borderRadius: 18, borderWidth: 1, borderColor: COLORS.borderLight, padding: 14 },
+  goalCardEmpty: { backgroundColor: COLORS.lightYellow, borderColor: COLORS.yellowBorder },
+  goalIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: COLORS.goldYellow, alignItems: 'center', justifyContent: 'center' },
+  goalTitle: { fontSize: 15, fontWeight: '700', color: COLORS.darkNavy },
+  goalLine: { fontSize: 12.5, lineHeight: 17, color: COLORS.textMuted, marginTop: 2 },
+  goalNote: { fontSize: 11.5, color: COLORS.textGold, fontWeight: '600', marginTop: 3 },
   tastes: { marginTop: 18, backgroundColor: COLORS.cardWhite, borderRadius: 18, borderWidth: 1, borderColor: COLORS.borderLight, padding: 16, gap: 12 },
   tastesHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   tastesTitle: { fontSize: 15, fontWeight: '700', color: COLORS.darkNavy },

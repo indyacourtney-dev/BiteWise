@@ -22,6 +22,8 @@ import { useRecipeLibrary } from './useRecipeLibrary';
 import { configured } from '../lib/supabase';
 import { fetchMyRatingFeedback } from '../lib/reviewsApi';
 import { rankForDecision, type Craving, type Decision } from '../utils/decide';
+import { ageOn } from '../utils/age';
+import { goalForMeal } from '../utils/goals';
 import type { MealType, RecipeRatingFeedback } from '../types';
 
 export interface UseDecisionOptions {
@@ -39,7 +41,7 @@ let ratingCache: RecipeRatingFeedback[] | null = null;
 
 export function useDecision({ mealType, craving, active = true, noteShown = true }: UseDecisionOptions) {
   const {
-    preferences, pantry, favorites, history, recordQuizRun, recipeExposure, noteRecipesShown,
+    preferences, pantry, favorites, history, recordQuizRun, recipeExposure, noteRecipesShown, birthDate,
   } = useApp();
   const { recipes, loading, error } = useRecipeLibrary(mealType, preferences);
 
@@ -77,12 +79,13 @@ export function useDecision({ mealType, craving, active = true, noteShown = true
         ? rankForDecision(recipes, {
             mealType, craving, preferences, pantry, favorites, history,
             ratings, exposure: exposureAtStart.current,
+            goal: goalForMeal(preferences.goals, birthDate ? ageOn(birthDate) : null, mealType),
           })
         : [],
     // history/favorites left out on purpose: re-ranking while a pick is on
     // screen (after tapping the heart, say) would swap the card.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [active, round, recipes, mealType, craving, preferences, pantry, ratings]
+    [active, round, recipes, mealType, craving, preferences, pantry, ratings, birthDate]
   );
   const remaining = useMemo(() => ranked.filter(d => !skipped.includes(d.recipe.id)), [ranked, skipped]);
   const pick = remaining[0] ?? null;

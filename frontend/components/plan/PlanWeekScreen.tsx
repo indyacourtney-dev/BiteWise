@@ -41,7 +41,8 @@ import { useAccessibility } from '@/hooks/useAccessibility';
 import { fetchRecipesByIds } from '@/lib/recipesApi';
 import { configured } from '@/lib/supabase';
 import { ageAllowsRecipe, pantryHas } from '@/utils/matching';
-import { todayIso } from '@/utils/age';
+import { ageOn, todayIso } from '@/utils/age';
+import { goalForMeal } from '@/utils/goals';
 import { addDays, planSlotKey, PLAN_SLOTS, fillWeek, ingredientsToBuy, pickForSlot, weekDays } from '@/utils/weekPlan';
 import { recencyPenalty } from '@/utils/variety';
 import type { PlanDayStatus, PlannedMeal, PlanSlot, Recipe } from '@/types';
@@ -60,8 +61,9 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
   const a11y = useAccessibility();
   const {
     mealPlan, mealPlanDays, mealPlanSlots, planMeal, planMeals, unplanMeal, unplanMeals, clearMealPlanRange, toggleMealCooked, updateMealServings,
-    setPlanDayStatus, setPlanSlotStatus, preferences, favorites, pantry, addGroceryItem, recipeExposure,
+    setPlanDayStatus, setPlanSlotStatus, preferences, favorites, pantry, addGroceryItem, recipeExposure, birthDate,
   } = useApp();
+  const goalFor = (slot: PlanSlot) => goalForMeal(preferences.goals, birthDate ? ageOn(birthDate) : null, slot);
 
   // ----- the week -----
   const today = todayIso();
@@ -153,6 +155,7 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
       slotStatuses: mealPlanSlots,
       // Dishes suggested or eaten in the last few days rank lower (utils/variety.ts).
       penalty: r => recencyPenalty(r.id, recipeExposure) / 10,
+      goalFor,
     });
     planMeals(added.map(({ id: _i, addedAt: _a, ...rest }) => rest));
     setUndoEntries(added.map(({ date, slot, recipeId }) => ({ date, slot, recipeId })));
@@ -657,7 +660,7 @@ function RecipePicker({
 }) {
   const insets = useSafeAreaInsets();
   const a11y = useAccessibility();
-  const { preferences, recipeExposure } = useApp();
+  const { preferences, recipeExposure, birthDate } = useApp();
   const [query, setQuery] = useState('');
 
   useEffect(() => setQuery(''), [target]);
@@ -675,6 +678,7 @@ function RecipePicker({
         preferences,
         favoriteIds,
         penalty: x => recencyPenalty(x.id, recipeExposure) / 10,
+        goalFor: slot => goalForMeal(preferences.goals, birthDate ? ageOn(birthDate) : null, slot),
       });
       if (!r) break;
       picks.push(r);

@@ -1,3 +1,4 @@
+import type { NutritionGoals } from '../utils/goals';
 
 // 'random' was Surprise Me (removed); kept so older saved history still loads.
 export type GameMode = 'pantry' | 'weekly' | 'thisorthat' | 'decide' | 'random';
@@ -219,6 +220,13 @@ export interface UserPreferences {
    * responsible-drinking note (ms). Asked once; synced with the account.
    */
   cocktailsConfirmedAt?: number;
+  /**
+   * Optional fitness / nutrition goal set in Profile (never in onboarding):
+   * height, weight, activity and what they're after. Turned into calorie
+   * and protein targets by utils/goals.ts; synced with the account like the
+   * rest of preferences. Missing = no goal, nothing changes.
+   */
+  goals?: NutritionGoals | null;
 }
 
 // ============================================

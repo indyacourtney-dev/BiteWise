@@ -21,6 +21,7 @@
 // protein you just skipped. tests/decide.sim.ts measures the effect.
 
 import { favoriteOverlap, dislikeOverlap, getPantryCoverage, isPlateBalanced, plateBalanceScore } from './matching';
+import { goalFit, type GoalKind, type MealTargets } from './goals';
 import { getTotalTime } from '../constants/recipes';
 import { lovedFoodsIn } from './customFoods';
 import { CUISINE_LABELS, cuisineMatches } from './cuisine';
@@ -115,6 +116,8 @@ export interface DecideContext {
   random?: () => number;
   /** false = the old ranking (top score, tiny shuffle). Only for comparisons. */
   variety?: boolean;
+  /** Fitness goal for this meal (utils/goals.ts goalForMeal). Missing = no goal. */
+  goal?: { kind: GoalKind; target: MealTargets } | null;
 }
 
 export interface Decision {
@@ -180,6 +183,8 @@ export const DISLIKE_MAX_SHOWINGS = 2;      // after this many showings it's out
 export const DISLIKE_BACKOFF_PENALTY = 60;
 /** Points for a fully balanced plate (scaled by plateBalanceScore). */
 export const BALANCE_WEIGHT = 16;
+/** Points for a serving that fits the person's fitness goal (scaled by goalFit). */
+export const GOAL_WEIGHT = 14;
 
 export function dislikePenalty(dislikes: number, timesShown: number, everChosen: boolean): number {
   if (dislikes <= 0) return 0;
@@ -330,6 +335,14 @@ export function rankForDecision(pool: Recipe[], ctx: DecideContext): Decision[] 
         score += BALANCE_WEIGHT * balance;
         if (isPlateBalanced(recipe.plate)) reasons.push({ weight: 7, text: 'A balanced plate' });
         else if (balance >= 0.7) reasons.push({ weight: 3, text: 'Close to a balanced plate' });
+      }
+      // Fitness goal: more protein for "gain muscle", lighter and filling
+      // for "lose weight", about-right for "maintain". A soft nudge with a
+      // reason, never a filter — portions are suggested on the recipe page.
+      if (ctx.goal && ctx.mealType !== 'dessert' && recipe.nutrition.calories > 0) {
+        const fit = goalFit(recipe.nutrition, ctx.goal.kind, ctx.goal.target);
+        score += GOAL_WEIGHT * fit.score;
+        if (fit.reason && fit.score >= 0.75) reasons.push({ weight: 6.5, text: fit.reason });
       }
       if (!recipe.source || recipe.source === 'bitewise') score += 3;   // hand-checked recipes
 

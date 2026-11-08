@@ -27,6 +27,8 @@ import { MEAL_INFO, getMealTypes } from '../utils/meals';
 import { findCustomConflicts } from '../utils/customFoods';
 import { getPantryCoverage, pantryHas } from '../utils/matching';
 import { scaleAmount } from '../utils/servings';
+import { ageOn } from '../utils/age';
+import { GOAL_LABELS, goalFit, goalForMeal, isCompleteGoals } from '../utils/goals';
 import { useApp } from '../context/AppContext';
 import { useAccessibility } from '../hooks/useAccessibility';
 import {
@@ -90,7 +92,7 @@ export default function RecipeDetail({
   openCookingSignal,
   hideInlineCookButton = false,
 }: Props) {
-  const { preferences, pantry, addGroceryItem, grocery } = useApp();
+  const { preferences, pantry, addGroceryItem, grocery, mealType: currentMeal, birthDate } = useApp();
   const a11y = useAccessibility();
   const [guidedVisible, setGuidedVisible] = useState(false);
   const [reviewPrompt, setReviewPrompt] = useState(false);
@@ -165,6 +167,15 @@ export default function RecipeDetail({
   const coverage = useMemo(() => getPantryCoverage(recipe, pantry), [recipe, pantry]);
   const factor = recipe.servings > 0 ? servings / recipe.servings : 1;
   const isDrink = recipe.kind === 'drink';
+  const goalView = (() => {
+    if (!isCompleteGoals(preferences.goals) || recipe.nutrition.calories <= 0) return null;
+    const meals = getMealTypes(recipe);
+    const meal = meals.includes(currentMeal) ? currentMeal : (meals[0] ?? 'dinner');
+    if (meal === 'dessert') return null;
+    const g = goalForMeal(preferences.goals, birthDate ? ageOn(birthDate) : null, meal);
+    if (!g) return null;
+    return { ...g, fit: goalFit(recipe.nutrition, g.kind, g.target), mealLabel: MEAL_INFO[meal].label.toLowerCase() };
+  })();
   const onList = useMemo(() => new Set(grocery.map(g => g.name.toLowerCase())), [grocery]);
   const missingRequired = recipe.ingredients.filter(i => !i.optional && !pantryHas(pantry, i.name));
   const missingNotListed = missingRequired.filter(i => !onList.has(i.name.toLowerCase()));
@@ -400,6 +411,30 @@ export default function RecipeDetail({
           <FontAwesome name="lightbulb-o" size={14} color={COLORS.textGold} />
           <Text style={styles.tipText}>{suggestion}</Text>
         </View>
+      ) : null}
+
+      {/* FOR YOUR GOAL — only when a goal is set; one serving against this meal's share */}
+      {goalView && !isDrink ? (
+        <>
+          <Text style={styles.sectionTitle}>For your goal · {GOAL_LABELS[goalView.kind]}</Text>
+          <Card style={styles.blockPad}>
+            <GoalBar label="Calories" value={Math.round(recipe.nutrition.calories)} target={goalView.target.calories} unit="" meal={goalView.mealLabel} />
+            <GoalBar label="Protein" value={Math.round(recipe.nutrition.protein)} target={goalView.target.protein} unit=" g" meal={goalView.mealLabel} />
+            {goalView.fit.reason ? (
+              <View style={styles.goalLine}>
+                <FontAwesome name="check-circle" size={14} color={COLORS.green} />
+                <Text style={[styles.goalLineText, { color: COLORS.green }]}>{goalView.fit.reason}</Text>
+              </View>
+            ) : null}
+            {goalView.fit.portion ? (
+              <View style={styles.goalLine}>
+                <FontAwesome name="lightbulb-o" size={14} color={COLORS.textGold} />
+                <Text style={styles.goalLineText}>{goalView.fit.portion}</Text>
+              </View>
+            ) : null}
+            <Text style={styles.goalFine}>Per serving. Targets are estimates from your goal, not medical advice.</Text>
+          </Card>
+        </>
       ) : null}
 
       {/* GOOD TO KNOW */}
@@ -704,7 +739,33 @@ function GuidedStepTipsPage({
 // STYLES
 // ============================================
 
+function GoalBar({ label, value, target, unit, meal }: { label: string; value: number; target: number; unit: string; meal: string }) {
+  const ratio = target > 0 ? value / target : 0;
+  const over = ratio > 1.15;
+  const width = `${Math.min(100, Math.round(ratio * 100))}%` as const;
+  return (
+    <View style={styles.goalBarWrap} accessibilityLabel={`${label}: ${value}${unit} of about ${target}${unit} for ${meal}`}>
+      <View style={styles.goalBarHead}>
+        <Text style={styles.goalBarLabel}>{label}</Text>
+        <Text style={styles.goalBarNums}>
+          <Text style={{ fontWeight: '800', color: over ? COLORS.textGold : COLORS.darkNavy }}>{value}{unit}</Text> of ~{target}{unit} for {meal}
+        </Text>
+      </View>
+      <View style={styles.goalTrack}><View style={[styles.goalFill, { width }, over && { backgroundColor: COLORS.goldYellow }]} /></View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  goalBarWrap: { gap: 6, marginBottom: 12 },
+  goalBarHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 },
+  goalBarLabel: { fontSize: 13, fontWeight: '700', color: COLORS.darkNavy },
+  goalBarNums: { fontSize: 12.5, color: COLORS.textMuted },
+  goalTrack: { height: 8, borderRadius: 4, backgroundColor: COLORS.lightBlueBg, overflow: 'hidden' },
+  goalFill: { height: '100%', borderRadius: 4, backgroundColor: COLORS.green },
+  goalLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 2, marginBottom: 6 },
+  goalLineText: { flex: 1, fontSize: 13, lineHeight: 18, color: COLORS.textDark },
+  goalFine: { fontSize: 11.5, color: COLORS.textMuted, marginTop: 4 },
   noteBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     backgroundColor: COLORS.lightYellow, borderWidth: 1, borderColor: COLORS.yellowBorder,
