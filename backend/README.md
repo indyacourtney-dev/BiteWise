@@ -88,6 +88,7 @@ npm run db:seed                 # send the updated recipes to Supabase
 - **Safety.** Allergy and diet filtering happens in the database on every call:
   - a recipe is only shown if its allergens are verified and it neither contains nor may contain anything the user avoids;
   - a recipe must carry every diet tag the user chose.
+- **The app checks again before suggesting anything.** `frontend/utils/recipeSafety.ts` `validateRecipe()` returns `safe`, `review` or `rejected` with reasons. It checks the labels above, and it also scans the ingredient names, so a recipe that claims "vegan" but lists honey is rejected. Only `safe` recipes are suggested. Missing data, vague ingredients ("broth" for a vegetarian) and errors during the check all count as `review`, never as safe. Every suggestion screen uses it through `passesDietaryFilter`. **Any new recipe source (AI-generated, a new import) must pass its recipes through `screenRecipesForUser()` before showing them.**
 - **Server-side tables for later.** `user_pantry`, `user_allergens` and `user_diet_tags` exist for when you want pantries to sync across devices. The pantry functions use them when no pantry is passed in.
 - **Favorites (Task 1.6).** Hearts are stored in the `favorites` table, one row per user and recipe. A trigger keeps `recipes.favorite_count` up to date, and the app shows it as "Saved by N cooks".
 - **Chat rooms (Task 1.7).**

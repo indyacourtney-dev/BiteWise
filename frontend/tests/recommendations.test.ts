@@ -32,7 +32,8 @@ const recipe = (patch: Partial<Recipe>): Recipe => ({
   allergens: [],
   mayContain: [],
   allergensVerified: true,
-  ingredients: [],
+  // An empty list can't be checked, so the safety check holds it for review.
+  ingredients: [{ name: 'rice', amount: '1 cup', category: 'grains' }],
   ...patch,
 });
 

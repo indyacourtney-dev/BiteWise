@@ -41,7 +41,8 @@ const baseRecipe: Recipe = {
   cookMinutes: 20,
   servings: 2,
   difficulty: 'easy',
-  ingredients: [],
+  // An empty list can't be checked, so the safety check holds it for review.
+  ingredients: [{ name: 'rice', amount: '1 cup', category: 'grains' }],
   instructions: [],
   dietary: [],
   allergens: [],
