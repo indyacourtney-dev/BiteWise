@@ -25,7 +25,7 @@ import { COLORS } from '../constants/Colors';
 import { formatTime, getTotalTime, DIFFICULTY_LABELS } from '../constants/recipes';
 import { getRecipeImage, hasRecipePhoto } from '../constants/recipeImages';
 import { MEAL_INFO, getMealTypes } from '../utils/meals';
-import { findCustomConflicts } from '../utils/customFoods';
+import { validateRecipe } from '../utils/recipeSafety';
 import { getPantryCoverage, pantryHas } from '../utils/matching';
 import { scaleAmount } from '../utils/servings';
 import { ageOn } from '../utils/age';
@@ -150,19 +150,18 @@ export default function RecipeDetail({
   };
 
   // Safety net for recipes opened directly (a chat card, an old favorite):
-  // say clearly if it conflicts with the user's allergies or foods to avoid.
-  const custom = findCustomConflicts(recipe, preferences);
-  const contains = recipe.allergens.filter(a => preferences.avoidAllergens.includes(a));
-  const mayContain = (recipe.mayContain ?? []).filter(a => preferences.avoidAllergens.includes(a));
+  // the same check every suggestion goes through (utils/recipeSafety.ts),
+  // with its reasons. The age rule is handled by the screen itself.
+  const safety = useMemo(() => validateRecipe(recipe, preferences), [recipe, preferences]);
+  const shown = safety.issues.filter(i => i.kind !== 'age');
+  const notSafe = shown.filter(i => i.status === 'rejected' && i.kind !== 'avoid').map(i => i.message);
+  const toCheck = shown.filter(i => i.status === 'review').map(i => i.message);
+  const avoidNotes = shown.filter(i => i.kind === 'avoid').map(i => i.message);
+  const allergyKinds = ['allergen', 'custom-allergy'];
+  const notSafeTitle = shown.some(i => i.status === 'rejected' && allergyKinds.includes(i.kind))
+    ? 'Not safe for your allergies' : 'Doesn’t fit your diet';
   const hasAnyAllergy = preferences.avoidAllergens.length > 0 || (preferences.customAllergies ?? []).length > 0;
-  const allergyWarnings = [
-    ...contains.map(a => `Contains ${a.replace(/_/g, '-')}`),
-    ...mayContain.map(a => `May contain ${a.replace(/_/g, '-')}`),
-    ...custom.allergies.map(a => `Mentions ${a}`),
-    ...(hasAnyAllergy && recipe.allergensVerified === false
-      ? ["Some ingredients weren't recognised, so we can't confirm it's safe"] : []),
-  ];
-  const safeForAllergies = hasAnyAllergy && allergyWarnings.length === 0;
+  const safeForAllergies = hasAnyAllergy && safety.status === 'safe';
 
   // Pantry check per ingredient.
   const coverage = useMemo(() => getPantryCoverage(recipe, pantry), [recipe, pantry]);
@@ -194,16 +193,22 @@ export default function RecipeDetail({
 
   return (
     <View onLayout={event => { detailOffset.current = event.nativeEvent.layout.y; }}>
-      {allergyWarnings.length > 0 ? (
+      {notSafe.length > 0 ? (
         <View style={styles.warnBox} accessibilityRole="alert">
-          <Text style={styles.warnTitle}>Not safe for your allergies</Text>
-          {allergyWarnings.map(w => <Text key={w} style={styles.warnText}>• {w}</Text>)}
+          <Text style={styles.warnTitle}>{notSafeTitle}</Text>
+          {notSafe.map(w => <Text key={w} style={styles.warnText}>• {w}</Text>)}
         </View>
       ) : null}
-      {custom.avoid.length > 0 ? (
+      {toCheck.length > 0 ? (
+        <View style={styles.warnBox} accessibilityRole="alert">
+          <Text style={styles.warnTitle}>Check before cooking</Text>
+          {toCheck.map(w => <Text key={w} style={styles.warnText}>• {w}</Text>)}
+        </View>
+      ) : null}
+      {avoidNotes.length > 0 ? (
         <View style={styles.noteBox}>
           <FontAwesome name="info-circle" size={14} color={COLORS.textGold} />
-          <Text style={styles.noteText}>Has {custom.avoid.join(', ')}, which you said you'd rather avoid.</Text>
+          <Text style={styles.noteText}>{avoidNotes.join(' ')}</Text>
         </View>
       ) : null}
       {note ? (

@@ -19,9 +19,9 @@ import { COLORS } from '@/constants/Colors';
 import { getRecipeById } from '@/constants/recipes';
 import { useApp } from '@/context/AppContext';
 import { fetchRecipesByIds } from '@/lib/recipesApi';
-import { findCustomConflicts } from '@/utils/customFoods';
 import { MEAL_INFO, MEAL_TYPES, suitsMeal } from '@/utils/meals';
 import { ageAllowsRecipe } from '@/utils/matching';
+import { isSafeToRecommend } from '@/utils/recipeSafety';
 import type { MealType, Recipe } from '@/types';
 
 export default function FavoritesScreen() {
@@ -66,9 +66,10 @@ export default function FavoritesScreen() {
   // Hearts are respected even if preferences changed later — but never
   // suggest something that now conflicts with an allergy.
   const pickForMe = () => {
-    const safe = shown.filter(r =>
-      !r.allergens.some(a => preferences.avoidAllergens.includes(a))
-      && findCustomConflicts(r, preferences).allergies.length === 0);
+    // Same safety check as every other suggestion (utils/recipeSafety.ts):
+    // allergies incl. "may contain", diet rules, foods to avoid. Anything it
+    // can't confirm is left out.
+    const safe = shown.filter(r => isSafeToRecommend(r, preferences));
     if (safe.length === 0) return;
     const choice = safe[Math.floor(Math.random() * safe.length)];
     recordQuizRun({

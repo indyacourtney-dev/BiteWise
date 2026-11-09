@@ -27,12 +27,9 @@
 // dimension instead of being a hard filter, so picking "spicy" nudges
 // results rather than deleting two-thirds of the library.
 
-import { findCustomConflicts } from './customFoods';
-import { dietRules } from './diets';
-import { recipeHasAlcohol } from './alcohol';
+import { isSafeToRecommend } from './recipeSafety';
 import { TASTE_OPTIONS } from '../constants/preferenceOptions';
 import type {
-  Allergen,
   Recipe,
   ScoredRecipe,
   PlateComposition,
@@ -302,72 +299,26 @@ export function getPantryCoverage(
 // DIETARY FILTERING
 // ============================================
 
-/**
- * Allergens are a hard exclusion — never surface a recipe containing
- * something the user flagged.
- */
-/**
- * Age safeguard on its own, for screens that show a recipe without the
- * other filters (a shared link, chat, Community, favorites).
- */
-export function ageAllowsRecipe(recipe: Recipe, prefs: Pick<UserPreferences, 'allowAlcohol'>): boolean {
-  return prefs.allowAlcohol === true || !recipeHasAlcohol(recipe);
-}
+// Safety (allergies, diet rules, age, foods to avoid) lives in
+// utils/recipeSafety.ts, so every screen and every recipe source uses one
+// set of rules. These are re-exported for the screens that import them here.
+export { ageAllowsRecipe, expandAllergens } from './recipeSafety';
 
 /**
- * Allergens the user picked, plus the ones they imply. The recipe database
- * tags clams, mussels, squid etc. as 'mollusc' separately from 'shellfish',
- * so without this a "Shellfish" allergy let 400+ mollusc recipes through.
- * Wheat is already tagged 'gluten' by the pipeline; it's listed here so a
- * hand-entered recipe tagged only 'wheat' is caught too.
+ * Can this recipe be suggested to this person? Only when the safety check
+ * says 'safe' (a recipe it can't confirm is never suggested), and it fits
+ * their cooking-time limit. Use validateRecipe() for the reasons.
  */
-const IMPLIED_ALLERGENS: Partial<Record<Allergen, Allergen[]>> = {
-  shellfish: ['mollusc'],
-  gluten: ['wheat'],
-};
-
-export function expandAllergens(avoid: Allergen[]): Allergen[] {
-  const out = new Set<Allergen>(avoid);
-  for (const a of avoid) IMPLIED_ALLERGENS[a]?.forEach(x => out.add(x));
-  return Array.from(out);
-}
-
 export function passesDietaryFilter(
   recipe: Recipe,
   prefs: UserPreferences
 ): boolean {
-  // Age safeguard: recipes made with alcohol only for people 21+ (utils/alcohol.ts).
-  if (!ageAllowsRecipe(recipe, prefs)) return false;
+  if (!isSafeToRecommend(recipe, prefs)) return false;
 
-  const avoid = expandAllergens(prefs.avoidAllergens);
-  const hasAllergen = recipe.allergens.some(a => avoid.includes(a));
-  if (hasAllergen) return false;
-
-  // Recipes from the database can also list hidden allergens ("bread may
-  // contain eggs"), and imported/community recipes with an unrecognised
-  // ingredient have allergensVerified === false. For anyone with an
-  // allergy, both mean "don't show it".
-  const customAllergies = prefs.customAllergies ?? [];
-  if (avoid.length > 0 || customAllergies.length > 0) {
-    if (recipe.allergensVerified === false) return false;
-    if (recipe.mayContain?.some(a => avoid.includes(a))) return false;
-  }
-
-  // Allergies and foods-to-avoid the user typed in Profile.
-  if (customAllergies.length > 0 || (prefs.customAvoid ?? []).length > 0) {
-    const conflicts = findCustomConflicts(recipe, prefs);
-    if (conflicts.allergies.length > 0 || conflicts.avoid.length > 0) return false;
-  }
-
-  // Diet RULES (vegan, gluten-free, halal…) are hard; eating GOALS
-  // (heart-healthy, low-sodium…) are favored in ranking, never required —
-  // see utils/diets.ts.
-  const meetsDiet = dietRules(prefs).every(tag => recipe.dietary.includes(tag));
-  if (!meetsDiet) return false;
-
-  if (prefs.maxCookMinutes !== null) {
+  if (prefs.maxCookMinutes !== null && prefs.maxCookMinutes !== undefined) {
     const total = recipe.prepMinutes + recipe.cookMinutes;
-    if (total > prefs.maxCookMinutes) return false;
+    // A missing time can't be checked against the limit.
+    if (!Number.isFinite(total) || total > prefs.maxCookMinutes) return false;
   }
 
   return true;
