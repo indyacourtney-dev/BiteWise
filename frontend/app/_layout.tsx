@@ -88,6 +88,7 @@ function RootLayoutNav() {
               />
               {/* Pushed screens keep the default slide-from-right + swipe back. */}
               <Stack.Screen name="cookWithPantry" />
+              <Stack.Screen name="generateRecipes" />
               <Stack.Screen name="thisorthat" />
               <Stack.Screen name="planWeek" />
               <Stack.Screen name="recipe/[id]" />

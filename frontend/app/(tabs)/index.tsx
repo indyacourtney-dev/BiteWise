@@ -222,6 +222,24 @@ export default function Home() {
           />
         </View>
 
+        {/* CREATE WITH AI */}
+        <TouchableOpacity
+          style={[ui.pad, { marginTop: 10 }]}
+          onPress={() => router.push(`/generateRecipes?meal=${mealType}`)}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Create with AI: new recipes from what you have"
+        >
+          <View style={s.drinksRow}>
+            <FontAwesome name="magic" size={20} color={COLORS.goldYellow} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.drinksTitle}>Create with AI</Text>
+              <Text style={s.drinksSub}>New recipes from what you have, checked for your allergies</Text>
+            </View>
+            <FontAwesome name="chevron-right" size={13} color={COLORS.navyMuted} />
+          </View>
+        </TouchableOpacity>
+
         {/* DRINKS — its own section, never mixed into meal picks */}
         <TouchableOpacity
           style={[ui.pad, { marginTop: 10 }]}

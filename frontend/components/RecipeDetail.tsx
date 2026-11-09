@@ -211,6 +211,18 @@ export default function RecipeDetail({
           <Text style={styles.noteText}>{avoidNotes.join(' ')}</Text>
         </View>
       ) : null}
+      {recipe.source === 'ai' ? (
+        <View style={styles.noteBox}>
+          <FontAwesome name="magic" size={14} color={COLORS.textGold} />
+          <Text style={styles.noteText}>
+            Written by AI. Allergen and diet labels {recipe.ai?.labelsChecked ? 'were checked against the BiteWise ingredient list' : 'couldn’t be checked yet, so they’re unverified'}
+            {recipe.ai?.unmatchedIngredients.length ? ` (we didn’t recognise: ${recipe.ai.unmatchedIngredients.join(', ')})` : ''}.
+            {recipe.ai?.claimedDietary.length ? ` The AI says it’s ${recipe.ai.claimedDietary.join(', ')} (unverified).` : ''}
+            {recipe.ai && !recipe.ai.timesKnown ? ' Cooking times weren’t given.' : ''}
+            {' '}Check labels before cooking.
+          </Text>
+        </View>
+      ) : null}
       {note ? (
         <View style={styles.noteBox}>
           <FontAwesome name="info-circle" size={14} color={COLORS.textGold} />
@@ -238,7 +250,9 @@ export default function RecipeDetail({
             ? (recipe.containsAlcohol ? 'Cocktail' : 'Drink')
             : getMealTypes(recipe).map(m => MEAL_INFO[m].label).join(' · ')}
           {recipe.source === 'community' ? ` · Home recipe${recipe.authorName ? ` by ${recipe.authorName}` : ''}` : ''}
+          {recipe.source === 'ai' ? ' · Made with AI' : ''}
         </Text>
+        {recipe.description ? <Text style={styles.description}>{recipe.description}</Text> : null}
         <View style={styles.titleRow}>
           <TouchableOpacity
             style={styles.ratingPill}
@@ -811,6 +825,7 @@ const styles = StyleSheet.create({
   heroTag: { position: 'absolute', top: 12, right: 12 },
 
   titleBlock: { gap: 10 },
+  description: { fontSize: 14, lineHeight: 20, color: COLORS.textDark, marginTop: 6 },
   heroMeals: { fontSize: 13, color: COLORS.textMuted, fontWeight: '600' },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' },
   ratingPill: {

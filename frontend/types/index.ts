@@ -95,13 +95,42 @@ export interface Recipe {
   kind?: 'food' | 'drink';
   /** true = the source didn't say how many it serves; nutrition is per ~500 kcal portion. */
   servingsEstimated?: boolean;
-  source?: 'bitewise' | 'kaggle' | 'community';
+  /** 'ai' = written by Claude on request (lib/aiRecipesApi.ts); see `ai` below. */
+  source?: 'bitewise' | 'kaggle' | 'community' | 'ai';
+  /** One or two sentences about the dish (AI-generated recipes have one). */
+  description?: string;
+  /** Set only on AI-generated recipes. */
+  ai?: AiRecipeInfo;
   sourceUrl?: string;
   /** How many BiteWise users saved it (Supabase favorites). */
   favoriteCount?: number;
   /** Community (home) recipes: who shared it. */
   authorId?: string;
   authorName?: string;
+}
+
+/**
+ * What the AI said about its own recipe, kept apart from the checked labels.
+ * `Recipe.dietary` / `allergens` / `mayContain` / `allergensVerified` on an
+ * AI recipe come from the BiteWise ingredient catalog (plus any allergen the
+ * AI admitted to); these claims are shown as unverified and never used to
+ * decide whether a recipe is safe.
+ */
+export interface AiRecipeInfo {
+  /** Diets the AI says the recipe fits. Unverified. */
+  claimedDietary: string[];
+  /** Allergens the AI says the recipe contains. Unverified. */
+  claimedAllergens: string[];
+  /** true when the ingredient catalog checked the labels; false if that check couldn't run. */
+  labelsChecked: boolean;
+  /** Ingredient names the catalog didn't recognise (so allergens couldn't be confirmed). */
+  unmatchedIngredients: string[];
+  /** false = the AI didn't give prep/cook times; prepMinutes/cookMinutes are 0. */
+  timesKnown: boolean;
+  /** false = the AI didn't give nutrition; numbers are 0. */
+  nutritionKnown: boolean;
+  model: string;
+  generatedAt: number;
 }
 
 export interface RecipeRatingFeedback {

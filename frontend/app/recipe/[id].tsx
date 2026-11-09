@@ -27,6 +27,7 @@ import { getRecipeById } from '@/constants/recipes';
 import { COLORS } from '@/constants/Colors';
 import { configured } from '@/lib/supabase';
 import { fetchRecipeById } from '@/lib/recipesApi';
+import { getGeneratedRecipe, isGeneratedRecipeId, loadGeneratedRecipe } from '@/lib/aiRecipesApi';
 import { useApp } from '@/context/AppContext';
 import { ageAllowsRecipe } from '@/utils/matching';
 import type { Recipe } from '@/types';
@@ -37,9 +38,9 @@ export default function RecipeScreen() {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollViewInstance>(null);
 
-  const local = id ? getRecipeById(id) : undefined;
+  const local = id ? getRecipeById(id) ?? getGeneratedRecipe(id) : undefined;
   const [remote, setRemote] = useState<Recipe | undefined>(undefined);
-  const [loading, setLoading] = useState(!local && Boolean(id) && configured);
+  const [loading, setLoading] = useState(!local && Boolean(id) && (configured || isGeneratedRecipeId(id ?? '')));
   const [sharing, setSharing] = useState(false);
   const [planning, setPlanning] = useState(false);
   const [cookSignal, setCookSignal] = useState(0);
@@ -52,10 +53,13 @@ export default function RecipeScreen() {
   const matchScore = match ? Number(match) : undefined;
 
   useEffect(() => {
-    if (local || !id || !configured) return;
+    if (local || !id) return;
+    // AI-generated recipes are stored on the phone, not in the database.
+    const ai = isGeneratedRecipeId(id);
+    if (!ai && !configured) return;
     let cancelled = false;
     setLoading(true);
-    fetchRecipeById(id)
+    (ai ? loadGeneratedRecipe(id) : fetchRecipeById(id))
       .then(r => {
         if (!cancelled) setRemote(r);
       })
