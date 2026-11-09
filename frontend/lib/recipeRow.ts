@@ -107,6 +107,8 @@ export function rowToRecipe(row: RecipeRow): Recipe {
 
 /** Curated recipes from constants/recipes.ts → database rows (backend/scripts/seedCuratedRecipes.ts). */
 export function recipeToRow(recipe: Recipe): RecipeRow {
+  // AI recipes stay on the phone; their labels must never be stored as checked.
+  if (recipe.source === 'ai') throw new Error(`AI-generated recipe ${recipe.id} can't be saved as a curated row`);
   return {
     id: recipe.id,
     name: recipe.name,
@@ -127,7 +129,7 @@ export function recipeToRow(recipe: Recipe): RecipeRow {
     ingredients: recipe.ingredients,
     instructions: recipe.instructions,
     meal_types: recipe.mealTypes ?? ['dinner'],   // curated recipes were written as dinners
-    source: recipe.source ?? 'bitewise',
+    source: (recipe.source ?? 'bitewise') as RecipeRow['source'],
     source_url: recipe.sourceUrl ?? null,
   };
 }

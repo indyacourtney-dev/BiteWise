@@ -105,6 +105,46 @@ npm run db:seed                 # send the updated recipes to Supabase
 - **`docker-compose.yml`.** The Postgres it starts isn't used by any of this, since Supabase hosts the database. For a fully local setup, use `npx supabase start` (needs Docker), which runs the same stack locally.
 - **`frontend/hooks/usePantry.ts`.** It points at a REST endpoint (`/api/pantry`) that doesn't exist. Supabase replaces that.
 
+## AI recipes ("Create with AI")
+
+The app can ask Claude to write new recipes from the user's ingredients, meal, number of people and preferences. Open it from Home → **Create with AI**, or from **Cook with my pantry**.
+
+### Which model, and why
+
+| | Choice |
+|---|---|
+| Model | **Claude Opus 5.5** (`claude-opus-5-5`) through the Anthropic API, official TypeScript SDK (`npm:@anthropic-ai/sdk`) |
+| Structured data | Structured outputs (`output_config.format` with a JSON schema in `functions/generate-recipes/generation.ts`). Every reply has the same fields: name, description, ingredients with quantities, steps, servings, times, nutrition, plate, claimed diets and allergens. |
+| Cost | $4 per million input tokens, $20 per million output tokens. One request (up to 3 recipes) is roughly 1–2K tokens in and 3–6K out, so about **5–12 cents**. This is an estimate; check `usage` in the Anthropic Console once it's live. |
+| Response time | Not measured yet. Expect tens of seconds for three recipes. Effort is set to `low` to keep it quick. The app waits up to 120 s and the function up to 110 s. |
+| Cheaper options | Set the `BITEWISE_AI_MODEL` secret. `claude-sonnet-5-5` costs about half ($2 / $10). `claude-haiku-5-5` costs about 1/40 ($0.10 / $0.50), but it has no server-side fallback if a request is declined. Recipes still go through the same safety checks whichever model you pick. |
+| Refusals | `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`): if a safety classifier declines, the API retries on Anthropic's recommended fallback model. |
+
+### How the app talks to it
+
+```
+app (lib/aiRecipesApi.ts)
+  → supabase.functions.invoke('generate-recipes', { ingredients, mealType, servings, count, pantryOnly, note, preferences })
+      Edge Function: checks the sign-in, hourly limit (BITEWISE_AI_HOURLY_LIMIT, default 20),
+      calls Claude, then labels each recipe with analyze_ingredients() (same catalog and rules as shared recipes)
+  ← { recipes: [{ recipe, labels }], model }   or   { error: { code, message } }
+app: normalizes each recipe (utils/aiRecipes.ts), runs the safety check (utils/recipeSafety.ts),
+     shows only the safe ones and lists the rest with the reason they were held back
+```
+
+- **Unverified until checked.** The AI's own diet and allergen claims are stored as `recipe.ai.claimedDietary` / `claimedAllergens` and shown as unverified. The labels the safety check uses come from the ingredient catalog. Allergens can only be added to (the AI's admitted allergens are included), never removed. If the catalog check fails, the recipe counts as unverified and is held back from anyone with allergies or diet rules.
+- **Failures never crash the app.** A declined request, a cut-off or unreadable reply, a timeout, a missing key, or the hourly limit all come back as an `error.code` with a message the screen shows. A recipe missing its name, ingredients or steps is dropped and counted.
+- **Where generated recipes live.** They aren't saved to the database. The phone keeps the last 40 (AsyncStorage) so the recipe screen can open them.
+
+### Setup (once), from `backend/`
+
+```bash
+npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...     # from console.anthropic.com
+npx supabase db push                                       # adds analyze_ingredients + the rate-limit table
+npx supabase functions deploy generate-recipes
+npx deno test supabase/functions/generate-recipes/         # optional: the function's own tests
+```
+
 ## Improving the ingredient matcher
 
 After `db:clean`, open `database/unmatched_ingredients.csv` to find ingredients the catalog doesn't know yet. Add them to `database/cleaning/catalog.py`, run `npm run db:test`, then re-run `db:clean` (with `--fresh`) and `db:push`.

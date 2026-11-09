@@ -120,6 +120,15 @@ export default function CookWithPantryScreen() {
       </View>
       <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
         <MealTypePicker value={mealType} onChange={setMealType} />
+        <TouchableOpacity
+          style={styles.aiLink}
+          onPress={() => router.push(`/generateRecipes?meal=${mealType}`)}
+          accessibilityRole="button"
+          accessibilityLabel="Create a new recipe from my pantry with AI"
+        >
+          <FontAwesome name="magic" size={13} color={COLORS.darkNavy} />
+          <Text style={styles.aiLinkText}>Create a new recipe from my pantry with AI</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -267,6 +276,8 @@ function MealCard({
 }
 
 const styles = StyleSheet.create({
+  aiLink: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 10 },
+  aiLinkText: { fontSize: 14, fontWeight: '700', color: COLORS.darkNavy, textDecorationLine: 'underline' },
   listBtn: {
     flexDirection: 'row',
     alignItems: 'center',
