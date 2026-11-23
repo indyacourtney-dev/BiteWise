@@ -277,6 +277,15 @@ export default function ThisOrThatScreen() {
                 ) : (
                   <RecipeTile height={170} emoji={r.emoji} tone={i === 0 ? 'clay' : 'sage'} />
                 )}
+                <TouchableOpacity
+                  style={styles.roundFavoriteBtn}
+                  onPress={e => { e.stopPropagation(); toggleFavorite(r.id); }}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={isFavorite(r.id) ? `Remove ${r.name} from favorites` : `Save ${r.name} to favorites`}
+                >
+                  <FontAwesome name={isFavorite(r.id) ? 'heart' : 'heart-o'} size={20} color={isFavorite(r.id) ? COLORS.redAccent : COLORS.darkNavy} />
+                </TouchableOpacity>
                 <View style={styles.emojiBadge}>
                   <Text style={styles.emojiBadgeText}>{r.emoji}</Text>
                 </View>
@@ -515,6 +524,7 @@ const styles = StyleSheet.create({
     boxShadow: '0 3px 6px rgba(0,0,0,0.12)',
   },
   photo: { width: '100%', height: 170, backgroundColor: COLORS.blueSoft },
+  roundFavoriteBtn: { position: 'absolute', top: 12, left: 12, width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.cardWhite, alignItems: 'center', justifyContent: 'center', zIndex: 1 },
   emojiBadge: {
     position: 'absolute',
     top: 12,

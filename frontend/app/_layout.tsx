@@ -1,3 +1,4 @@
+
 // app/_layout.tsx — ROOT layout (Stack). Providers, fonts, splash, auth gate.
 
 import React, { useEffect } from 'react';
@@ -20,6 +21,7 @@ import {
 import { useColorScheme } from '@/components/useColorScheme';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import ChefAssistant from '@/components/ChefAssistant';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -105,6 +107,7 @@ function RootLayoutNav() {
               <Stack.Screen name="shareRecipe" options={{ presentation: 'modal' }} />
               <Stack.Screen name="chat/[roomId]" />
             </Stack>
+            <ChefAssistant />
           </AuthAndOnboardingGate>
         </ThemeProvider>
       </AppProvider>
