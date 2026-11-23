@@ -57,7 +57,7 @@ import { configured } from '../lib/supabase';
 import { addFavorite, removeFavorite, syncFavorites } from '../lib/favoritesApi';
 import { ensureProfile } from '../lib/communityApi';
 import { getMealTypeForNow } from '../utils/meals';
-import { clearPlanRange, planSlotKey, rolloverLeftovers } from '../utils/weekPlan';
+import { addDays, clearPlanRange, planSlotKey, rolloverLeftovers } from '../utils/weekPlan';
 
 // ============================================
 // DEFAULTS & STORAGE KEYS
@@ -111,6 +111,7 @@ const keysFor = (userId: string) =>
     mealPlan: `@bitewise/${userId}/mealPlan`,
     mealPlanDays: `@bitewise/${userId}/mealPlanDays`,
     mealPlanSlots: `@bitewise/${userId}/mealPlanSlots`,
+    planPresets: `@bitewise/${userId}/planPresets`,
     /** Sync bookkeeping: deletions not yet uploaded, and when we last synced. */
     sync: `@bitewise/${userId}/sync`,
   }) as const;
@@ -118,6 +119,15 @@ const keysFor = (userId: string) =>
 // ============================================
 // CONTEXT SHAPE
 // ============================================
+
+export interface WeekPlanPreset {
+  id: string;
+  name: string;
+  createdAt: number;
+  meals: Array<Omit<PlannedMeal, 'id' | 'date' | 'addedAt' | 'updatedAt'> & { dayOffset: number }>;
+  dayStatuses: Record<string, PlanDayStatus>;
+  slotStatuses: Record<string, PlanDayStatus>;
+}
 
 interface AppContextValue {
   /** True once persisted state has been loaded from disk. */
@@ -175,6 +185,12 @@ interface AppContextValue {
   updateMealServings: (id: string, servings: number) => void;
   setPlanDayStatus: (date: string, status: PlanDayStatus) => void;
   setPlanSlotStatus: (date: string, slot: PlanSlot, status: PlanDayStatus) => void;
+
+  // Reusable named weekly plans (stored locally per account)
+  planPresets: WeekPlanPreset[];
+  savePlanPreset: (name: string, startDate: string) => boolean;
+  deletePlanPreset: (id: string) => void;
+  loadPlanPreset: (id: string, startDate: string) => boolean;
 
   // Grocery list
   grocery: GroceryItem[];
@@ -256,6 +272,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [mealPlan, setMealPlan] = useState<PlannedMeal[]>([]);
   const [mealPlanDays, setMealPlanDays] = useState<Record<string, PlanDayStatus>>({});
   const [mealPlanSlots, setMealPlanSlots] = useState<Record<string, PlanDayStatus>>({});
+  const [planPresets, setPlanPresets] = useState<WeekPlanPreset[]>([]);
   const favoritesRef = useRef<SavedRecipe[]>([]);
   const pantryRef = useRef<PantryItem[]>([]);
   const groceryRef = useRef<GroceryItem[]>([]);
@@ -323,6 +340,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setMealPlan([]);
     setMealPlanDays({});
     setMealPlanSlots({});
+    setPlanPresets([]);
     setBirthDateState(null);
     setBirthDateChecked(false);
     syncMeta.current = { ...EMPTY_SYNC_META, planStatusUpdatedAt: {} };
@@ -366,6 +384,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const saved: Record<string, PlanDayStatus> = JSON.parse(data[KEYS.mealPlanSlots]!);
           setMealPlanSlots(Object.fromEntries(Object.entries(saved).filter(([key]) => key.slice(0, 10) >= cutoff)));
         }
+        if (data[KEYS.planPresets]) setPlanPresets(JSON.parse(data[KEYS.planPresets]!));
         if (data[KEYS.sync]) syncMeta.current = { ...syncMeta.current, ...JSON.parse(data[KEYS.sync]!) };
         if (data[KEYS.preferences]) {
           // Spread over defaults so newly added fields (like dislikedTags)
@@ -422,6 +441,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => persist('mealPlan', mealPlan), [mealPlan, persist]);
   useEffect(() => persist('mealPlanDays', mealPlanDays), [mealPlanDays, persist]);
   useEffect(() => persist('mealPlanSlots', mealPlanSlots), [mealPlanSlots, persist]);
+  useEffect(() => persist('planPresets', planPresets), [planPresets, persist]);
   useEffect(() => {
     if (birthDate) persist('birthDate', birthDate);
   }, [birthDate, persist]);
@@ -926,6 +946,85 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setMealPlanSlots(cleared.slotStatuses);
   }, [mealPlanDays, mealPlanSlots, commitPlan, stampStatus]);
 
+
+  // ---------- Reusable week presets ----------
+  // Offset-based storage makes a saved week reusable on any future date.
+  const savePlanPreset = useCallback((name: string, startDate: string): boolean => {
+    const cleanName = name.trim();
+    if (!hydrated || !userId || !cleanName) return false;
+    const endDate = addDays(startDate, 6);
+    const meals = mealPlanRef.current
+      .filter(m => m.date >= startDate && m.date <= endDate)
+      .map(({ id, date, addedAt, updatedAt, ...meal }) => ({
+        ...meal,
+        leftoverSourceKey: meal.leftoverSourceKey ? `${Math.round((Date.parse(meal.leftoverSourceKey.slice(0, 10)) - Date.parse(startDate)) / 86400000)}${meal.leftoverSourceKey.slice(10)}` : undefined,
+        dayOffset: Math.round((Date.parse(date) - Date.parse(startDate)) / 86400000),
+      }));
+    const dayStatuses: Record<string, PlanDayStatus> = {};
+    const slotStatuses: Record<string, PlanDayStatus> = {};
+    for (let offset = 0; offset < 7; offset++) {
+      const date = addDays(startDate, offset);
+      if (mealPlanDays[date] && mealPlanDays[date] !== 'cook') dayStatuses[String(offset)] = mealPlanDays[date];
+      for (const slot of ['breakfast', 'lunch', 'dinner'] as PlanSlot[]) {
+        const status = mealPlanSlots[planSlotKey(date, slot)];
+        if (status && status !== 'cook') slotStatuses[`${offset}|${slot}`] = status;
+      }
+    }
+    if (!meals.length && !Object.keys(dayStatuses).length && !Object.keys(slotStatuses).length) return false;
+    setPlanPresets(prev => [{ id: newId(), name: cleanName, createdAt: Date.now(), meals, dayStatuses, slotStatuses }, ...prev]);
+    return true;
+  }, [hydrated, userId, mealPlanDays, mealPlanSlots]);
+
+  const deletePlanPreset = useCallback((id: string) => {
+    setPlanPresets(prev => prev.filter(p => p.id !== id));
+  }, []);
+
+  const loadPlanPreset = useCallback((id: string, startDate: string): boolean => {
+    const preset = planPresets.find(p => p.id === id);
+    if (!preset || !hydrated || !userId) return false;
+    const endDate = addDays(startDate, 6);
+    const now = Date.now();
+    const cleared = clearPlanRange(mealPlanRef.current, mealPlanDaysRef.current, mealPlanSlotsRef.current, startDate, endDate);
+    const nextDays = { ...cleared.dayStatuses };
+    const nextSlots = { ...cleared.slotStatuses };
+    Object.entries(preset.dayStatuses).forEach(([offset, status]) => {
+      nextDays[addDays(startDate, Number(offset))] = status;
+    });
+    Object.entries(preset.slotStatuses).forEach(([key, status]) => {
+      const [offset, slot] = key.split('|');
+      nextSlots[planSlotKey(addDays(startDate, Number(offset)), slot as PlanSlot)] = status;
+    });
+    // Sync the changed day/slot statuses, including cleared statuses.
+    for (let offset = 0; offset < 7; offset++) {
+      const date = addDays(startDate, offset);
+      const beforeDay = mealPlanDaysRef.current[date] ?? 'cook';
+      const afterDay = nextDays[date] ?? 'cook';
+      if (beforeDay !== afterDay) stampStatus(`day:${date}`, afterDay);
+      for (const slot of ['breakfast', 'lunch', 'dinner'] as PlanSlot[]) {
+        const key = planSlotKey(date, slot);
+        const before = mealPlanSlotsRef.current[key] ?? 'cook';
+        const after = nextSlots[key] ?? 'cook';
+        if (before !== after) stampStatus(`slot:${key}`, after);
+      }
+    }
+    const restored: PlannedMeal[] = preset.meals.map(({ dayOffset, ...meal }, index) => ({
+      ...meal,
+      id: `${now}-preset-${index}-${Math.random().toString(36).slice(2, 6)}`,
+      date: addDays(startDate, dayOffset),
+      leftoverSourceKey: meal.leftoverSourceKey ? `${addDays(startDate, Number(meal.leftoverSourceKey.split('|')[0]))}${meal.leftoverSourceKey.slice(meal.leftoverSourceKey.indexOf('|'))}` : undefined,
+      cooked: false,
+      addedAt: now,
+      updatedAt: now,
+    }));
+    const working = [...cleared.meals, ...restored];
+    mealPlanDaysRef.current = nextDays;
+    mealPlanSlotsRef.current = nextSlots;
+    setMealPlanDays(nextDays);
+    setMealPlanSlots(nextSlots);
+    commitPlan(working);
+    return true;
+  }, [planPresets, hydrated, userId, commitPlan, stampStatus]);
+
   const toggleMealCooked = useCallback((id: string) => {
     const now = Date.now();
     commitPlan(mealPlanRef.current.map(m => (m.id === id ? { ...m, cooked: !m.cooked, updatedAt: now } : m)));
@@ -1220,6 +1319,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     mealPlan,
     mealPlanDays,
     mealPlanSlots,
+    planPresets,
+    savePlanPreset,
+    deletePlanPreset,
+    loadPlanPreset,
     planMeal,
     planMeals,
     unplanMeal,

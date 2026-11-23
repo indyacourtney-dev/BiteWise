@@ -63,7 +63,7 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
   const a11y = useAccessibility();
   const {
     mealPlan, mealPlanDays, mealPlanSlots, planMeal, planMeals, unplanMeal, unplanMeals, clearMealPlanRange, toggleMealCooked, updateMealServings,
-    setPlanDayStatus, setPlanSlotStatus, preferences, favorites, pantry, addGroceryItem, recipeExposure, birthDate, settings, updateSettings,
+    setPlanDayStatus, setPlanSlotStatus, planPresets, savePlanPreset, deletePlanPreset, loadPlanPreset, preferences, favorites, pantry, addGroceryItem, recipeExposure, birthDate, settings, updateSettings,
   } = useApp();
   const autoLeftovers = settings.planLeftovers ?? false;
   const goalFor = (slot: PlanSlot) => goalForMeal(preferences.goals, birthDate ? ageOn(birthDate) : null, slot);
@@ -134,6 +134,10 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
   // ----- actions -----
   const [picker, setPicker] = useState<{ date: string; slot: PlanSlot } | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [presetModal, setPresetModal] = useState<'save' | 'load' | null>(null);
+  const [presetName, setPresetName] = useState('');
+  const [pendingPreset, setPendingPreset] = useState<string | null>(null);
+  const [deletePresetId, setDeletePresetId] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const say = (text: string) => {
     setFlash(text);
@@ -198,6 +202,32 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
     unplanMeals(undoEntries);
     setUndoEntries([]);
     say('Auto-filled meals removed');
+  };
+
+  const saveCurrentPreset = () => {
+    if (!presetName.trim()) return;
+    if (!savePlanPreset(presetName, weekStart)) {
+      say('Add meals or day settings before saving a preset');
+      return;
+    }
+    setPresetName('');
+    setPresetModal(null);
+    a11y.haptic('success');
+    say('Preset saved');
+  };
+
+  const applyPreset = (id: string) => {
+    if (weekHasContent) {
+      setPendingPreset(id);
+      setPresetModal(null);
+      return;
+    }
+    if (loadPlanPreset(id, weekStart)) {
+      setUndoEntries([]);
+      setPresetModal(null);
+      a11y.haptic('success');
+      say('Preset loaded');
+    }
   };
 
   const clearWeek = () => {
@@ -367,6 +397,16 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
           >
             <FontAwesome name="shopping-cart" size={15} color={COLORS.darkNavy} />
             <Text style={styles.goldText}>{need.length ? `Shop for it (${need.length})` : 'Nothing to buy'}</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.presetActions}>
+          <TouchableOpacity style={styles.presetButton} onPress={() => setPresetModal('save')} accessibilityRole="button">
+            <FontAwesome name="bookmark-o" size={15} color={COLORS.darkNavy} />
+            <Text style={styles.presetButtonText}>Save preset</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.presetButton} onPress={() => setPresetModal('load')} accessibilityRole="button">
+            <FontAwesome name="folder-open-o" size={15} color={COLORS.darkNavy} />
+            <Text style={styles.presetButtonText}>Load preset{planPresets.length ? ` (${planPresets.length})` : ''}</Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity
@@ -549,6 +589,89 @@ export default function PlanWeekScreen({ embedded = false, bottomPadding = 0 }: 
           setPicker(null);
         }}
       />
+
+      <Modal visible={presetModal !== null} transparent animationType="fade" onRequestClose={() => setPresetModal(null)}>
+        <View style={styles.clearBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPresetModal(null)} />
+          <View style={styles.clearDialog}>
+            <Text style={styles.clearTitle}>{presetModal === 'save' ? 'Save this week' : 'Saved presets'}</Text>
+            {presetModal === 'save' ? (
+              <>
+                <Text style={styles.clearMessage}>Give this meal plan a name so you can reuse it later.</Text>
+                <TextInput
+                  style={styles.presetInput}
+                  placeholder="e.g. My favorite week"
+                  placeholderTextColor={COLORS.inactiveGray}
+                  value={presetName}
+                  onChangeText={setPresetName}
+                  maxLength={60}
+                  accessibilityLabel="Preset name"
+                />
+                <View style={styles.clearActions}>
+                  <TouchableOpacity style={styles.cancelClearButton} onPress={() => setPresetModal(null)}><Text style={styles.cancelClearText}>Cancel</Text></TouchableOpacity>
+                  <TouchableOpacity style={[styles.presetSaveButton, !presetName.trim() && styles.disabled]} disabled={!presetName.trim()} onPress={saveCurrentPreset}><Text style={styles.confirmClearText}>Save preset</Text></TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.clearMessage}>Load a saved plan into {days[0].date} – {days[6].date}.</Text>
+                <ScrollView style={styles.presetList}>
+                  {planPresets.length === 0 ? <Text style={styles.emptyNote}>No saved presets yet.</Text> : null}
+                  {planPresets.map(p => (
+                    <View key={p.id} style={styles.presetListRow}>
+                      <TouchableOpacity style={styles.flex1} onPress={() => applyPreset(p.id)} accessibilityRole="button" accessibilityLabel={`Load ${p.name}`}>
+                        <Text style={styles.presetListName}>{p.name}</Text>
+                        <Text style={styles.presetListMeta}>{p.meals.length} meals · Tap to load</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => { setDeletePresetId(p.id); setPresetModal(null); }} accessibilityRole="button" accessibilityLabel={`Delete ${p.name}`}>
+                        <FontAwesome name="trash-o" size={18} color={COLORS.redAccent} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+                <View style={styles.clearActions}>
+                  <TouchableOpacity style={styles.cancelClearButton} onPress={() => setPresetModal(null)}><Text style={styles.cancelClearText}>Close</Text></TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={!!pendingPreset} transparent animationType="fade" onRequestClose={() => setPendingPreset(null)}>
+        <View style={styles.clearBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPendingPreset(null)} />
+          <View style={styles.clearDialog}>
+            <Text style={styles.clearTitle}>Replace this week?</Text>
+            <Text style={styles.clearMessage}>Loading this preset will replace the meals and day settings for these seven days. Other weeks will remain unchanged.</Text>
+            <View style={styles.clearActions}>
+              <TouchableOpacity style={styles.cancelClearButton} onPress={() => setPendingPreset(null)}><Text style={styles.cancelClearText}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.presetSaveButton} onPress={() => {
+                if (pendingPreset && loadPlanPreset(pendingPreset, weekStart)) { setUndoEntries([]); a11y.haptic('success'); say('Preset loaded'); }
+                setPendingPreset(null);
+              }}><Text style={styles.confirmClearText}>Replace week</Text></TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={!!deletePresetId} transparent animationType="fade" onRequestClose={() => setDeletePresetId(null)}>
+        <View style={styles.clearBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setDeletePresetId(null)} />
+          <View style={styles.clearDialog}>
+            <Text style={styles.clearTitle}>Delete preset?</Text>
+            <Text style={styles.clearMessage}>This will delete the saved preset, not your current meal plan.</Text>
+            <View style={styles.clearActions}>
+              <TouchableOpacity style={styles.cancelClearButton} onPress={() => setDeletePresetId(null)}><Text style={styles.cancelClearText}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.confirmClearButton} onPress={() => {
+                if (deletePresetId) deletePlanPreset(deletePresetId);
+                setDeletePresetId(null);
+                say('Preset deleted');
+              }}><Text style={styles.confirmClearText}>Delete</Text></TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={confirmClear} transparent animationType="fade" onRequestClose={() => setConfirmClear(false)}>
         <View style={styles.clearBackdrop}>
@@ -894,6 +1017,15 @@ const styles = StyleSheet.create({
   slotChipText: { fontSize: 13, fontWeight: '700', color: COLORS.textMuted },
   slotChipTextOn: { color: COLORS.darkNavy },
 
+  presetActions: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  presetButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, backgroundColor: COLORS.cardWhite, borderWidth: 1, borderColor: COLORS.borderLight, borderRadius: 14 },
+  presetButtonText: { fontSize: 14, fontWeight: '700', color: COLORS.darkNavy },
+  presetInput: { backgroundColor: COLORS.cardWhite, borderColor: COLORS.borderLight, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, marginTop: 16, fontSize: 15, color: COLORS.darkNavy },
+  presetSaveButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: COLORS.darkNavy },
+  presetList: { maxHeight: 300, marginTop: 16 },
+  presetListRow: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
+  presetListName: { fontSize: 15, fontWeight: '700', color: COLORS.darkNavy },
+  presetListMeta: { fontSize: 12, color: COLORS.textMuted, marginTop: 3 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 14 },
   leftoverToggle: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 12, paddingHorizontal: 2 },
   toggleBox: { width: 22, height: 22, borderRadius: 7, borderWidth: 1, borderColor: COLORS.borderLight, backgroundColor: COLORS.cardWhite, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
